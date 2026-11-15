@@ -1,0 +1,44 @@
+
+running 1 test
+history=1000 pair=1 mode=feed us_per_update=2.951 rows_examined=3006
+history=1000 pair=1 mode=scan us_per_update=3.901 rows_examined=1006008
+history=1000 pair=2 mode=scan us_per_update=3.980 rows_examined=1006008
+history=1000 pair=2 mode=feed us_per_update=2.829 rows_examined=3006
+history=1000 pair=3 mode=feed us_per_update=2.831 rows_examined=3006
+history=1000 pair=3 mode=scan us_per_update=4.562 rows_examined=1006008
+history=1000 pair=4 mode=scan us_per_update=4.183 rows_examined=1006008
+history=1000 pair=4 mode=feed us_per_update=2.699 rows_examined=3006
+history=1000 pair=5 mode=feed us_per_update=2.767 rows_examined=3006
+history=1000 pair=5 mode=scan us_per_update=4.157 rows_examined=1006008
+history=1000 pair=6 mode=scan us_per_update=4.267 rows_examined=1006008
+history=1000 pair=6 mode=feed us_per_update=2.959 rows_examined=3006
+history=1000 pair=7 mode=feed us_per_update=2.905 rows_examined=3006
+history=1000 pair=7 mode=scan us_per_update=4.143 rows_examined=1006008
+history=1000 pair=8 mode=scan us_per_update=3.917 rows_examined=1006008
+history=1000 pair=8 mode=feed us_per_update=2.925 rows_examined=3006
+history=1000 pair=9 mode=feed us_per_update=2.978 rows_examined=3006
+history=1000 pair=9 mode=scan us_per_update=3.976 rows_examined=1006008
+history=1000 updates=1000 median_us_per_update scan=4.143 feed=2.905; runtime + projection + host reconciliation, no rendering
+history=10000 pair=1 mode=feed us_per_update=22.594 rows_examined=21006
+history=10000 pair=1 mode=scan us_per_update=31.164 rows_examined=10042008
+history=10000 pair=2 mode=scan us_per_update=31.732 rows_examined=10042008
+history=10000 pair=2 mode=feed us_per_update=20.270 rows_examined=21006
+history=10000 pair=3 mode=feed us_per_update=24.333 rows_examined=21006
+history=10000 pair=3 mode=scan us_per_update=36.447 rows_examined=10042008
+history=10000 pair=4 mode=scan us_per_update=30.865 rows_examined=10042008
+history=10000 pair=4 mode=feed us_per_update=21.970 rows_examined=21006
+history=10000 pair=5 mode=feed us_per_update=20.596 rows_examined=21006
+history=10000 pair=5 mode=scan us_per_update=31.386 rows_examined=10042008
+history=10000 pair=6 mode=scan us_per_update=32.018 rows_examined=10042008
+history=10000 pair=6 mode=feed us_per_update=20.291 rows_examined=21006
+history=10000 pair=7 mode=feed us_per_update=21.297 rows_examined=21006
+history=10000 pair=7 mode=scan us_per_update=30.850 rows_examined=10042008
+history=10000 pair=8 mode=scan us_per_update=33.073 rows_examined=10042008
+history=10000 pair=8 mode=feed us_per_update=22.129 rows_examined=21006
+history=10000 pair=9 mode=feed us_per_update=19.964 rows_examined=21006
+history=10000 pair=9 mode=scan us_per_update=31.319 rows_examined=10042008
+history=10000 updates=1000 median_us_per_update scan=31.386 feed=21.297; runtime + projection + host reconciliation, no rendering
+test host_reconciliation_cost_per_streamed_update ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 1.52s
+

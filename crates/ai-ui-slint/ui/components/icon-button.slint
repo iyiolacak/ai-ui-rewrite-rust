@@ -1,0 +1,128 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantTooltipContent } from "tooltip.slint";
+
+// A source-style circular action. The host opts in to each capability.
+// The component's own geometry is the pointer target (at least `hit-size`);
+// the visual `control-size` square is centered inside it, so the drawn size
+// stays the same while the target is comfortable to hit.
+export component AssistantIconButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    // Optional hover description. The label remains the accessible name.
+    in property <string> tooltip;
+    in property <bool> enabled: true;
+    // Opt-in: a repeat activation inside 300 ms is ignored. Only actions where a
+    // second start does harm (send, save, regenerate, approve, feedback) set it.
+    in property <bool> guard-repeat: false;
+    in property <bool> primary: false;
+    // Selected is host-controlled, suitable for a toggle-like action.
+    in property <bool> selected: false;
+    in property <length> control-size: 28px;
+    // Minimum pointer target. Desktop guidance is 32 px; 44 px is for touch.
+    in property <length> hit-size: 32px;
+    // Per-axis pointer target; default to the square hit size. A tight row can
+    // use a narrower pitch (for example 28 px) with 32 px height.
+    in property <length> hit-width: root.hit-size;
+    in property <length> hit-height: root.hit-size;
+    in property <length> icon-size: 16px;
+    in property <length> corner-radius: root.control-size / 2;
+    in property <bool> bordered: true;
+    out property <bool> has-focus: focus.has-focus;
+    // Pointer over this button. An enabled button takes the pointer from any
+    // TouchArea behind it, so a parent that shows content on hover must read this.
+    out property <bool> has-hover: area.has-hover;
+    // The focus ring: shown for keyboard focus (Tab or a programmatic request), not for a pointer click.
+    out property <bool> focus-visible: false;
+    // Capture action identity at gesture start when a controlled consumer needs it.
+    callback armed();
+    callback activated();
+    private property <bool> key-down;
+    // Guarded controls ignore activations for 300 ms after the first one, so a
+    // fast double click (or a repeated key) cannot start the action twice.
+    private property <bool> cooling;
+    cooldown := Timer {
+        interval: 300ms;
+        running: false;
+        triggered => { self.running = false; root.cooling = false; }
+    }
+    private property <bool> pressed: area.pressed || root.key-down;
+    width: max(root.control-size, root.hit-width);
+    height: max(root.control-size, root.hit-height);
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if root.enabled { root.armed(); root.activate(); } }
+    forward-focus: focus;
+
+    function activate() {
+        if root.guard-repeat {
+            if root.cooling { return; }
+            root.cooling = true;
+            cooldown.running = true;
+        }
+        root.activated();
+    }
+
+    focus := FocusScope {
+        enabled: root.enabled;
+        changed has-focus => { if !self.has-focus { root.key-down = false; } }
+        focus-gained(reason) => { root.focus-visible = reason != FocusReason.pointer-click; }
+        focus-lost => { root.focus-visible = false; }
+        key-pressed(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                if root.enabled && !root.key-down { root.key-down = true; root.armed(); root.activate(); }
+                return accept;
+            }
+            return reject;
+        }
+        key-released(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                root.key-down = false;
+                return accept;
+            }
+            return reject;
+        }
+    }
+    visual := Rectangle {
+        width: root.control-size;
+        height: root.control-size;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        border-radius: root.corner-radius;
+        background: root.primary
+            ? (root.enabled
+                ? (root.pressed ? AssistantTheme.primary.darker(0.15) : area.has-hover ? AssistantTheme.primary.transparentize(0.1) : AssistantTheme.primary)
+                : AssistantTheme.disabled)
+            : ((root.selected || area.has-hover || root.pressed) && root.enabled
+                ? (root.pressed ? AssistantTheme.surface.darker(0.15) : AssistantTheme.surface)
+                : transparent);
+        animate background { duration: 80ms; }
+        border-width: (root.focus-visible && root.enabled) || (root.bordered && !root.primary) ? 1px : 0px;
+        border-color: root.focus-visible && root.enabled ? AssistantTheme.focus-border : AssistantTheme.border;
+        Image {
+            width: root.icon-size; height: root.icon-size;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            colorize: root.primary ? AssistantTheme.primary-text : (root.enabled ? AssistantTheme.text : AssistantTheme.disabled);
+            opacity: root.pressed ? 0.85 : 1;
+            animate opacity { duration: 80ms; }
+        }
+    }
+    area := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        pointer-event(event) => {
+            if root.enabled && event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                root.armed();
+            }
+        }
+        // A pointer click takes focus for keyboard handling but shows no ring.
+        clicked => { focus.focus(); root.focus-visible = false; root.activate(); }
+    }
+    // Slint lowers Tooltip to an input-transparent popup with an on-demand
+    // one-shot hover timer; no timer runs while the pointer is away.
+    if root.enabled && root.tooltip != "": Tooltip {
+        AssistantTooltipContent { label: root.tooltip; }
+    }
+}

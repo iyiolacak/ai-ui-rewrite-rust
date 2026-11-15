@@ -1,0 +1,17 @@
+[package]
+name = "ai-ui-markdown-slint"
+version = "0.1.0"
+license.workspace = true
+# Set by dependencies (checked in CI with this exact toolchain).
+rust-version = "1.92"
+keywords.workspace = true
+categories.workspace = true
+description = "Slint rendering of ai-ui-markdown blocks, with off-thread formatting and a streaming cache."
+edition.workspace = true
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+ai-ui-markdown = { path = "../ai-ui-markdown", version = "0.1.0" }
+slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-18"] }

@@ -1,0 +1,22 @@
+[package]
+name = "ai-ui-markdown"
+version = "0.1.0"
+license.workspace = true
+# Set by dependencies (checked in CI with this exact toolchain).
+rust-version = "1.88"
+keywords.workspace = true
+categories.workspace = true
+description = "Rust port of @assistant-ui/markdown: a bounded, safe Markdown parser and block projection for streaming chat text."
+edition.workspace = true
+autoexamples = false
+repository.workspace = true
+readme = "README.md"
+
+[[example]]
+name = "assistant_markdown_synthetic_cost"
+path = "examples/synthetic_cost.rs"
+
+[dependencies]
+pulldown-cmark = { version = "0.13", default-features = false }
+url = "2"
+serde = { version = "1", features = ["derive"] }

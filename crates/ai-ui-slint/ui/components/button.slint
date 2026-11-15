@@ -1,0 +1,137 @@
+import { AssistantTheme } from "../theme.slint";
+
+// Presentation only: callers own the action, pending state and error handling.
+export enum AssistantButtonVariant { primary, outline, secondary, ghost }
+export enum AssistantButtonSize { normal, small }
+
+export component AssistantButton inherits Rectangle {
+    in property <string> label;
+    in property <string> accessible-name: root.label;
+    in property <bool> enabled: true;
+    // Opt-in: a repeat activation inside 300 ms is ignored. Only actions where a
+    // second start does harm (send, save, regenerate, approve, feedback) set it.
+    in property <bool> guard-repeat: false;
+    in property <AssistantButtonVariant> variant: AssistantButtonVariant.primary;
+    in property <AssistantButtonSize> size: AssistantButtonSize.normal;
+    // Optional quiet leading text and start alignment support compact list
+    // actions while keeping activation and focus handling in this primitive.
+    in property <string> leading-label;
+    in property <bool> start-aligned: false;
+    in property <length> horizontal-padding: root.size == AssistantButtonSize.small ? 12px : 16px;
+    in property <color> ghost-hover-color: AssistantTheme.dark ? AssistantTheme.surface.transparentize(0.5) : AssistantTheme.surface;
+    in property <length> corner-radius: 8px;
+    in property <int> label-weight: 500;
+    out property <bool> has-focus: focus.has-focus;
+    // The focus ring: shown for keyboard focus (Tab or a programmatic request), not for a pointer click.
+    out property <bool> focus-visible: false;
+    // Emitted before a pointer, keyboard or accessibility activation, so a
+    // controlled consumer can capture the identity present at gesture start.
+    callback armed();
+    callback activated();
+    private property <bool> key-down;
+    // Guarded controls ignore activations for 300 ms after the first one, so a
+    // fast double click (or a repeated key) cannot start the action twice.
+    private property <bool> cooling;
+    cooldown := Timer {
+        interval: 300ms;
+        running: false;
+        triggered => { self.running = false; root.cooling = false; }
+    }
+    private property <bool> pressed: area.pressed || root.key-down;
+
+    function activate() {
+        if root.guard-repeat {
+            if root.cooling { return; }
+            root.cooling = true;
+            cooldown.running = true;
+        }
+        root.activated();
+    }
+
+    preferred-width: content.preferred-width;
+    min-width: content.min-width;
+    preferred-height: (root.size == AssistantButtonSize.small ? 32px : 36px) * AssistantTheme.hit-scale;
+    min-height: (root.size == AssistantButtonSize.small ? 32px : 36px) * AssistantTheme.hit-scale;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    border-radius: root.corner-radius;
+    border-width: (root.focus-visible && root.enabled) || root.variant == AssistantButtonVariant.outline ? 1px : 0px;
+    border-color: root.focus-visible && root.enabled ? AssistantTheme.focus-border : AssistantTheme.border;
+    background: root.variant == AssistantButtonVariant.primary
+        ? (root.pressed ? AssistantTheme.primary.darker(0.15) : area.has-hover ? AssistantTheme.primary.transparentize(0.1) : AssistantTheme.primary)
+        : root.variant == AssistantButtonVariant.outline
+            ? (AssistantTheme.dark
+                ? (root.pressed ? AssistantTheme.text.transparentize(0.88) : area.has-hover ? AssistantTheme.text.transparentize(0.925) : AssistantTheme.text.transparentize(0.955))
+                : (root.pressed ? AssistantTheme.surface.darker(0.08) : area.has-hover ? AssistantTheme.surface : AssistantTheme.background))
+            : root.variant == AssistantButtonVariant.secondary
+                ? (root.pressed ? AssistantTheme.surface.darker(0.15) : area.has-hover ? AssistantTheme.surface.transparentize(0.2) : AssistantTheme.surface)
+                : (root.pressed ? root.ghost-hover-color.mix(AssistantTheme.text, 0.12) : area.has-hover ? root.ghost-hover-color : transparent);
+    animate background { duration: 80ms; }
+    opacity: root.enabled ? 1 : 0.5;
+    accessible-role: button;
+    accessible-label: root.accessible-name;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if root.enabled { root.armed(); root.activate(); } }
+    forward-focus: focus;
+
+    content := HorizontalLayout {
+        padding-left: root.horizontal-padding;
+        padding-right: root.horizontal-padding;
+        spacing: root.leading-label == "" ? 0px : 10px;
+        alignment: root.start-aligned ? start : center;
+        if root.leading-label != "": Text {
+            text: root.leading-label;
+            color: area.has-hover ? AssistantTheme.text : AssistantTheme.muted.transparentize(0.4);
+            font-family: AssistantTheme.mono-family;
+            font-size: 12px * AssistantTheme.text-scale;
+            vertical-alignment: center;
+        }
+        Text {
+            text: root.label;
+            color: root.variant == AssistantButtonVariant.primary ? AssistantTheme.primary-text : AssistantTheme.text;
+            font-family: "Inter";
+            font-size: 14px * AssistantTheme.text-scale;
+            font-weight: root.label-weight;
+            vertical-alignment: center;
+            horizontal-alignment: root.start-aligned ? left : center;
+            horizontal-stretch: root.start-aligned ? 1 : 0;
+            overflow: elide;
+        }
+    }
+    focus := FocusScope {
+        width: 0px;
+        enabled: root.enabled;
+        changed has-focus => { if !self.has-focus { root.key-down = false; } }
+        focus-gained(reason) => { root.focus-visible = reason != FocusReason.pointer-click; }
+        focus-lost => { root.focus-visible = false; }
+        key-pressed(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                if root.enabled && !root.key-down {
+                    root.key-down = true;
+                    root.armed();
+                    root.activate();
+                }
+                return accept;
+            }
+            return reject;
+        }
+        key-released(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                root.key-down = false;
+                return accept;
+            }
+            return reject;
+        }
+    }
+    area := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        pointer-event(event) => {
+            if root.enabled && event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                root.armed();
+            }
+        }
+        // A pointer click takes focus for keyboard handling but shows no ring.
+        clicked => { focus.focus(); root.focus-visible = false; root.activate(); }
+    }
+}

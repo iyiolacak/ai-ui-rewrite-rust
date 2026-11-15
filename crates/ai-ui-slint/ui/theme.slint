@@ -1,0 +1,38 @@
+// Converted from assistant-ui docs theme tokens at the pinned upstream revision.
+// See assets/assistant-ui-MIT-LICENSE.txt and docs/assistant-port/FIDELITY.md.
+// Upstream's default thread fonts, registered here so an app using these
+// components gets them without importing anything: Inter (regular, medium, and
+// semibold for bold text) and IBM Plex Mono for code. Slint resolves a
+// `font-family` string as a literal family name, so the generic "monospace"
+// would fall back to the UI font.
+import "assets/Inter-Regular.ttf";
+import "assets/Inter-Medium.ttf";
+import "assets/Inter-SemiBold.ttf";
+import "assets/IBMPlexMono-Regular.ttf";
+import { Palette } from "std-widgets.slint";
+export enum AssistantColorScheme { dark, light }
+export global AssistantTheme {
+    in property <AssistantColorScheme> scheme: AssistantColorScheme.dark;
+    // Follow the operating system's scheme instead of `scheme`.
+    in property <bool> follow-system: false;
+    // Multiplies the font size of message text, Markdown, code, reasoning, tool
+    // calls, approvals, sources, the action row and the composer.
+    // One global, so a change re-evaluates only the rows that are instantiated.
+    in property <float> text-scale: 1.0;
+    // Size of icon buttons and hit targets: grows with the text, never below 1.
+    out property <float> hit-scale: max(1.0, text-scale);
+    out property <string> mono-family: "IBM Plex Mono";
+    out property <bool> dark: follow-system ? Palette.color-scheme == ColorScheme.dark : scheme == AssistantColorScheme.dark;
+    out property <color> background: dark ? #0f0f0e : #fcfcfb;
+    out property <color> text: dark ? #fafaf9 : #0a0a08;
+    out property <color> muted: dark ? #a1a19e : #74746f;
+    out property <color> surface: dark ? #282826 : #f5f5f2;
+    out property <color> composer: dark ? #171716 : #fafaf8;
+    out property <color> border: dark ? #292928 : #e3e3e1;
+    out property <color> focus-border: dark ? #4a4a49 : #bfbfbd;
+    out property <color> primary: dark ? #e5e5e4 : #171714;
+    out property <color> primary-text: dark ? #1a1918 : #fafaf8;
+    out property <color> disabled: dark ? #71716f : #898987;
+    out property <color> error: dark ? #f87171 : #dc2626;
+    out property <color> progress: dark ? #60a5fa : #3b82f6;
+}

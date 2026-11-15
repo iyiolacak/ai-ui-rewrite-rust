@@ -1,0 +1,80 @@
+import { AssistantTheme } from "../theme.slint";
+
+// Controlled vertical scrollbar. The owner supplies the current extent and
+// position; only pointer interaction invokes `scrolled`.
+export component AssistantScrollbar inherits Rectangle {
+    in property <length> content-height;
+    in property <length> visible-height;
+    in-out property <length> content-y;
+    // Native overlay behaviour: the thumb shows while hovered or dragged, while
+    // the owner sets `reveal` (e.g. the user is scrolling), and briefly after.
+    // Programmatic movement (following a streaming reply) does not show it.
+    in property <bool> reveal: false;
+    callback scrolled();
+    private property <bool> awake: false;
+    changed reveal => {
+        if root.reveal {
+            root.awake = true;
+            sleep.running = false;
+        } else {
+            sleep.running = true;
+        }
+    }
+    sleep := Timer {
+        interval: 900ms;
+        running: false;
+        triggered => { self.running = false; root.awake = false; }
+    }
+
+    private property <length> maximum: max(0px, root.content-height - root.visible-height);
+    private property <length> thumb-height: root.maximum > 0px && root.content-height > 0px
+        ? min(root.height, max(24px, root.height * root.visible-height / root.content-height)) : root.height;
+    private property <length> travel: max(0px, root.height - root.thumb-height);
+    private property <length> thumb-y: root.maximum > 0px ? root.travel * clamp(-root.content-y / root.maximum, 0, 1) : 0px;
+
+    width: 14px;
+    visible: root.maximum > 0px;
+    background: transparent;
+
+    function scroll-to(position: length) -> bool {
+        let next = clamp(position, -root.maximum, 0px);
+        if next == root.content-y { return false; }
+        root.content-y = next;
+        root.scrolled();
+        return true;
+    }
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: root.thumb-y;
+        width: input.has-hover || input.pressed ? 6px : 4px;
+        height: root.thumb-height;
+        border-radius: 3px;
+        background: AssistantTheme.focus-border;
+        opacity: root.reveal || root.awake || input.has-hover || input.pressed ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+    input := TouchArea {
+        property <length> previous-y;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                self.previous-y = self.mouse-y;
+                if (self.mouse-y < root.thumb-y || self.mouse-y > root.thumb-y + root.thumb-height) && root.travel > 0px {
+                    root.scroll-to(-root.maximum * clamp((self.mouse-y - root.thumb-height / 2) / root.travel, 0, 1));
+                }
+            }
+        }
+        moved => {
+            if self.pressed && root.travel > 0px {
+                // Measure each movement against the current extent so a size
+                // change while dragging cannot reuse stale geometry.
+                root.scroll-to(root.content-y - (self.mouse-y - self.previous-y) * root.maximum / root.travel);
+                self.previous-y = self.mouse-y;
+            }
+        }
+        scroll-event(event) => {
+            if event.delta-y != 0px && root.scroll-to(root.content-y + event.delta-y) { return accept; }
+            return reject;
+        }
+    }
+}

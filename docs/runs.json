@@ -1,0 +1,2384 @@
+{
+ "schema": 1,
+ "generated_from": [
+  "benchmarks/results/like-for-like/raw",
+  "benchmarks/results/like-for-like-run2",
+  "~/.cache/ai-ui-rewrite-rust/results/perf-profile",
+  "~/.cache/ai-ui-rewrite-rust/results/perf-balanced",
+  "~/.cache/ai-ui-rewrite-rust/results/haiku-tests",
+  "docs/results.json (earlier long-fixture and GPU rows, copied as given)"
+ ],
+ "generated_by": "benchmarks/results/make-runs-json.py",
+ "runs": [
+  {
+   "id": "run1",
+   "label": "Run 1",
+   "date": "2026-11-11",
+   "pairs": 5,
+   "workload": {
+    "messages": 1000,
+    "prompt_kb": 9,
+    "window_s": 60,
+    "comparison": "release Rust --bench-render vs headless Chromium, interleaved pairs"
+   },
+   "power": {
+    "tuned_profile": "not recorded",
+    "governor": "not recorded",
+    "epp": "not recorded"
+   },
+   "ac": "unknown",
+   "conditions": "Interleaved pairs, load about 4-6, power profile not recorded (probably power saver).",
+   "load_before_each_pair": [
+    4.88,
+    4.6,
+    4.63,
+    4.64,
+    4.61
+   ],
+   "load_after_each_pair": [
+    3.96,
+    4.55,
+    4.82,
+    3.73,
+    4.31
+   ],
+   "mean_cpu_mhz_per_pair": "not recorded",
+   "sources": [
+    "benchmarks/results/like-for-like/raw"
+   ],
+   "measures": {
+    "open_like_for_like": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust: until the last message's Markdown is formatted and painted. React: all messages in the DOM with Markdown rendered plus two frames.",
+     "rust": [
+      150.9,
+      101.9,
+      109.1,
+      100.8,
+      105.3
+     ],
+     "react": [
+      2962,
+      2794,
+      2987,
+      2940,
+      2897
+     ],
+     "rust_median": 105.3,
+     "rust_min": 100.8,
+     "rust_max": 150.9,
+     "react_median": 2940,
+     "react_min": 2794,
+     "react_max": 2987,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      19.6,
+      27.4,
+      27.3,
+      29.1,
+      27.5
+     ],
+     "ratio_floor_median": 27.9,
+     "ratio_floor_least_favourable": 19.6,
+     "ratio_floor_most_favourable": 29.1,
+     "ratio_floor_median_of_pair_ratios": 27.4
+    },
+    "open_first_sync_rust_only": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust history import + first sync (rows visible, Markdown not yet formatted). NOT comparable with React's open time.",
+     "rust": [
+      28.6,
+      12.3,
+      11.1,
+      12.9,
+      13.1
+     ],
+     "rust_median": 12.9,
+     "rust_min": 11.1,
+     "rust_max": 28.6
+    },
+    "cpu_60s": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Process CPU while streaming 60 s. Load-sensitive; not a headline figure. Rust includes software raster; React is the whole Chromium process tree.",
+     "rust": [
+      13700.0,
+      17160.0,
+      17650.0,
+      16250.0,
+      17200.0
+     ],
+     "react": [
+      73380,
+      73050,
+      73250,
+      73540,
+      73260
+     ],
+     "rust_median": 17160.0,
+     "rust_min": 13700.0,
+     "rust_max": 17650.0,
+     "react_median": 73260,
+     "react_min": 73050,
+     "react_max": 73540,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      5.3,
+      4.2,
+      4.1,
+      4.5,
+      4.2
+     ],
+     "ratio_floor_median": 4.2,
+     "ratio_floor_least_favourable": 4.1,
+     "ratio_floor_most_favourable": 5.3,
+     "ratio_floor_median_of_pair_ratios": 4.2
+    },
+    "stall": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Longest loop iteration (Rust, unpaced) vs longest animation-frame interval (React). Single-event maximum, noisy.",
+     "rust": [
+      31.664533,
+      17.483792,
+      35.196293,
+      35.405538,
+      34.04525
+     ],
+     "react": [
+      883.3,
+      866.6,
+      1183.3,
+      1166.5,
+      916.6
+     ],
+     "rust_median": 34.045,
+     "rust_min": 17.483792,
+     "rust_max": 35.405538,
+     "react_median": 916.6,
+     "react_min": 866.6,
+     "react_max": 1183.3,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      27.8,
+      49.5,
+      33.6,
+      32.9,
+      26.9
+     ],
+     "ratio_floor_median": 26.9,
+     "ratio_floor_least_favourable": 26.9,
+     "ratio_floor_most_favourable": 49.5,
+     "ratio_floor_median_of_pair_ratios": 32.9
+    },
+    "memory_end_rss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Resident memory at the end. React: RSS summed over all Chromium processes.",
+     "rust": [
+      29.7,
+      30.4,
+      29.9,
+      30.1,
+      30.2
+     ],
+     "react": [
+      1526.6,
+      1481.5,
+      1474.5,
+      1521.6,
+      1480.5
+     ],
+     "rust_median": 30.1,
+     "rust_min": 29.7,
+     "rust_max": 30.4,
+     "react_median": 1481.5,
+     "react_min": 1474.5,
+     "react_max": 1526.6,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      51.4,
+      48.7,
+      49.3,
+      50.5,
+      49.0
+     ],
+     "ratio_floor_median": 49.2,
+     "ratio_floor_least_favourable": 48.7,
+     "ratio_floor_most_favourable": 51.4,
+     "ratio_floor_median_of_pair_ratios": 49.3
+    },
+    "memory_end_pss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Conservative: Rust RSS against React PSS (discounts shared pages). React only for PSS; Rust value is its RSS.",
+     "rust": [
+      29.7,
+      30.4,
+      29.9,
+      30.1,
+      30.2
+     ],
+     "react": [
+      895.4,
+      849.4,
+      841.8,
+      887.8,
+      850.3
+     ],
+     "rust_median": 30.1,
+     "rust_min": 29.7,
+     "rust_max": 30.4,
+     "react_median": 850.3,
+     "react_min": 841.8,
+     "react_max": 895.4,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      30.1,
+      27.9,
+      28.1,
+      29.4,
+      28.1
+     ],
+     "ratio_floor_median": 28.2,
+     "ratio_floor_least_favourable": 27.9,
+     "ratio_floor_most_favourable": 30.1,
+     "ratio_floor_median_of_pair_ratios": 28.1
+    },
+    "rust_iterations_over_4ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "Rust loop iterations over 4 ms in the 60 s window.",
+     "rust": [
+      775,
+      1195,
+      1250,
+      1023,
+      1164
+     ],
+     "rust_median": 1164,
+     "rust_min": 775,
+     "rust_max": 1250
+    },
+    "react_frames_over_33ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "React frames over 33 ms in the 60 s window.",
+     "react": [
+      105,
+      92,
+      116,
+      91,
+      89
+     ],
+     "react_median": 92,
+     "react_min": 89,
+     "react_max": 116
+    },
+    "react_frame_p95": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "React 95th percentile frame interval.",
+     "react": [
+      33.3,
+      33.3,
+      33.4,
+      33.3,
+      33.3
+     ],
+     "react_median": 33.3,
+     "react_min": 33.3,
+     "react_max": 33.4
+    }
+   }
+  },
+  {
+   "id": "run2",
+   "label": "Run 2",
+   "date": "2026-11-11",
+   "pairs": 9,
+   "workload": {
+    "messages": 1000,
+    "prompt_kb": 9,
+    "window_s": 60
+   },
+   "power": {
+    "tuned_profile": "not recorded",
+    "governor": "not recorded",
+    "epp": "not recorded"
+   },
+   "ac": "unknown",
+   "conditions": "9 interleaved pairs, load about 3-5, power profile not recorded.",
+   "load_before_each_pair": [
+    3.19,
+    2.71,
+    2.7,
+    2.65,
+    4.02,
+    4.09,
+    4.76,
+    2.83,
+    2.66
+   ],
+   "load_after_each_pair": [
+    2.71,
+    2.7,
+    2.65,
+    4.02,
+    4.09,
+    4.76,
+    2.83,
+    2.66,
+    2.41
+   ],
+   "mean_cpu_mhz_per_pair": "not recorded",
+   "sources": [
+    "benchmarks/results/like-for-like-run2"
+   ],
+   "measures": {
+    "open_like_for_like": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust: until the last message's Markdown is formatted and painted. React: all messages in the DOM with Markdown rendered plus two frames.",
+     "rust": [
+      89.9,
+      87.2,
+      94.1,
+      213.2,
+      97.5,
+      104.2,
+      85.7,
+      144.9,
+      129.7
+     ],
+     "react": [
+      2489,
+      2623,
+      2408,
+      1870,
+      2527,
+      2080,
+      2472,
+      2151,
+      2874
+     ],
+     "rust_median": 97.5,
+     "rust_min": 85.7,
+     "rust_max": 213.2,
+     "react_median": 2472,
+     "react_min": 1870,
+     "react_max": 2874,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      27.6,
+      30.0,
+      25.5,
+      8.7,
+      25.9,
+      19.9,
+      28.8,
+      14.8,
+      22.1
+     ],
+     "ratio_floor_median": 25.3,
+     "ratio_floor_least_favourable": 8.7,
+     "ratio_floor_most_favourable": 30.0,
+     "ratio_floor_median_of_pair_ratios": 25.5
+    },
+    "open_first_sync_rust_only": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust history import + first sync (rows visible, Markdown not yet formatted). NOT comparable with React's open time.",
+     "rust": [
+      10.0,
+      8.2,
+      8.4,
+      14.4,
+      18.1,
+      9.7,
+      7.3,
+      29.9,
+      26.5
+     ],
+     "rust_median": 10.0,
+     "rust_min": 7.3,
+     "rust_max": 29.9
+    },
+    "cpu_60s": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Process CPU while streaming 60 s. Load-sensitive; not a headline figure. Rust includes software raster; React is the whole Chromium process tree.",
+     "rust": [
+      12150.0,
+      12430.0,
+      9690.0,
+      7570.0,
+      8980.0,
+      8480.0,
+      8840.0,
+      14990.0,
+      14740.0
+     ],
+     "react": [
+      73360,
+      68190,
+      69360,
+      69350,
+      71030,
+      70100,
+      70290,
+      69250,
+      68700
+     ],
+     "rust_median": 9690.0,
+     "rust_min": 7570.0,
+     "rust_max": 14990.0,
+     "react_median": 69360,
+     "react_min": 68190,
+     "react_max": 73360,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      6.0,
+      5.4,
+      7.1,
+      9.1,
+      7.9,
+      8.2,
+      7.9,
+      4.6,
+      4.6
+     ],
+     "ratio_floor_median": 7.1,
+     "ratio_floor_least_favourable": 4.6,
+     "ratio_floor_most_favourable": 9.1,
+     "ratio_floor_median_of_pair_ratios": 7.1
+    },
+    "stall": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Longest loop iteration (Rust, unpaced) vs longest animation-frame interval (React). Single-event maximum, noisy.",
+     "rust": [
+      16.520115,
+      16.679057,
+      24.119715,
+      30.532443,
+      15.102372,
+      11.73481,
+      12.51166,
+      29.767714,
+      28.848218
+     ],
+     "react": [
+      550,
+      483.3,
+      516.7,
+      416.6,
+      983.3,
+      799.9,
+      516.6,
+      766.6,
+      566.7
+     ],
+     "rust_median": 16.679,
+     "rust_min": 11.73481,
+     "rust_max": 30.532443,
+     "react_median": 550,
+     "react_min": 416.6,
+     "react_max": 983.3,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      33.2,
+      28.9,
+      21.4,
+      13.6,
+      65.1,
+      68.1,
+      41.2,
+      25.7,
+      19.6
+     ],
+     "ratio_floor_median": 32.9,
+     "ratio_floor_least_favourable": 13.6,
+     "ratio_floor_most_favourable": 68.1,
+     "ratio_floor_median_of_pair_ratios": 28.9
+    },
+    "memory_end_rss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Resident memory at the end. React: RSS summed over all Chromium processes.",
+     "rust": [
+      29.8,
+      30.0,
+      30.1,
+      29.8,
+      30.1,
+      30.1,
+      30.1,
+      30.2,
+      30.2
+     ],
+     "react": [
+      1427.7,
+      1708.5,
+      1531.5,
+      1637.2,
+      1677.8,
+      1527.7,
+      1521.4,
+      1525.3,
+      1682.3
+     ],
+     "rust_median": 30.1,
+     "rust_min": 29.8,
+     "rust_max": 30.2,
+     "react_median": 1531.5,
+     "react_min": 1427.7,
+     "react_max": 1708.5,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      47.9,
+      56.9,
+      50.8,
+      54.9,
+      55.7,
+      50.7,
+      50.5,
+      50.5,
+      55.7
+     ],
+     "ratio_floor_median": 50.8,
+     "ratio_floor_least_favourable": 47.9,
+     "ratio_floor_most_favourable": 56.9,
+     "ratio_floor_median_of_pair_ratios": 50.8
+    },
+    "memory_end_pss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Conservative: Rust RSS against React PSS (discounts shared pages). React only for PSS; Rust value is its RSS.",
+     "rust": [
+      29.8,
+      30.0,
+      30.1,
+      29.8,
+      30.1,
+      30.1,
+      30.1,
+      30.2,
+      30.2
+     ],
+     "react": [
+      793.2,
+      1066.3,
+      888,
+      996.7,
+      1036.1,
+      886,
+      880.6,
+      886.2,
+      1041.3
+     ],
+     "rust_median": 30.1,
+     "rust_min": 29.8,
+     "rust_max": 30.2,
+     "react_median": 888,
+     "react_min": 793.2,
+     "react_max": 1066.3,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      26.6,
+      35.5,
+      29.5,
+      33.4,
+      34.4,
+      29.4,
+      29.2,
+      29.3,
+      34.4
+     ],
+     "ratio_floor_median": 29.5,
+     "ratio_floor_least_favourable": 26.6,
+     "ratio_floor_most_favourable": 35.5,
+     "ratio_floor_median_of_pair_ratios": 29.5
+    },
+    "rust_iterations_over_4ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "Rust loop iterations over 4 ms in the 60 s window.",
+     "rust": [
+      621,
+      594,
+      499,
+      234,
+      246,
+      189,
+      251,
+      936,
+      913
+     ],
+     "rust_median": 499,
+     "rust_min": 189,
+     "rust_max": 936
+    },
+    "react_frames_over_33ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "React frames over 33 ms in the 60 s window.",
+     "react": [
+      129,
+      19,
+      44,
+      32,
+      36,
+      15,
+      55,
+      49,
+      65
+     ],
+     "react_median": 44,
+     "react_min": 15,
+     "react_max": 129
+    },
+    "react_frame_p95": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "React 95th percentile frame interval.",
+     "react": [
+      33.4,
+      16.8,
+      16.8,
+      16.8,
+      16.8,
+      16.8,
+      16.8,
+      16.8,
+      33.2
+     ],
+     "react_median": 16.8,
+     "react_min": 16.8,
+     "react_max": 33.4
+    }
+   }
+  },
+  {
+   "id": "run3",
+   "label": "Run 3 (performance profile)",
+   "date": "2026-11-11",
+   "pairs": 9,
+   "workload": {
+    "messages": 1000,
+    "prompt_kb": 9,
+    "window_s": 60
+   },
+   "power": {
+    "tuned_profile": "throughput-performance",
+    "governor": "performance",
+    "epp": "not recorded",
+    "power_after_raw": [
+     "== AFTER Wed Nov 11 09:25:00 PM +03 2026",
+     " 21:25:00 up  1:41,  2 users,  load average: 0.50, 0.76, 3.21",
+     "Current active profile: throughput-performance",
+     "     12 performance",
+     "AC online: 1"
+    ],
+    "power_before_raw": [
+     "== BEFORE Wed Nov 11 09:05:59 PM +03 2026",
+     " 21:05:59 up  1:22,  2 users,  load average: 1.12, 4.04, 8.77",
+     "Current active profile: throughput-performance",
+     "     12 performance",
+     "AC online: 1"
+    ]
+   },
+   "ac": "plugged in",
+   "conditions": "9 interleaved pairs, tuned throughput-performance, governor performance, plugged in, load 0.5-2.9.",
+   "load_before_each_pair": [
+    1.12,
+    1.68,
+    1.69,
+    2.93,
+    2.46,
+    1.02,
+    0.6,
+    0.77,
+    0.92
+   ],
+   "load_after_each_pair": [
+    1.68,
+    1.69,
+    2.93,
+    2.46,
+    1.02,
+    0.6,
+    0.77,
+    0.92,
+    0.7
+   ],
+   "mean_cpu_mhz_per_pair": [
+    4231,
+    4036,
+    4125,
+    4006,
+    2916,
+    2506,
+    2856,
+    2603,
+    2459
+   ],
+   "sources": [
+    "~/.cache/ai-ui-rewrite-rust/results/perf-profile"
+   ],
+   "measures": {
+    "open_like_for_like": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust: until the last message's Markdown is formatted and painted. React: all messages in the DOM with Markdown rendered plus two frames.",
+     "rust": [
+      102.8,
+      82.3,
+      82.9,
+      81.6,
+      81.2,
+      84.7,
+      83.4,
+      83.7,
+      83.7
+     ],
+     "react": [
+      1486,
+      1375,
+      1385,
+      1952,
+      1175,
+      1138,
+      2166,
+      1705,
+      1152
+     ],
+     "rust_median": 83.4,
+     "rust_min": 81.2,
+     "rust_max": 102.8,
+     "react_median": 1385,
+     "react_min": 1138,
+     "react_max": 2166,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      14.4,
+      16.7,
+      16.7,
+      23.9,
+      14.4,
+      13.4,
+      25.9,
+      20.3,
+      13.7
+     ],
+     "ratio_floor_median": 16.6,
+     "ratio_floor_least_favourable": 13.4,
+     "ratio_floor_most_favourable": 25.9,
+     "ratio_floor_median_of_pair_ratios": 16.7
+    },
+    "open_first_sync_rust_only": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust history import + first sync (rows visible, Markdown not yet formatted). NOT comparable with React's open time.",
+     "rust": [
+      13.9,
+      5.1,
+      5.7,
+      4.8,
+      4.5,
+      4.5,
+      4.4,
+      4.4,
+      4.5
+     ],
+     "rust_median": 4.5,
+     "rust_min": 4.4,
+     "rust_max": 13.9
+    },
+    "cpu_60s": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Process CPU while streaming 60 s. Load-sensitive; not a headline figure. Rust includes software raster; React is the whole Chromium process tree.",
+     "rust": [
+      5270.0,
+      5190.0,
+      5130.0,
+      5070.0,
+      4040.0,
+      4270.0,
+      4260.0,
+      4260.0,
+      4250.0
+     ],
+     "react": [
+      63260,
+      62790,
+      63440,
+      64440,
+      59710,
+      59890,
+      58450,
+      59520,
+      59320
+     ],
+     "rust_median": 4270.0,
+     "rust_min": 4040.0,
+     "rust_max": 5270.0,
+     "react_median": 59890,
+     "react_min": 58450,
+     "react_max": 64440,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      12.0,
+      12.0,
+      12.3,
+      12.7,
+      14.7,
+      14.0,
+      13.7,
+      13.9,
+      13.9
+     ],
+     "ratio_floor_median": 14.0,
+     "ratio_floor_least_favourable": 12.0,
+     "ratio_floor_most_favourable": 14.7,
+     "ratio_floor_median_of_pair_ratios": 13.7
+    },
+    "stall": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Longest loop iteration (Rust, unpaced) vs longest animation-frame interval (React). Single-event maximum, noisy.",
+     "rust": [
+      7.402716,
+      7.003551,
+      7.521268,
+      7.465937,
+      5.839022,
+      4.996713,
+      5.251766,
+      5.206451,
+      5.310925
+     ],
+     "react": [
+      416.7,
+      316.7,
+      299.9,
+      633.2,
+      233.4,
+      233.2,
+      233.3,
+      249.9,
+      233.4
+     ],
+     "rust_median": 5.839,
+     "rust_min": 4.996713,
+     "rust_max": 7.521268,
+     "react_median": 249.9,
+     "react_min": 233.2,
+     "react_max": 633.2,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      56.2,
+      45.2,
+      39.8,
+      84.8,
+      39.9,
+      46.6,
+      44.4,
+      47.9,
+      43.9
+     ],
+     "ratio_floor_median": 42.7,
+     "ratio_floor_least_favourable": 39.8,
+     "ratio_floor_most_favourable": 84.8,
+     "ratio_floor_median_of_pair_ratios": 45.2
+    },
+    "memory_end_rss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Resident memory at the end. React: RSS summed over all Chromium processes.",
+     "rust": [
+      29.8,
+      30.4,
+      29.8,
+      30.3,
+      30.3,
+      29.8,
+      30.2,
+      30.2,
+      30.1
+     ],
+     "react": [
+      1689.9,
+      1551.1,
+      1642.9,
+      1544.9,
+      1618.3,
+      1622.5,
+      1640.1,
+      1613.8,
+      1623.7
+     ],
+     "rust_median": 30.2,
+     "rust_min": 29.8,
+     "rust_max": 30.4,
+     "react_median": 1622.5,
+     "react_min": 1544.9,
+     "react_max": 1689.9,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      56.7,
+      51.0,
+      55.1,
+      50.9,
+      53.4,
+      54.4,
+      54.3,
+      53.4,
+      53.9
+     ],
+     "ratio_floor_median": 53.7,
+     "ratio_floor_least_favourable": 50.9,
+     "ratio_floor_most_favourable": 56.7,
+     "ratio_floor_median_of_pair_ratios": 53.9
+    },
+    "memory_end_pss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Conservative: Rust RSS against React PSS (discounts shared pages). React only for PSS; Rust value is its RSS.",
+     "rust": [
+      29.8,
+      30.4,
+      29.8,
+      30.3,
+      30.3,
+      29.8,
+      30.2,
+      30.2,
+      30.1
+     ],
+     "react": [
+      1056.7,
+      919.6,
+      1011.4,
+      914.7,
+      986.5,
+      988.2,
+      1009.1,
+      984.1,
+      991.9
+     ],
+     "rust_median": 30.2,
+     "rust_min": 29.8,
+     "rust_max": 30.4,
+     "react_median": 988.2,
+     "react_min": 914.7,
+     "react_max": 1056.7,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      35.4,
+      30.2,
+      33.9,
+      30.1,
+      32.5,
+      33.1,
+      33.4,
+      32.5,
+      32.9
+     ],
+     "ratio_floor_median": 32.7,
+     "ratio_floor_least_favourable": 30.1,
+     "ratio_floor_most_favourable": 35.4,
+     "ratio_floor_median_of_pair_ratios": 32.9
+    },
+    "rust_iterations_over_4ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "Rust loop iterations over 4 ms in the 60 s window.",
+     "rust": [
+      14,
+      21,
+      11,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "rust_median": 1,
+     "rust_min": 1,
+     "rust_max": 21
+    },
+    "react_frames_over_33ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "React frames over 33 ms in the 60 s window.",
+     "react": [
+      2,
+      5,
+      11,
+      6,
+      3,
+      2,
+      3,
+      3,
+      2
+     ],
+     "react_median": 3,
+     "react_min": 2,
+     "react_max": 11
+    },
+    "react_frame_p95": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "React 95th percentile frame interval.",
+     "react": [
+      16.7,
+      16.7,
+      16.8,
+      16.7,
+      16.8,
+      16.7,
+      16.8,
+      16.8,
+      16.7
+     ],
+     "react_median": 16.7,
+     "react_min": 16.7,
+     "react_max": 16.8
+    }
+   }
+  },
+  {
+   "id": "run4",
+   "label": "Run 4 (balanced profile)",
+   "date": "2026-11-11",
+   "pairs": 9,
+   "workload": {
+    "messages": 1000,
+    "prompt_kb": 9,
+    "window_s": 60
+   },
+   "power": {
+    "tuned_profile": "balanced",
+    "governor": "powersave",
+    "epp": "balance_performance",
+    "power_after_raw": [
+     "== FINAL 2026-11-11 21:51:49",
+     "date: Wed Nov 11 09:51:49 PM +03 2026",
+     "uptime:  21:51:49 up  2:07,  2 users,  load average: 2.83, 5.72, 5.55",
+     "tuned-adm: Current active profile: balanced",
+     "governors:",
+     "     12 powersave",
+     "epp policy0: balance_performance",
+     "AC online: 1"
+    ],
+    "power_before_raw": [
+     "== BEFORE 2026-11-11 21:32:23",
+     "date: Wed Nov 11 09:32:23 PM +03 2026",
+     "uptime:  21:32:23 up  1:48,  2 users,  load average: 2.49, 0.89, 2.23",
+     "tuned-adm: Current active profile: balanced",
+     "governors:",
+     "     12 powersave",
+     "epp policy0: balance_performance",
+     "AC online: 1"
+    ]
+   },
+   "ac": "plugged in",
+   "conditions": "9 interleaved pairs, tuned balanced, governor powersave, energy_performance_preference balance_performance, plugged in.",
+   "load_before_each_pair": [
+    2.49,
+    11.2,
+    9.68,
+    2.68,
+    1.78,
+    11.66,
+    9.79,
+    13.61,
+    4.68
+   ],
+   "load_after_each_pair": [
+    11.2,
+    9.68,
+    2.68,
+    1.78,
+    11.66,
+    9.79,
+    13.61,
+    4.68,
+    2.83
+   ],
+   "mean_cpu_mhz_per_pair": [
+    3588,
+    3775,
+    3973,
+    3722,
+    3230,
+    3542,
+    3509,
+    3189,
+    3923
+   ],
+   "sources": [
+    "~/.cache/ai-ui-rewrite-rust/results/perf-balanced"
+   ],
+   "measures": {
+    "open_like_for_like": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust: until the last message's Markdown is formatted and painted. React: all messages in the DOM with Markdown rendered plus two frames.",
+     "rust": [
+      82.5,
+      128.3,
+      83.2,
+      88.5,
+      83.1,
+      157.3,
+      83.2,
+      82.9,
+      81.6
+     ],
+     "react": [
+      1601,
+      1785,
+      1271,
+      1248,
+      1674,
+      1410,
+      4571,
+      2271,
+      2378
+     ],
+     "rust_median": 83.2,
+     "rust_min": 81.6,
+     "rust_max": 157.3,
+     "react_median": 1674,
+     "react_min": 1248,
+     "react_max": 4571,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      19.4,
+      13.9,
+      15.2,
+      14.1,
+      20.1,
+      8.9,
+      54.9,
+      27.3,
+      29.1
+     ],
+     "ratio_floor_median": 20.1,
+     "ratio_floor_least_favourable": 8.9,
+     "ratio_floor_most_favourable": 54.9,
+     "ratio_floor_median_of_pair_ratios": 19.4
+    },
+    "open_first_sync_rust_only": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust history import + first sync (rows visible, Markdown not yet formatted). NOT comparable with React's open time.",
+     "rust": [
+      5.0,
+      13.3,
+      5.4,
+      4.5,
+      5.0,
+      17.9,
+      5.0,
+      5.6,
+      4.8
+     ],
+     "rust_median": 5.0,
+     "rust_min": 4.5,
+     "rust_max": 17.9
+    },
+    "cpu_60s": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Process CPU while streaming 60 s. Load-sensitive; not a headline figure. Rust includes software raster; React is the whole Chromium process tree.",
+     "rust": [
+      7160.0,
+      6680.0,
+      5800.0,
+      4900.0,
+      6870.0,
+      7750.0,
+      7210.0,
+      9750.0,
+      4130.0
+     ],
+     "react": [
+      61090,
+      62300,
+      62130,
+      60860,
+      58950,
+      62060,
+      61930,
+      61990,
+      62740
+     ],
+     "rust_median": 6870.0,
+     "rust_min": 4130.0,
+     "rust_max": 9750.0,
+     "react_median": 61990,
+     "react_min": 58950,
+     "react_max": 62740,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      8.5,
+      9.3,
+      10.7,
+      12.4,
+      8.5,
+      8.0,
+      8.5,
+      6.3,
+      15.1
+     ],
+     "ratio_floor_median": 9.0,
+     "ratio_floor_least_favourable": 6.3,
+     "ratio_floor_most_favourable": 15.1,
+     "ratio_floor_median_of_pair_ratios": 8.5
+    },
+    "stall": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Longest loop iteration (Rust, unpaced) vs longest animation-frame interval (React). Single-event maximum, noisy.",
+     "rust": [
+      11.883583,
+      45.454859,
+      12.591711,
+      11.531879,
+      8.930046,
+      28.447599,
+      13.564903,
+      17.498477,
+      6.373033
+     ],
+     "react": [
+      300,
+      266.7,
+      233.4,
+      249.9,
+      299.9,
+      316.6,
+      1783.3,
+      333.3,
+      283.3
+     ],
+     "rust_median": 12.592,
+     "rust_min": 6.373033,
+     "rust_max": 45.454859,
+     "react_median": 299.9,
+     "react_min": 233.4,
+     "react_max": 1783.3,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      25.2,
+      5.8,
+      18.5,
+      21.6,
+      33.5,
+      11.1,
+      131.4,
+      19.0,
+      44.4
+     ],
+     "ratio_floor_median": 23.8,
+     "ratio_floor_least_favourable": 5.8,
+     "ratio_floor_most_favourable": 131.4,
+     "ratio_floor_median_of_pair_ratios": 21.6
+    },
+    "memory_end_rss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Resident memory at the end. React: RSS summed over all Chromium processes.",
+     "rust": [
+      29.8,
+      28.8,
+      29.5,
+      29.8,
+      29.2,
+      29.1,
+      28.7,
+      28.7,
+      28.8
+     ],
+     "react": [
+      1604.9,
+      1683.1,
+      1641.4,
+      1702.5,
+      1662.2,
+      1676.4,
+      1650,
+      1664.8,
+      1688.4
+     ],
+     "rust_median": 29.1,
+     "rust_min": 28.7,
+     "rust_max": 29.8,
+     "react_median": 1664.8,
+     "react_min": 1604.9,
+     "react_max": 1702.5,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      53.8,
+      58.4,
+      55.6,
+      57.1,
+      56.9,
+      57.6,
+      57.4,
+      58.0,
+      58.6
+     ],
+     "ratio_floor_median": 57.2,
+     "ratio_floor_least_favourable": 53.8,
+     "ratio_floor_most_favourable": 58.6,
+     "ratio_floor_median_of_pair_ratios": 57.4
+    },
+    "memory_end_pss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Conservative: Rust RSS against React PSS (discounts shared pages). React only for PSS; Rust value is its RSS.",
+     "rust": [
+      29.8,
+      28.8,
+      29.5,
+      29.8,
+      29.2,
+      29.1,
+      28.7,
+      28.7,
+      28.8
+     ],
+     "react": [
+      972.2,
+      1049.5,
+      1015.7,
+      1076.9,
+      1029.8,
+      1044.3,
+      1027.1,
+      1031.5,
+      1053.8
+     ],
+     "rust_median": 29.1,
+     "rust_min": 28.7,
+     "rust_max": 29.8,
+     "react_median": 1031.5,
+     "react_min": 972.2,
+     "react_max": 1076.9,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      32.6,
+      36.4,
+      34.4,
+      36.1,
+      35.2,
+      35.8,
+      35.7,
+      35.9,
+      36.5
+     ],
+     "ratio_floor_median": 35.4,
+     "ratio_floor_least_favourable": 32.6,
+     "ratio_floor_most_favourable": 36.5,
+     "ratio_floor_median_of_pair_ratios": 35.8
+    },
+    "rust_iterations_over_4ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "Rust loop iterations over 4 ms in the 60 s window.",
+     "rust": [
+      199,
+      194,
+      221,
+      106,
+      211,
+      206,
+      336,
+      363,
+      1
+     ],
+     "rust_median": 206,
+     "rust_min": 1,
+     "rust_max": 363
+    },
+    "react_frames_over_33ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "React frames over 33 ms in the 60 s window.",
+     "react": [
+      155,
+      6,
+      4,
+      2,
+      318,
+      2,
+      102,
+      2,
+      4
+     ],
+     "react_median": 4,
+     "react_min": 2,
+     "react_max": 318
+    },
+    "react_frame_p95": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "React 95th percentile frame interval.",
+     "react": [
+      33.4,
+      16.7,
+      16.7,
+      16.7,
+      50,
+      16.7,
+      33.3,
+      16.7,
+      16.8
+     ],
+     "react_median": 16.7,
+     "react_min": 16.7,
+     "react_max": 50
+    }
+   }
+  },
+  {
+   "id": "run1-200x40",
+   "label": "Run 1, 200 messages / 40 KB prompt",
+   "date": "2026-11-11",
+   "pairs": 5,
+   "workload": {
+    "messages": 200,
+    "prompt_kb": 40,
+    "window_s": 60,
+    "comparison": "release Rust --bench-render vs headless Chromium, interleaved pairs"
+   },
+   "power": {
+    "tuned_profile": "not recorded",
+    "governor": "not recorded",
+    "epp": "not recorded"
+   },
+   "ac": "unknown",
+   "conditions": "Interleaved pairs, load about 4-6, power profile not recorded (probably power saver).",
+   "load_before_each_pair": [
+    3.83,
+    5.2,
+    5.23,
+    4.83,
+    3.68
+   ],
+   "load_after_each_pair": [
+    6.01,
+    4.77,
+    5.0,
+    4.2,
+    3.82
+   ],
+   "mean_cpu_mhz_per_pair": "not recorded",
+   "sources": [
+    "benchmarks/results/like-for-like/raw"
+   ],
+   "measures": {
+    "open_like_for_like": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust: until the last message's Markdown is formatted and painted. React: all messages in the DOM with Markdown rendered plus two frames.",
+     "rust": [
+      33.7,
+      46.6,
+      32.4,
+      31.8,
+      33.2
+     ],
+     "react": [
+      1029,
+      1197,
+      1104,
+      1085,
+      1135
+     ],
+     "rust_median": 33.2,
+     "rust_min": 31.8,
+     "rust_max": 46.6,
+     "react_median": 1104,
+     "react_min": 1029,
+     "react_max": 1197,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      30.5,
+      25.6,
+      34.0,
+      34.1,
+      34.1
+     ],
+     "ratio_floor_median": 33.2,
+     "ratio_floor_least_favourable": 25.6,
+     "ratio_floor_most_favourable": 34.1,
+     "ratio_floor_median_of_pair_ratios": 34.0
+    },
+    "open_first_sync_rust_only": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust history import + first sync (rows visible, Markdown not yet formatted). NOT comparable with React's open time.",
+     "rust": [
+      2.0,
+      6.1,
+      2.6,
+      1.5,
+      2.1
+     ],
+     "rust_median": 2.1,
+     "rust_min": 1.5,
+     "rust_max": 6.1
+    },
+    "cpu_60s": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Process CPU while streaming 60 s. Load-sensitive; not a headline figure. Rust includes software raster; React is the whole Chromium process tree.",
+     "rust": [
+      15740.0,
+      19450.0,
+      17020.0,
+      19310.0,
+      13660.0
+     ],
+     "react": [
+      51250,
+      50050,
+      51160,
+      41900,
+      57120
+     ],
+     "rust_median": 17020.0,
+     "rust_min": 13660.0,
+     "rust_max": 19450.0,
+     "react_median": 51160,
+     "react_min": 41900,
+     "react_max": 57120,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      3.2,
+      2.5,
+      3.0,
+      2.1,
+      4.1
+     ],
+     "ratio_floor_median": 3.0,
+     "ratio_floor_least_favourable": 2.1,
+     "ratio_floor_most_favourable": 4.1,
+     "ratio_floor_median_of_pair_ratios": 3.0
+    },
+    "stall": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Longest loop iteration (Rust, unpaced) vs longest animation-frame interval (React). Single-event maximum, noisy.",
+     "rust": [
+      111.710128,
+      36.167555,
+      109.87343,
+      136.21633,
+      39.50892
+     ],
+     "react": [
+      2183.2,
+      2649.9,
+      2283.3,
+      2399.9,
+      2516.6
+     ],
+     "rust_median": 109.873,
+     "rust_min": 36.167555,
+     "rust_max": 136.21633,
+     "react_median": 2399.9,
+     "react_min": 2183.2,
+     "react_max": 2649.9,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      19.5,
+      73.2,
+      20.7,
+      17.6,
+      63.6
+     ],
+     "ratio_floor_median": 21.8,
+     "ratio_floor_least_favourable": 17.6,
+     "ratio_floor_most_favourable": 73.2,
+     "ratio_floor_median_of_pair_ratios": 20.7
+    },
+    "memory_end_rss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Resident memory at the end. React: RSS summed over all Chromium processes.",
+     "rust": [
+      24.8,
+      24.6,
+      24.5,
+      24.8,
+      24.6
+     ],
+     "react": [
+      1212.7,
+      1268,
+      1210,
+      1212.6,
+      1249.6
+     ],
+     "rust_median": 24.6,
+     "rust_min": 24.5,
+     "rust_max": 24.8,
+     "react_median": 1212.7,
+     "react_min": 1210,
+     "react_max": 1268,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      48.8,
+      51.5,
+      49.3,
+      48.8,
+      50.7
+     ],
+     "ratio_floor_median": 49.2,
+     "ratio_floor_least_favourable": 48.8,
+     "ratio_floor_most_favourable": 51.5,
+     "ratio_floor_median_of_pair_ratios": 49.3
+    },
+    "memory_end_pss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Conservative: Rust RSS against React PSS (discounts shared pages). React only for PSS; Rust value is its RSS.",
+     "rust": [
+      24.8,
+      24.6,
+      24.5,
+      24.8,
+      24.6
+     ],
+     "react": [
+      584,
+      640.9,
+      583.1,
+      582.4,
+      622.9
+     ],
+     "rust_median": 24.6,
+     "rust_min": 24.5,
+     "rust_max": 24.8,
+     "react_median": 584,
+     "react_min": 582.4,
+     "react_max": 640.9,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      23.5,
+      26.0,
+      23.8,
+      23.4,
+      25.3
+     ],
+     "ratio_floor_median": 23.7,
+     "ratio_floor_least_favourable": 23.4,
+     "ratio_floor_most_favourable": 26.0,
+     "ratio_floor_median_of_pair_ratios": 23.8
+    },
+    "rust_iterations_over_4ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "Rust loop iterations over 4 ms in the 60 s window.",
+     "rust": [
+      769,
+      1316,
+      964,
+      1352,
+      570
+     ],
+     "rust_median": 964,
+     "rust_min": 570,
+     "rust_max": 1352
+    },
+    "react_frames_over_33ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "React frames over 33 ms in the 60 s window.",
+     "react": [
+      2,
+      2,
+      2,
+      2,
+      4
+     ],
+     "react_median": 2,
+     "react_min": 2,
+     "react_max": 4
+    },
+    "react_frame_p95": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "React 95th percentile frame interval.",
+     "react": [
+      16.8,
+      16.8,
+      16.8,
+      16.7,
+      16.7
+     ],
+     "react_median": 16.8,
+     "react_min": 16.7,
+     "react_max": 16.8
+    }
+   }
+  },
+  {
+   "id": "run1-10000",
+   "label": "Run 1, 10,000 messages / 9 KB prompt",
+   "date": "2026-11-11",
+   "pairs": 5,
+   "workload": {
+    "messages": 10000,
+    "prompt_kb": 9,
+    "window_s": 60,
+    "comparison": "release Rust --bench-render vs headless Chromium, interleaved pairs"
+   },
+   "power": {
+    "tuned_profile": "not recorded",
+    "governor": "not recorded",
+    "epp": "not recorded"
+   },
+   "ac": "unknown",
+   "conditions": "Interleaved pairs, load about 4-6, power profile not recorded (probably power saver).",
+   "load_before_each_pair": [
+    5.91,
+    4.92,
+    4.57,
+    6.03,
+    5.09
+   ],
+   "load_after_each_pair": [
+    5.42,
+    4.89,
+    6.5,
+    5.34,
+    5.47
+   ],
+   "mean_cpu_mhz_per_pair": "not recorded",
+   "sources": [
+    "benchmarks/results/like-for-like/raw"
+   ],
+   "measures": {
+    "open_like_for_like": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust: until the last message's Markdown is formatted and painted. React: all messages in the DOM with Markdown rendered plus two frames.",
+     "rust": [
+      409.6,
+      382.9,
+      472.1,
+      435.5,
+      442.7
+     ],
+     "react": [
+      23591,
+      26902,
+      23655,
+      27196,
+      26081
+     ],
+     "rust_median": 435.5,
+     "rust_min": 382.9,
+     "rust_max": 472.1,
+     "react_median": 26081,
+     "react_min": 23591,
+     "react_max": 27196,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      57.5,
+      70.2,
+      50.1,
+      62.4,
+      58.9
+     ],
+     "ratio_floor_median": 59.8,
+     "ratio_floor_least_favourable": 50.1,
+     "ratio_floor_most_favourable": 70.2,
+     "ratio_floor_median_of_pair_ratios": 58.9
+    },
+    "open_first_sync_rust_only": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Rust history import + first sync (rows visible, Markdown not yet formatted). NOT comparable with React's open time.",
+     "rust": [
+      183.4,
+      138.0,
+      207.4,
+      147.5,
+      147.8
+     ],
+     "rust_median": 147.8,
+     "rust_min": 138.0,
+     "rust_max": 207.4
+    },
+    "cpu_60s": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Process CPU while streaming 60 s. Load-sensitive; not a headline figure. Rust includes software raster; React is the whole Chromium process tree.",
+     "rust": [
+      21890.0,
+      22980.0,
+      22800.0,
+      20930.0,
+      23220.0
+     ],
+     "react": [
+      76060,
+      84710,
+      84340,
+      83500,
+      83420
+     ],
+     "rust_median": 22800.0,
+     "rust_min": 20930.0,
+     "rust_max": 23220.0,
+     "react_median": 83500,
+     "react_min": 76060,
+     "react_max": 84710,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      3.4,
+      3.6,
+      3.6,
+      3.9,
+      3.5
+     ],
+     "ratio_floor_median": 3.6,
+     "ratio_floor_least_favourable": 3.4,
+     "ratio_floor_most_favourable": 3.9,
+     "ratio_floor_median_of_pair_ratios": 3.6
+    },
+    "stall": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "Longest loop iteration (Rust, unpaced) vs longest animation-frame interval (React). Single-event maximum, noisy.",
+     "rust": [
+      42.749137,
+      41.125439,
+      45.958388,
+      28.327653,
+      38.878049
+     ],
+     "react": [
+      9833,
+      12666.1,
+      11599.5,
+      12899.5,
+      11016.2
+     ],
+     "rust_median": 41.125,
+     "rust_min": 28.327653,
+     "rust_max": 45.958388,
+     "react_median": 11599.5,
+     "react_min": 9833,
+     "react_max": 12899.5,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      230.0,
+      307.9,
+      252.3,
+      455.3,
+      283.3
+     ],
+     "ratio_floor_median": 282.0,
+     "ratio_floor_least_favourable": 230.0,
+     "ratio_floor_most_favourable": 455.3,
+     "ratio_floor_median_of_pair_ratios": 283.3
+    },
+    "memory_end_rss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Resident memory at the end. React: RSS summed over all Chromium processes.",
+     "rust": [
+      63.6,
+      64.0,
+      63.4,
+      63.7,
+      63.3
+     ],
+     "react": [
+      3926,
+      3709,
+      3675.4,
+      3717.8,
+      3835.4
+     ],
+     "rust_median": 63.6,
+     "rust_min": 63.3,
+     "rust_max": 64.0,
+     "react_median": 3717.8,
+     "react_min": 3675.4,
+     "react_max": 3926,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      61.7,
+      57.9,
+      57.9,
+      58.3,
+      60.5
+     ],
+     "ratio_floor_median": 58.4,
+     "ratio_floor_least_favourable": 57.9,
+     "ratio_floor_most_favourable": 61.7,
+     "ratio_floor_median_of_pair_ratios": 58.3
+    },
+    "memory_end_pss": {
+     "unit": "MiB",
+     "better": "lower",
+     "note": "Conservative: Rust RSS against React PSS (discounts shared pages). React only for PSS; Rust value is its RSS.",
+     "rust": [
+      63.6,
+      64.0,
+      63.4,
+      63.7,
+      63.3
+     ],
+     "react": [
+      3298.6,
+      3081.2,
+      3051.1,
+      3088.9,
+      3206.7
+     ],
+     "rust_median": 63.6,
+     "rust_min": 63.3,
+     "rust_max": 64.0,
+     "react_median": 3088.9,
+     "react_min": 3051.1,
+     "react_max": 3298.6,
+     "ratio_rule": "react/rust (lower is better)",
+     "ratio_per_pair_floor": [
+      51.8,
+      48.1,
+      48.1,
+      48.4,
+      50.6
+     ],
+     "ratio_floor_median": 48.5,
+     "ratio_floor_least_favourable": 48.1,
+     "ratio_floor_most_favourable": 51.8,
+     "ratio_floor_median_of_pair_ratios": 48.4
+    },
+    "rust_iterations_over_4ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "Rust loop iterations over 4 ms in the 60 s window.",
+     "rust": [
+      1499,
+      1674,
+      1699,
+      1433,
+      1701
+     ],
+     "rust_median": 1674,
+     "rust_min": 1433,
+     "rust_max": 1701
+    },
+    "react_frames_over_33ms": {
+     "unit": "count",
+     "better": "lower",
+     "note": "React frames over 33 ms in the 60 s window.",
+     "react": [
+      320,
+      268,
+      260,
+      269,
+      302
+     ],
+     "react_median": 269,
+     "react_min": 260,
+     "react_max": 320
+    },
+    "react_frame_p95": {
+     "unit": "ms",
+     "better": "lower",
+     "note": "React 95th percentile frame interval.",
+     "react": [
+      316.6,
+      333.4,
+      333.4,
+      333.3,
+      299.9
+     ],
+     "react_median": 333.3,
+     "react_min": 299.9,
+     "react_max": 333.4
+    }
+   }
+  }
+ ],
+ "web": {
+  "wasm_bytes": {
+   "raw": 9500548,
+   "gzip": 2971326,
+   "brotli": 2005463
+  },
+  "wasm_mib": {
+   "raw": 9.06,
+   "gzip": 2.834,
+   "brotli": 1.913
+  },
+  "measurements": {
+   "job1": {
+    "source": "~/.cache/ai-ui-rewrite-rust/results/haiku-tests/job1-measure-web.json",
+    "history_messages": 10000,
+    "load_1min_before": 3.09,
+    "load_1min_all": [
+     3.09
+    ],
+    "runs_per_scenario": 5,
+    "scenarios": {
+     "empty": {
+      "first_paint_ms": [
+       765.8,
+       233.3,
+       373.7,
+       236.9,
+       300.6
+      ],
+      "wasm_memory_mib": [
+       3.9375,
+       4,
+       3.9375,
+       4,
+       4
+      ],
+      "fps": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "console_errors": [
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "first_paint_ms_median": 300.6,
+      "fps_median": 0
+     },
+     "history": {
+      "first_paint_ms": [
+       428.7,
+       422.8,
+       493.7,
+       512.8,
+       400.4
+      ],
+      "wasm_memory_mib": [
+       29.25,
+       29.25,
+       29.25,
+       29.5625,
+       29.3125
+      ],
+      "fps": [
+       14.971,
+       15.42,
+       15.095,
+       13.483,
+       14.685
+      ],
+      "console_errors": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "first_paint_ms_median": 428.7,
+      "fps_median": 14.971
+     }
+    },
+    "note": "fps for the empty thread was recorded as 0 (harness did not drive frames then); use job4 for fps. One 404 console error (favicon-type resource) on the first empty run in both files."
+   },
+   "job4_fps_fixed": {
+    "source": "~/.cache/ai-ui-rewrite-rust/results/haiku-tests/job4-measure-web-fixed.json",
+    "history_messages": 10000,
+    "load_1min_before": 3.25,
+    "load_1min_all": [
+     3.25,
+     3.65
+    ],
+    "runs_per_scenario": 5,
+    "scenarios": {
+     "empty": {
+      "first_paint_ms": [
+       432.8,
+       142.9,
+       153.3,
+       226.7,
+       211
+      ],
+      "wasm_memory_mib": [
+       3.9375,
+       3.9375,
+       3.9375,
+       4,
+       4
+      ],
+      "fps": [
+       19.056,
+       19.354,
+       19.258,
+       18.046,
+       18.242
+      ],
+      "console_errors": [
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "first_paint_ms_median": 211,
+      "fps_median": 19.056
+     },
+     "history": {
+      "first_paint_ms": [
+       337.9,
+       296.6,
+       296.6,
+       355.3,
+       326.2
+      ],
+      "wasm_memory_mib": [
+       29.25,
+       29.375,
+       29.3125,
+       29.5625,
+       29.4375
+      ],
+      "fps": [
+       19.225,
+       18.98,
+       17.912,
+       16.566,
+       16.637
+      ],
+      "console_errors": [
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "first_paint_ms_median": 326.2,
+      "fps_median": 17.912
+     }
+    },
+    "note": "fps harness fixed; empty-thread and 10,000-message fps. Browser tab, software-rendered WebAssembly build."
+   }
+  }
+ },
+ "tests": {
+  "command": "cargo test --workspace --offline --release, 3 sequential runs, all exit 0",
+  "date": "2026-11-11",
+  "source": "~/.cache/ai-ui-rewrite-rust/results/haiku-tests/job3-summary.txt",
+  "runs": [
+   {
+    "run": 1,
+    "passed": 334,
+    "failed": 0,
+    "ignored": 7,
+    "test_result_lines": 61
+   },
+   {
+    "run": 2,
+    "passed": 334,
+    "failed": 0,
+    "ignored": 7,
+    "test_result_lines": 61
+   },
+   {
+    "run": 3,
+    "passed": 334,
+    "failed": 0,
+    "ignored": 7,
+    "test_result_lines": 61
+   }
+  ],
+  "summary_text": [
+   "cargo test --workspace --offline --release, 3 sequential runs, all exit 0",
+   "Each run: 334 passed, 0 failed, 7 ignored, 61 test-result lines (incl. 10 doc-test groups).",
+   "Ignored: ai_ui_example_thread 1; perf.rs 1 (unit) + 4 (integration, tests/perf.rs); doc-test ai_ui_data_stream 1.",
+   "No FAILED or panicked lines in any run. Flaky tests: none observed.",
+   "Runs 2 and 3 reused compiled binaries (about 16 s each)."
+  ]
+ },
+ "earlier_rows": [
+  {
+   "id": "fx2000-open",
+   "group": "vs_react",
+   "workload": "2,000 long structured messages (12.2 MB)",
+   "measure": "open the thread",
+   "unit": "ms",
+   "rust": 527.1,
+   "react": 42090,
+   "rust_range": [
+    485.5,
+    528.3
+   ],
+   "react_range": [
+    42090,
+    96584
+   ],
+   "source": "benchmarks/results/summary-run1.json (raw: results-run1/a-2000, 3 Rust runs, 2 of 3 React runs finished); hist build = 2cbedad + origin/demo/long-threads loader + benchmarks/results/rust-bench-extras.patch",
+   "date": "2026-11-10",
+   "conditions": "words.py seed 7 fixture, 2,000 messages, 12.2 MB of text, long structured replies, 9 KB prompt, 60 s window, headless Chromium vs --bench-render, 3 interleaved pairs, machine load 6-25. Rust = import incl. JSON parse + first sync + Markdown formatted (open_ms + formatted_after_s of each raw run: 485.5, 527.1, 528.3 ms; first sync alone was 375.5 to 417.1 ms and is not comparable); React = navigation until all messages are in the DOM (that old harness did not check Markdown, so this is if anything a lower bound for React). Third React run did not finish within the 120 s harness limit and is excluded from the range, so the range understates React.",
+   "drivers": "React renders every message as DOM and parses all Markdown on the main thread; Rust formats on worker threads."
+  },
+  {
+   "id": "fx2000-stall",
+   "group": "vs_react",
+   "workload": "2,000 long structured messages",
+   "measure": "longest single iteration or frame while streaming",
+   "unit": "ms",
+   "rust": 41.5,
+   "react": 1633.2,
+   "rust_range": [
+    35.0,
+    74.8
+   ],
+   "react_range": [
+    1633.2,
+    4583.1
+   ],
+   "source": "benchmarks/results/summary-run1.json (raw: results-run1/a-2000, 3 Rust runs, 2 of 3 React runs finished); hist build = 2cbedad + origin/demo/long-threads loader + benchmarks/results/rust-bench-extras.patch",
+   "date": "2026-11-10",
+   "conditions": "words.py seed 7 fixture, 2,000 messages, 12.2 MB of text, long structured replies, 9 KB prompt, 60 s window, headless Chromium vs --bench-render, 3 interleaved pairs, machine load 6-25. Rust = longest iteration (app work + layout + software paint, unpaced); React = longest frame interval. Single-event stalls are noisy: all runs shown in the range.",
+   "drivers": "React main thread saturated (61 s busy in a 60 s window)."
+  },
+  {
+   "id": "fx2000-mem",
+   "group": "vs_react",
+   "workload": "2,000 long structured messages",
+   "measure": "resident memory at the end",
+   "unit": "MiB",
+   "rust": 88.1,
+   "react": 2946.3,
+   "rust_range": [
+    87.8,
+    88.4
+   ],
+   "react_range": [
+    2946.3,
+    3449.1
+   ],
+   "source": "benchmarks/results/summary-run1.json (raw: results-run1/a-2000, 3 Rust runs, 2 of 3 React runs finished); hist build = 2cbedad + origin/demo/long-threads loader + benchmarks/results/rust-bench-extras.patch",
+   "date": "2026-11-10",
+   "conditions": "words.py seed 7 fixture, 2,000 messages, 12.2 MB of text, long structured replies, 9 KB prompt, 60 s window, headless Chromium vs --bench-render, 3 interleaved pairs, machine load 6-25. React = RSS summed over all Chromium processes.",
+   "drivers": "Rust keeps parsed text once and instantiates Slint rows; React keeps DOM, JS heap (1.47 GiB in run 1) and Markdown tree."
+  },
+  {
+   "id": "fx2000-cpu",
+   "group": "vs_react",
+   "workload": "2,000 long structured messages",
+   "measure": "process CPU while streaming 60 s",
+   "unit": "ms",
+   "rust": 9130,
+   "react": 60260,
+   "rust_range": [
+    8780,
+    9750
+   ],
+   "react_range": [
+    60260,
+    65430
+   ],
+   "source": "benchmarks/results/summary-run1.json (raw: results-run1/a-2000, 3 Rust runs, 2 of 3 React runs finished); hist build = 2cbedad + origin/demo/long-threads loader + benchmarks/results/rust-bench-extras.patch",
+   "date": "2026-11-10",
+   "conditions": "words.py seed 7 fixture, 2,000 messages, 12.2 MB of text, long structured replies, 9 KB prompt, 60 s window, headless Chromium vs --bench-render, 3 interleaved pairs, machine load 6-25. Rust includes software raster; React plain CSS, whole Chromium process tree.",
+   "drivers": "React re-renders and re-lays out the long thread on each streamed update."
+  },
+  {
+   "id": "fx5000-open",
+   "group": "vs_react",
+   "workload": "5,000 long structured messages (29.7 MB)",
+   "measure": "open the thread",
+   "unit": "ms",
+   "rust": 1256.7,
+   "react": 120000,
+   "rust_range": [
+    807.3,
+    1256.7
+   ],
+   "react_range": [
+    120000,
+    120000
+   ],
+   "source": "benchmarks/results/summary-run1.json (raw: results-run1/a-5000, 3/3 pairs)",
+   "date": "2026-11-10",
+   "conditions": "Same fixture family, 3 interleaved pairs. React did NOT have all 5,000 messages in the DOM within the harness's 120 s limit in 3 of 3 runs, so 120 s is a floor for React, not a measurement; Rust = import + first sync + Markdown formatted, value its slowest of 3 runs (807 to 1257 ms; first sync alone was 697 to 1117 ms). The ratio is therefore a lower bound.",
+   "drivers": "As above, growing with thread size.",
+   "lower_bound": true
+  },
+  {
+   "id": "gpu-cpu",
+   "group": "rust_only",
+   "workload": "1000 messages, ~9 KB reply, real GPU window (FemtoVG-WGPU, Intel UHD, Wayland, 30 s)",
+   "measure": "process CPU",
+   "unit": "s",
+   "rust": 14.1,
+   "react": 25.5,
+   "rust_range": [
+    11.8,
+    14.1
+   ],
+   "react_range": [
+    23.1,
+    25.5
+   ],
+   "better": "lower",
+   "source": "docs/STATUS.md at 2cbedad (6add923 React comparison, 54c371f scale, 48bc8ec real window); raw runs were not kept",
+   "date": "2026-11-10",
+   "conditions": "Rust now (femtovg pipeline-cache patch) vs Rust before; NOT a React comparison. Interleaved runs.",
+   "drivers": "femtovg recompiled pipelines every few frames."
+  },
+  {
+   "id": "gpu-fps",
+   "group": "rust_only",
+   "workload": "same",
+   "measure": "median frame rate",
+   "unit": "fps",
+   "rust": 141,
+   "react": 105,
+   "rust_range": [
+    141,
+    142
+   ],
+   "react_range": [
+    105,
+    108
+   ],
+   "better": "higher",
+   "source": "docs/STATUS.md at 2cbedad (6add923 React comparison, 54c371f scale, 48bc8ec real window); raw runs were not kept",
+   "date": "2026-11-10",
+   "conditions": "Rust now vs Rust before; display limit 142 fps.",
+   "drivers": "same"
+  }
+ ],
+ "notes": [
+  "All values are raw per-pair numbers from the stored files; medians, ranges and ratios are computed by make-runs-json.py. Ratios are floored to one decimal, never rounded up.",
+  "ratio_floor_median = floor(median(react)/median(rust)); least/most favourable = min/max of the per-pair ratios (ratio_per_pair_floor lists each pair).",
+  "Open times differ between runs because of power profile and machine load; React's open time is more CPU-speed sensitive than Rust's. Show ranges, not single numbers.",
+  "CPU totals and single-event stalls are load-sensitive and are not headline figures.",
+  "Runs 1 and 2 did not record the power profile; run 1 'plugged in' is unknown. Runs 'run1-200x40' and 'run1-10000' are other workloads of run 1 (5 pairs each).",
+  "memory_end_pss uses the Rust RSS as the Rust value (Rust has no PSS measurement).",
+  "Earlier rows (fx*, gpu-*) keep their own conditions; see their 'conditions' fields."
+ ]
+}

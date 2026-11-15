@@ -1,0 +1,160 @@
+import { ApprovalRequest, ApprovalState, ApprovalChoice, ToolCopyTarget, ChatPart, ChatPartKind, PartIcon } from "../models.slint";
+import { AssistantTheme } from "../theme.slint";
+import { AssistantDisclosureButton } from "disclosure-button.slint";
+import { AssistantApproval } from "approval.slint";
+import { AssistantMarkdown } from "markdown.slint";
+import { AssistantAttachmentChip } from "attachment-chip.slint";
+import { AssistantSourceCard } from "source-card.slint";
+import { AssistantReasoningPreview } from "reasoning-preview.slint";
+import { AssistantToolFallback } from "tool-fallback.slint";
+import { AssistantPagedText } from "paged-text.slint";
+import { AssistantChunkedText } from "chunked-text.slint";
+
+// A part is a pure projection. The host owns disclosure state across recycling.
+export component AssistantPart inherits Rectangle {
+    in property <ChatPart> part;
+    in property <int> conversation-revision;
+    in property <string> message-id;
+    in property <string> branch-token;
+    callback toggle();
+    callback page-requested(int, string, string, string, int, int);
+    callback resolve-approval(ApprovalRequest, ApprovalChoice);
+    in property <bool> can-copy-code: false;
+    in property <bool> can-copy-tool: false;
+    callback copy-tool-requested(int, string, string, string, ToolCopyTarget);
+    in property <bool> can-open-source: false;
+    callback source-requested();
+    callback source-requested-scoped(int, string, string, string);
+    callback link-activated(string);
+    callback copy-code(string);
+    callback copy-code-block(string, string, string);
+    height: content.preferred-height;
+    preferred-height: content.preferred-height;
+    content := VerticalLayout {
+        spacing: 4px;
+        if root.part.kind == ChatPartKind.text && !root.part.text-paged && !root.part.markdown-enabled && root.part.body-chunks.length > 0: AssistantChunkedText {
+            chunks: root.part.body-chunks;
+        }
+        if root.part.kind == ChatPartKind.text && !root.part.text-paged && !root.part.markdown-enabled && root.part.body-chunks.length == 0: Text {
+            text: root.part.body;
+            color: AssistantTheme.text;
+            font-family: "Inter";
+            font-size: 16px * AssistantTheme.text-scale;
+            font-weight: 400;
+            line-height-factor: 1.25;
+            wrap: word-wrap;
+        }
+        if root.part.kind == ChatPartKind.text && root.part.text-paged && root.part.text-page-error == "": AssistantPagedText {
+            private property <int> captured-revision;
+            private property <string> captured-message;
+            private property <string> captured-part;
+            private property <string> captured-token;
+            private property <int> captured-page;
+            page-text: root.part.text-page;
+            page-number: root.part.text-page-number;
+            page-count: root.part.text-page-count;
+            navigation-armed => {
+                self.captured-revision = root.conversation-revision;
+                self.captured-message = root.message-id;
+                self.captured-part = root.part.id;
+                self.captured-token = root.part.text-page-token;
+                self.captured-page = root.part.text-page-number;
+            }
+            previous => { root.page-requested(self.captured-revision, self.captured-message, self.captured-part, self.captured-token, self.captured-page, -1); }
+            next => { root.page-requested(self.captured-revision, self.captured-message, self.captured-part, self.captured-token, self.captured-page, 1); }
+        }
+        if root.part.kind == ChatPartKind.text && root.part.text-paged && root.part.text-page-error != "": Text {
+            text: root.part.text-page-error;
+            color: AssistantTheme.muted;
+            font-family: "Inter";
+            font-size: 14px * AssistantTheme.text-scale;
+            wrap: word-wrap;
+        }
+        if root.part.kind == ChatPartKind.text && !root.part.text-paged && root.part.markdown-enabled: AssistantMarkdown {
+            blocks: root.part.markdown-blocks;
+            can-copy-code: root.can-copy-code;
+            link-activated(link) => { root.link-activated(link); }
+            copy-code(code) => { root.copy-code(code); }
+            copy-code-block(token, code) => { root.copy-code-block(root.part.id, token, code); }
+        }
+        if !root.part.text-paged && root.part.markdown-warning != "": Text {
+            text: root.part.markdown-warning;
+            color: AssistantTheme.muted;
+            font-size: 12px * AssistantTheme.text-scale;
+            wrap: word-wrap;
+        }
+        if root.part.kind == ChatPartKind.attachment: AssistantAttachmentChip {
+            name: root.part.label;
+        }
+        if root.part.kind == ChatPartKind.source: AssistantSourceCard {
+            title: root.part.label;
+            detail: root.part.body;
+            can-open: root.can-open-source && root.part.source-action-enabled;
+            private property <int> captured-revision;
+            private property <string> captured-message;
+            private property <string> captured-branch;
+            private property <string> captured-part;
+            open-armed => {
+                self.captured-revision = root.conversation-revision;
+                self.captured-message = root.message-id;
+                self.captured-branch = root.branch-token;
+                self.captured-part = root.part.id;
+            }
+            open => {
+                root.source-requested-scoped(self.captured-revision, self.captured-message, self.captured-branch, self.captured-part);
+                root.source-requested();
+            }
+        }
+        if root.part.kind == ChatPartKind.reasoning || root.part.kind == ChatPartKind.tool: AssistantDisclosureButton {
+            label: root.part.label;
+            expanded: root.part.expanded;
+            icon: root.part.icon == PartIcon.brain ? @image-url("../assets/brain.svg")
+                : root.part.icon == PartIcon.complete ? @image-url("../assets/check.svg")
+                : root.part.icon == PartIcon.attention ? @image-url("../assets/circle-exclamation-point.svg")
+                : @image-url("../assets/loader-circle.svg");
+            activated => { root.toggle(); }
+        }
+        if root.part.kind == ChatPartKind.reasoning && root.part.expanded: AssistantReasoningPreview {
+            text: root.part.body;
+            chunks: root.part.body-chunks;
+            streaming: root.part.streaming;
+            conversation-revision: root.conversation-revision;
+            message-id: root.message-id;
+            part-id: root.part.id;
+        }
+        if root.part.kind == ChatPartKind.tool && root.part.expanded: AssistantToolFallback {
+            structured: root.part.tool-structured;
+            legacy-body: root.part.body;
+            arguments: root.part.tool-arguments;
+            detail: root.part.tool-detail;
+            has-result: root.part.tool-has-result;
+            result-label: root.part.tool-result-label;
+            result: root.part.tool-result;
+            can-copy-arguments: root.can-copy-tool && root.part.tool-copy-arguments;
+            can-copy-result: root.can-copy-tool && root.part.tool-copy-result;
+            conversation-revision: root.conversation-revision;
+            message-id: root.message-id;
+            branch-token: root.branch-token;
+            part-id: root.part.id;
+            copy-requested(revision, message, branch, part, target) => { root.copy-tool-requested(revision, message, branch, part, target); }
+        }
+        if root.part.approval-state == ApprovalState.requested || root.part.approval-state == ApprovalState.submitted: AssistantApproval {
+            prompt: root.part.approval-prompt;
+            pending: root.part.approval-state == ApprovalState.submitted;
+            can-approve: true;
+            can-deny: true;
+            approve-label: "Allow";
+            pending-label: "Response submitted; awaiting receipt…";
+            approve => { root.resolve-approval(root.part.approval-request, ApprovalChoice.approve); }
+            deny => { root.resolve-approval(root.part.approval-request, ApprovalChoice.deny); }
+        }
+        if root.part.approval-state == ApprovalState.approved || root.part.approval-state == ApprovalState.denied || root.part.approval-state == ApprovalState.unavailable: Text {
+            text: root.part.approval-state == ApprovalState.approved ? "Approval recorded: allowed · " + root.part.approval-prompt
+                : root.part.approval-state == ApprovalState.denied ? "Approval recorded: denied · " + root.part.approval-prompt
+                : "Approval unavailable while the run is not active.";
+            color: AssistantTheme.muted;
+            font-size: 12px * AssistantTheme.text-scale;
+            wrap: word-wrap;
+        }
+    }
+}

@@ -1,0 +1,23 @@
+[workspace]
+members = ["crates/*", "examples/*"]
+exclude = ["crates/ai-ui-clipboard/tests/browser", "crates/ai-ui-http/tests/browser", "patches/femtovg"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+keywords = ["assistant-ui", "chat", "llm", "streaming", "ui"]
+categories = ["gui", "asynchronous"]
+repository = "https://github.com/iyiolacak/ai-ui-rewrite-rust"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+# Until Slint ships femtovg 0.28 (Slint's main already depends on it), carry
+# femtovg #366 backported to 0.27; see patches/README.md. Applies to this
+# workspace only: an app using our crates adds the same entry to its own
+# workspace.
+[patch.crates-io]
+femtovg = { path = "patches/femtovg" }

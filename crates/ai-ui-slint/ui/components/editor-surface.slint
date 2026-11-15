@@ -1,0 +1,126 @@
+// Presentation and input forwarding only. The host owns the draft, revisions,
+// rendering, clipboard, IME and the meaning of each edit operation.
+export enum AssistantEditorEdit { insert, delete-backward, delete-forward, left, right, select-all, undo, redo, document-start, document-end, up, down, line-left, line-right }
+export enum AssistantEditorClipboard { copy, cut, paste }
+export component AssistantEditorSurface inherits Rectangle {
+    min-width: 0px;
+    min-height: 0px;
+    in property <image> frame;
+    in property <length> frame-width;
+    in property <length> frame-height;
+    in property <bool> empty: true;
+    in property <bool> enabled: true;
+    // Hosts opt in only after wiring every gesture callback to their scoped editor.
+    in property <bool> pointer-selection-enabled: false;
+    // A host that fences and queues drag positions can keep receiving an
+    // existing gesture while a newer frame is pending. A new gesture still
+    // requires a current frame.
+    in property <bool> allow-pending-selection: false;
+    in property <string> placeholder: "Send a message...";
+    in property <color> placeholder-color: #777777;
+    out property <bool> has-focus: editor-focus.has-focus;
+    callback edit(AssistantEditorEdit, string, bool) -> bool;
+    callback place-caret(float, float);
+    callback begin-selection(float, float, bool) -> bool;
+    callback move-selection(float, float);
+    callback end-selection(float, float);
+    callback cancel-selection();
+    // Logical pixels; a negative delta means scrolling toward later content.
+    callback scroll(float) -> bool;
+    callback submit();
+    callback clipboard(AssistantEditorClipboard) -> bool;
+    callback focus-changed(bool);
+    callback geometry-changed();
+    private property <bool> selecting: false;
+
+    forward-focus: editor-focus;
+    public function focus-editor() { editor-focus.focus(); }
+    changed width => { root.geometry-changed(); }
+    changed height => { root.geometry-changed(); }
+    changed enabled => {
+        if !root.enabled && root.selecting { root.selecting = false; root.cancel-selection(); }
+    }
+
+    editor-focus := FocusScope {
+        enabled: root.enabled;
+        changed has-focus => { root.focus-changed(self.has-focus); }
+        key-pressed(event) => {
+            if event.text == Key.Return {
+                if event.modifiers.shift { return root.edit(AssistantEditorEdit.insert, "\n", false) ? accept : reject; }
+                root.submit(); return accept;
+            }
+            if event.text == Key.Backspace { return root.edit(AssistantEditorEdit.delete-backward, "", false) ? accept : reject; }
+            if event.text == Key.Delete { return root.edit(AssistantEditorEdit.delete-forward, "", false) ? accept : reject; }
+            if event.text == Key.LeftArrow { return root.edit(AssistantEditorEdit.left, "", event.modifiers.shift) ? accept : reject; }
+            if event.text == Key.RightArrow { return root.edit(AssistantEditorEdit.right, "", event.modifiers.shift) ? accept : reject; }
+            if !event.modifiers.control && !event.modifiers.meta && !event.modifiers.alt && event.text == Key.UpArrow { return root.edit(AssistantEditorEdit.up, "", event.modifiers.shift) ? accept : reject; }
+            if !event.modifiers.control && !event.modifiers.meta && !event.modifiers.alt && event.text == Key.DownArrow { return root.edit(AssistantEditorEdit.down, "", event.modifiers.shift) ? accept : reject; }
+            if !event.modifiers.control && !event.modifiers.meta && !event.modifiers.alt && event.text == Key.Home { return root.edit(AssistantEditorEdit.line-left, "", event.modifiers.shift) ? accept : reject; }
+            if !event.modifiers.control && !event.modifiers.meta && !event.modifiers.alt && event.text == Key.End { return root.edit(AssistantEditorEdit.line-right, "", event.modifiers.shift) ? accept : reject; }
+            if event.modifiers.control || event.modifiers.meta {
+                // Document movement requires no assumptions about wrapped or
+                // bidirectional visual lines; the host owns the full draft.
+                if !event.modifiers.alt && event.text == Key.Home { return root.edit(AssistantEditorEdit.document-start, "", event.modifiers.shift) ? accept : reject; }
+                if !event.modifiers.alt && event.text == Key.End { return root.edit(AssistantEditorEdit.document-end, "", event.modifiers.shift) ? accept : reject; }
+                if event.text == "c" || event.text == "C" { return root.clipboard(AssistantEditorClipboard.copy) ? accept : reject; }
+                if event.text == "x" || event.text == "X" { return root.clipboard(AssistantEditorClipboard.cut) ? accept : reject; }
+                if event.text == "v" || event.text == "V" { return root.clipboard(AssistantEditorClipboard.paste) ? accept : reject; }
+                if event.text == "a" || event.text == "A" { return root.edit(AssistantEditorEdit.select-all, "", false) ? accept : reject; }
+                if event.text == "z" || event.text == "Z" { return root.edit(event.modifiers.shift ? AssistantEditorEdit.redo : AssistantEditorEdit.undo, "", false) ? accept : reject; }
+                if event.text == "y" || event.text == "Y" { return root.edit(AssistantEditorEdit.redo, "", false) ? accept : reject; }
+                return reject;
+            }
+            if event.modifiers.alt { return reject; }
+            return root.edit(AssistantEditorEdit.insert, event.text, false) ? accept : reject;
+        }
+        Image {
+            x: 0px; y: 0px;
+            width: parent.width; height: parent.height;
+            source: root.frame;
+            image-fit: fill;
+            // A previously rendered image must not be stretched to a new size.
+            visible: root.frame-width == root.width && root.frame-height == root.height;
+        }
+        if root.empty: Text {
+            x: 0px; y: 0px;
+            text: root.placeholder;
+            color: root.placeholder-color;
+            font-size: 16px;
+        }
+        TouchArea {
+            enabled: root.enabled;
+            mouse-cursor: text;
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.cancel {
+                    if root.selecting { root.selecting = false; root.cancel-selection(); }
+                } else if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                    editor-focus.focus();
+                    if root.pointer-selection-enabled && root.frame-width == root.width && root.frame-height == root.height {
+                        root.selecting = root.begin-selection(self.mouse-x / 1px, self.mouse-y / 1px, event.modifiers.shift);
+                    }
+                } else if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.selecting {
+                    root.selecting = false;
+                    if root.allow-pending-selection || (root.frame-width == root.width && root.frame-height == root.height) {
+                        root.end-selection(self.mouse-x / 1px, self.mouse-y / 1px);
+                    } else {
+                        root.cancel-selection();
+                    }
+                }
+            }
+            moved => {
+                if root.selecting && self.pressed && (root.allow-pending-selection || (root.frame-width == root.width && root.frame-height == root.height)) {
+                    root.move-selection(self.mouse-x / 1px, self.mouse-y / 1px);
+                }
+            }
+            clicked => {
+                if !root.pointer-selection-enabled && root.frame-width == root.width && root.frame-height == root.height {
+                    root.place-caret(self.mouse-x / 1px, self.mouse-y / 1px);
+                }
+            }
+            scroll-event(event) => {
+                if root.scroll(event.delta-y / 1px) { return accept; }
+                return reject;
+            }
+        }
+    }
+}

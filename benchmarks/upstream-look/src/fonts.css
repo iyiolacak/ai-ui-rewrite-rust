@@ -1,0 +1,6 @@
+/* next/font sets these in the template's layout; here they name the
+   self-hosted @fontsource families. */
+:root {
+  --font-inter: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-ibm-plex-mono: "IBM Plex Mono", ui-monospace, monospace;
+}

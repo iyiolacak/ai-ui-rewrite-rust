@@ -1,0 +1,104 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantFileBadge } from "file-badge.slint";
+import { AssistantIconButton } from "icon-button.slint";
+
+// The host owns the attachment and its lifecycle. In particular, this view
+// does not start an upload, infer success, or remove anything on its own.
+export enum AssistantAttachmentState { ready, uploading, failed }
+// IDs are opaque host-owned tokens, unique within the displayed draft.
+export struct AssistantDraftAttachment {
+    id: string,
+    name: string,
+    detail: string,
+    state: AssistantAttachmentState,
+    progress: float,
+    removable: bool,
+    // Host marks only a definitely failed, safely retryable upload.
+    retryable: bool,
+}
+
+export component AssistantAttachmentChip inherits Rectangle {
+    in property <string> name;
+    in property <string> detail;
+    in property <AssistantAttachmentState> state: AssistantAttachmentState.ready;
+    // A fraction in [0, 1]. The display clamps it; the host owns the value.
+    in property <float> progress: 0;
+    in property <bool> removable: false;
+    in property <bool> can-remove: true;
+    in property <bool> retryable: false;
+    in property <bool> enabled: true;
+    callback remove();
+    callback retry();
+    private property <bool> show-retry: root.retryable && root.state == AssistantAttachmentState.failed;
+    private property <length> action-inset: 10px + (root.removable ? 30px : 0px) + (root.show-retry ? 30px : 0px);
+    private property <string> displayed-detail: root.detail != "" ? root.detail
+        : root.state == AssistantAttachmentState.uploading ? "Uploading"
+        : root.state == AssistantAttachmentState.failed ? "Upload failed" : "";
+
+    preferred-width: min(260px, row.preferred-width);
+    min-width: 0px;
+    max-width: 260px;
+    horizontal-stretch: 0;
+    height: 44px * AssistantTheme.hit-scale;
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: AssistantTheme.border;
+    background: AssistantTheme.surface;
+    clip: true;
+
+    row := HorizontalLayout {
+        padding-left: 6px;
+        padding-right: root.action-inset;
+        spacing: 10px;
+        AssistantFileBadge { }
+        VerticalLayout {
+            spacing: 1px;
+            alignment: center;
+            Text {
+                text: root.name;
+                color: AssistantTheme.text;
+                font-family: "Inter";
+                font-size: 12px * AssistantTheme.text-scale;
+                font-weight: 500;
+                overflow: elide;
+            }
+            if root.displayed-detail != "": Text {
+                text: root.displayed-detail;
+                color: root.state == AssistantAttachmentState.failed ? AssistantTheme.error : AssistantTheme.muted;
+                font-family: "Inter";
+                font-size: 11px * AssistantTheme.text-scale;
+                overflow: elide;
+            }
+        }
+    }
+    if root.show-retry: AssistantIconButton {
+        x: max(0px, root.width - (root.removable ? 70px : 38px));
+        y: (root.height - 32px) / 2;
+        control-size: 24px;
+        icon-size: 14px;
+        icon: @image-url("../assets/rotate-ccw.svg");
+        label: "Retry " + root.name;
+        tooltip: "Retry upload";
+        enabled: root.enabled;
+        bordered: false;
+        activated => { if root.enabled { root.retry(); } }
+    }
+    if root.removable: AssistantIconButton {
+        x: max(0px, root.width - 38px);
+        y: (root.height - 32px) / 2;
+        tooltip: "Remove attachment";
+        control-size: 24px;
+        icon-size: 14px;
+        icon: @image-url("../assets/x.svg");
+        label: "Remove " + root.name;
+        enabled: root.enabled && root.can-remove;
+        bordered: false;
+        activated => { if root.enabled && root.can-remove { root.remove(); } }
+    }
+    if root.state == AssistantAttachmentState.uploading: Rectangle {
+        x: 0px; y: parent.height - 2px;
+        width: parent.width * max(0, min(1, root.progress));
+        height: 2px;
+        background: AssistantTheme.progress;
+    }
+}

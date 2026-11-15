@@ -1,0 +1,26 @@
+{
+  "name": "ai-ui-landing",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "wasm": "bash scripts/build-wasm.sh",
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "test:numbers": "node scripts/check-numbers.mjs",
+    "test:chart": "node --experimental-strip-types scripts/chart.test.ts",
+    "test:crash": "node --experimental-strip-types scripts/crash.test.ts"
+  },
+  "dependencies": {
+    "astro": "^7.4.11",
+    "gsap": "^3.15.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.20.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.6.0"
+  }
+}

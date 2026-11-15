@@ -1,0 +1,784 @@
+{
+  "method": "Release build, one warmup per executable, five baseline/candidate pairs, 1000 cumulative 6-byte streaming updates per scenario. Medians of reported per-update times (rounded by original harness to 0.1 us). Other agents paused compilation and benchmarks during measurement. Single same-machine synthetic workload; not end-to-end frame latency.",
+  "architecture": "x86_64",
+  "warmups": {
+    "baseline": "\nrunning 1 test\nsmooth=false    10 messages:      3.0 us per streamed update (runtime + projection)\nsmooth=false   100 messages:      2.4 us per streamed update (runtime + projection)\nsmooth=false  1000 messages:      9.4 us per streamed update (runtime + projection)\nsmooth=false  5000 messages:     75.1 us per streamed update (runtime + projection)\nsmooth=true     10 messages:      1.2 us per streamed update (runtime + projection)\nsmooth=true    100 messages:      1.8 us per streamed update (runtime + projection)\nsmooth=true   1000 messages:      8.3 us per streamed update (runtime + projection)\nsmooth=true   5000 messages:     40.3 us per streamed update (runtime + projection)\ntest projection_cost_per_streamed_update ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s\n\n",
+    "candidate": "\nrunning 1 test\nsmooth=false    10 messages:      2.3 us per streamed update (runtime + projection)\nsmooth=false   100 messages:      1.3 us per streamed update (runtime + projection)\nsmooth=false  1000 messages:      2.2 us per streamed update (runtime + projection)\nsmooth=false  5000 messages:      7.1 us per streamed update (runtime + projection)\nsmooth=true     10 messages:      1.1 us per streamed update (runtime + projection)\nsmooth=true    100 messages:      1.1 us per streamed update (runtime + projection)\nsmooth=true   1000 messages:      3.2 us per streamed update (runtime + projection)\nsmooth=true   5000 messages:      5.2 us per streamed update (runtime + projection)\ntest projection_cost_per_streamed_update ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s\n\n"
+  },
+  "results": [
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 4.0
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 2.3
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 10.6
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 43.6
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.3
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.9
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 8.9
+    },
+    {
+      "pair": 1,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 39.9
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 3.7
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 2.1
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 4.1
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 7.8
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.4
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.2
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 1.9
+    },
+    {
+      "pair": 1,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 5.8
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 4.6
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 4.0
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 10.4
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 40.8
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.1
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.8
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 8.5
+    },
+    {
+      "pair": 2,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 39.6
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.5
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.3
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 2.2
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 11.4
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.3
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 2.3
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 1.9
+    },
+    {
+      "pair": 2,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 5.2
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.6
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.9
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 9.1
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 40.1
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.2
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 2.0
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 8.4
+    },
+    {
+      "pair": 3,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 38.0
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.6
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.3
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 2.1
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 7.1
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.1
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.1
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 1.7
+    },
+    {
+      "pair": 3,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 4.7
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.5
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.9
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 9.2
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 39.5
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.4
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.8
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 8.1
+    },
+    {
+      "pair": 4,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 37.9
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.7
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.3
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 2.4
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 6.4
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.1
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.1
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 1.7
+    },
+    {
+      "pair": 4,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 4.3
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.2
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.9
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 9.1
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 40.4
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.5
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 2.1
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 8.6
+    },
+    {
+      "pair": 5,
+      "side": "baseline",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 38.4
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 10,
+      "microseconds_per_update": 2.5
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 100,
+      "microseconds_per_update": 1.2
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 1000,
+      "microseconds_per_update": 2.1
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": false,
+      "messages": 5000,
+      "microseconds_per_update": 6.4
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 10,
+      "microseconds_per_update": 1.1
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 100,
+      "microseconds_per_update": 1.2
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 1000,
+      "microseconds_per_update": 1.6
+    },
+    {
+      "pair": 5,
+      "side": "candidate",
+      "smooth": true,
+      "messages": 5000,
+      "microseconds_per_update": 4.1
+    }
+  ],
+  "summary": [
+    {
+      "smooth": false,
+      "messages": 10,
+      "samples": {
+        "baseline": [
+          4.0,
+          4.6,
+          2.6,
+          2.5,
+          2.2
+        ],
+        "candidate": [
+          3.7,
+          2.5,
+          2.6,
+          2.7,
+          2.5
+        ]
+      },
+      "median_us": {
+        "baseline": 2.6,
+        "candidate": 2.6
+      },
+      "speedup": 1.0,
+      "reduction_percent": 0.0
+    },
+    {
+      "smooth": false,
+      "messages": 100,
+      "samples": {
+        "baseline": [
+          2.3,
+          4.0,
+          1.9,
+          1.9,
+          1.9
+        ],
+        "candidate": [
+          2.1,
+          1.3,
+          1.3,
+          1.3,
+          1.2
+        ]
+      },
+      "median_us": {
+        "baseline": 1.9,
+        "candidate": 1.3
+      },
+      "speedup": 1.4615384615384615,
+      "reduction_percent": 31.57894736842105
+    },
+    {
+      "smooth": false,
+      "messages": 1000,
+      "samples": {
+        "baseline": [
+          10.6,
+          10.4,
+          9.1,
+          9.2,
+          9.1
+        ],
+        "candidate": [
+          4.1,
+          2.2,
+          2.1,
+          2.4,
+          2.1
+        ]
+      },
+      "median_us": {
+        "baseline": 9.2,
+        "candidate": 2.2
+      },
+      "speedup": 4.181818181818181,
+      "reduction_percent": 76.08695652173913
+    },
+    {
+      "smooth": false,
+      "messages": 5000,
+      "samples": {
+        "baseline": [
+          43.6,
+          40.8,
+          40.1,
+          39.5,
+          40.4
+        ],
+        "candidate": [
+          7.8,
+          11.4,
+          7.1,
+          6.4,
+          6.4
+        ]
+      },
+      "median_us": {
+        "baseline": 40.4,
+        "candidate": 7.1
+      },
+      "speedup": 5.690140845070423,
+      "reduction_percent": 82.42574257425743
+    },
+    {
+      "smooth": true,
+      "messages": 10,
+      "samples": {
+        "baseline": [
+          1.3,
+          1.1,
+          1.2,
+          1.4,
+          1.5
+        ],
+        "candidate": [
+          1.4,
+          1.3,
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "median_us": {
+        "baseline": 1.3,
+        "candidate": 1.1
+      },
+      "speedup": 1.1818181818181817,
+      "reduction_percent": 15.384615384615385
+    },
+    {
+      "smooth": true,
+      "messages": 100,
+      "samples": {
+        "baseline": [
+          1.9,
+          1.8,
+          2.0,
+          1.8,
+          2.1
+        ],
+        "candidate": [
+          1.2,
+          2.3,
+          1.1,
+          1.1,
+          1.2
+        ]
+      },
+      "median_us": {
+        "baseline": 1.9,
+        "candidate": 1.2
+      },
+      "speedup": 1.5833333333333333,
+      "reduction_percent": 36.8421052631579
+    },
+    {
+      "smooth": true,
+      "messages": 1000,
+      "samples": {
+        "baseline": [
+          8.9,
+          8.5,
+          8.4,
+          8.1,
+          8.6
+        ],
+        "candidate": [
+          1.9,
+          1.9,
+          1.7,
+          1.7,
+          1.6
+        ]
+      },
+      "median_us": {
+        "baseline": 8.5,
+        "candidate": 1.7
+      },
+      "speedup": 5.0,
+      "reduction_percent": 80.0
+    },
+    {
+      "smooth": true,
+      "messages": 5000,
+      "samples": {
+        "baseline": [
+          39.9,
+          39.6,
+          38.0,
+          37.9,
+          38.4
+        ],
+        "candidate": [
+          5.8,
+          5.2,
+          4.7,
+          4.3,
+          4.1
+        ]
+      },
+      "median_us": {
+        "baseline": 38.4,
+        "candidate": 4.7
+      },
+      "speedup": 8.170212765957446,
+      "reduction_percent": 87.76041666666666
+    }
+  ],
+  "baseline_commit": "54c371fa44ad193b6ae8466d00c0ea0f4e8af50b",
+  "toolchain": "rustc 1.99.1",
+  "profile": "release, lto=true, codegen-units=1",
+  "candidate_source_commit": "e9219baa25173b3240bd534f965b0d92b2721a1b"
+}

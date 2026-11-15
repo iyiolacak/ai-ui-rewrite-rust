@@ -1,0 +1,99 @@
+import { AssistantDraftAttachment } from "components/attachment-chip.slint";
+import { MarkdownBlock } from "components/markdown.slint";
+// Presentation records are projected by the host. IDs are opaque within its scope.
+export enum MessageRole { user, assistant }
+export enum MessageStatusTone { neutral, error }
+export enum MessageFeedback { none, positive, negative }
+export enum ChatPartKind { text, reasoning, tool, attachment, source }
+export enum PartIcon { none, brain, running, attention, complete, file }
+export enum ApprovalState { none, requested, submitted, approved, denied, unavailable }
+export enum ApprovalChoice { approve, deny }
+// The host resolves the complete current value; display previews are not copied.
+export enum ToolCopyTarget { arguments, result }
+export struct RunReference {
+    workspace: string,
+    generation: string,
+    thread: string,
+    run: string,
+}
+// Opaque identifiers returned unchanged to the host. Generation is a decimal
+// string because Slint's int cannot represent the core's full u64 domain.
+export struct ApprovalRequest {
+    workspace: string,
+    generation: string,
+    thread: string,
+    run: string,
+    message: string,
+    part: string,
+    approval: string,
+}
+export struct ChatPart {
+    id: string,
+    kind: ChatPartKind,
+    icon: PartIcon,
+    label: string,
+    body: string,
+    // Optional: `body` split into consecutive chunks. A host streaming long
+    // text appends chunks and rewrites only the last, so the toolkit re-wraps
+    // only that chunk per update instead of the whole text. Empty: use `body`.
+    body-chunks: [string],
+    // Host opts in per source; display text is never used as the authority.
+    source-action-enabled: bool,
+    // The host retains full text in its source model (optionally in `body`)
+    // and exposes only a bounded current page for layout. Page numbers are
+    // one-based. An error is an explicit unavailable state, not a replacement
+    // for the retained source.
+    text-paged: bool,
+    text-page: string,
+    text-page-number: int,
+    text-page-count: int,
+    text-page-error: string,
+    // Captured by the host for this exact page/source revision.
+    text-page-token: string,
+    // Optional, already-formatted tool data. `tool-has-result` distinguishes
+    // an empty result from a result that has not arrived. Hosts that do not
+    // supply this structure can continue to use `body` for tool details.
+    tool-structured: bool,
+    tool-arguments: string,
+    tool-detail: string,
+    tool-has-result: bool,
+    tool-result-label: string,
+    tool-result: string,
+    // Host opts in only when the complete value is available for this part.
+    tool-copy-arguments: bool,
+    tool-copy-result: bool,
+    // Host reports whether this reasoning part is actively streaming.
+    streaming: bool,
+    expanded: bool,
+    approval-state: ApprovalState,
+    approval-prompt: string,
+    approval-request: ApprovalRequest,
+    // A successful Markdown projection may intentionally have no blocks.
+    markdown-enabled: bool,
+    markdown-blocks: [MarkdownBlock],
+    markdown-warning: string,
+}
+export struct ChatRow {
+    id: string,
+    role: MessageRole,
+    // Used only to size the user bubble; content is rendered from parts in order.
+    width-hint: string,
+    parts: [ChatPart],
+    // Host-projected read-only references shown during text editing.
+    retained-attachments: [AssistantDraftAttachment],
+    status: string,
+    status-tone: MessageStatusTone,
+    // Opaque host-owned identity for a specific branch snapshot.
+    branch-token: string,
+    branch-number: int,
+    branch-count: int,
+    can-regenerate: bool,
+    can-edit: bool,
+    // The host determines whether this message has copyable text.
+    can-copy: bool,
+    // Set only after the host observes a successful clipboard write.
+    copied: bool,
+    // Feedback is host-owned; this component never sends or persists it.
+    can-feedback: bool,
+    feedback: MessageFeedback,
+}

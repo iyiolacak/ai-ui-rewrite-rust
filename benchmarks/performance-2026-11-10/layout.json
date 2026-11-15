@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-10",
+  "toolchain": "rustc 1.99.1",
+  "profile": "release, lto=true, codegen-units=1",
+  "platform": "Linux x86_64, Slint software renderer",
+  "method": "Same executable and 900x760 AppWindow; only raw full-text versus bounded-page presentation varies. One warmup per policy, then five interleaved first layout/paint pairs with alternating order. Source import, page range construction and runtime projection excluded.",
+  "source_bytes": 32742,
+  "raw_median_ms": 9.589,
+  "paged_median_ms": 5.554,
+  "speedup": 1.7265034209578682,
+  "percent_less_time": 42.07946605485452,
+  "individual_samples_recorded": false,
+  "command": "cargo test --release --locked -p ai-ui-example-thread bench_large_user_layout -- --ignored --nocapture",
+  "large_source_regression": "740000-byte/20000-line user message renders and preserves full source for copy/edit in integration test.",
+  "excluded_attempt": "512 KiB raw-text policy hit a Slint software-renderer integer-overflow panic in debug; no timing ratio reported for that case.",
+  "candidate_source_commit": "e9219baa25173b3240bd534f965b0d92b2721a1b"
+}

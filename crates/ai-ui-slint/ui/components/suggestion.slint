@@ -1,0 +1,43 @@
+import { AssistantButton, AssistantButtonVariant } from "button.slint";
+import { AssistantTheme } from "../theme.slint";
+
+// Only presentation crosses this boundary. The host owns each complete prompt,
+// validates the scoped ID, and decides whether activation fills or sends it.
+export struct AssistantSuggestion {
+    id: string,
+    title: string,
+}
+
+export component AssistantSuggestions inherits Rectangle {
+    in property <[AssistantSuggestion]> suggestions;
+    in property <string> scope;
+    in property <bool> enabled: true;
+    callback selected(string, string);
+    // Limit retained controls; hosts may choose the visible items and pagination.
+    private property <int> visible-count: min(root.suggestions.length, 4);
+    height: stack.preferred-height;
+    background: transparent;
+    stack := VerticalLayout {
+        padding-top: root.visible-count > 0 ? 8px : 0px;
+        spacing: 0px;
+        for index in root.visible-count: AssistantButton {
+            private property <string> captured-scope;
+            private property <string> captured-id;
+            horizontal-stretch: 1;
+            label: root.suggestions[index].title;
+            variant: AssistantButtonVariant.ghost;
+            leading-label: ">";
+            start-aligned: true;
+            horizontal-padding: 8px;
+            ghost-hover-color: AssistantTheme.text.transparentize(0.97);
+            corner-radius: 6px;
+            label-weight: 400;
+            enabled: root.enabled && root.scope != "" && root.suggestions[index].id != "";
+            armed => {
+                self.captured-scope = root.scope;
+                self.captured-id = root.suggestions[index].id;
+            }
+            activated => { root.selected(self.captured-scope, self.captured-id); }
+        }
+    }
+}

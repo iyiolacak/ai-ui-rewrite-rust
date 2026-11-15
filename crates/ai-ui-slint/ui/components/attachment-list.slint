@@ -1,0 +1,39 @@
+import { ScrollView } from "std-widgets.slint";
+import { AssistantAttachmentChip, AssistantDraftAttachment } from "attachment-chip.slint";
+
+// The host retains the model and handles removal; this view only forwards the
+// opaque ID. Wrap like the upstream composer; cap the viewport at three rows.
+export component AssistantAttachmentList inherits Rectangle {
+    in property <[AssistantDraftAttachment]> attachments;
+    in property <bool> enabled: true;
+    in property <bool> can-remove: true;
+    in property <bool> can-retry: false;
+    callback remove(string);
+    callback retry(string);
+    height: min(148px, flow.preferred-height);
+    clip: true;
+    ScrollView {
+        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+        vertical-scrollbar-policy: ScrollBarPolicy.as-needed;
+        content-width: self.width;
+        content-height: flow.preferred-height;
+        flow := FlexboxLayout {
+            width: parent.width;
+            height: self.preferred-height;
+            spacing: 8px;
+            flex-wrap: wrap;
+            for attachment in root.attachments: AssistantAttachmentChip {
+                name: attachment.name;
+                detail: attachment.detail;
+                state: attachment.state;
+                progress: attachment.progress;
+                removable: attachment.removable;
+                can-remove: root.can-remove;
+                retryable: root.can-retry && attachment.retryable;
+                enabled: root.enabled;
+                remove => { root.remove(attachment.id); }
+                retry => { root.retry(attachment.id); }
+            }
+        }
+    }
+}

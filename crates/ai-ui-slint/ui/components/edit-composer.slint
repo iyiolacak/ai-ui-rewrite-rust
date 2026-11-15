@@ -1,0 +1,335 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantButton, AssistantButtonSize, AssistantButtonVariant } from "button.slint";
+import { AssistantDraftAttachment } from "attachment-chip.slint";
+import { AssistantAttachmentList } from "attachment-list.slint";
+import { AssistantIconButton } from "icon-button.slint";
+import { AssistantEditorSurface, AssistantEditorEdit, AssistantEditorClipboard } from "editor-surface.slint";
+
+// The host owns the text and validates the captured message action on submit.
+export component AssistantEditComposer inherits Rectangle {
+    in-out property <string> draft;
+    // Already-uploaded references remain selected; the host owns the records.
+    in property <[AssistantDraftAttachment]> retained-attachments;
+    // Opt in only when the host maintains a separate, scoped edit draft.
+    in property <bool> can-remove-attachments: false;
+    // The host owns selection/upload and keeps Send disabled while any added
+    // attachment is not ready. The default preserves existing host behavior.
+    in property <bool> can-add-attachment: false;
+    in property <bool> can-retry-attachment: false;
+    // The host validates the edit session and copies its authoritative draft.
+    // Off by default; the component never writes to a clipboard.
+    in property <bool> can-copy-draft: false;
+    in property <bool> attachments-ready: true;
+    private property <length> attachments-height: root.retained-attachments.length > 0 ? retained-list.height + 28px : 0px;
+    callback save(string);
+    callback cancel();
+    callback remove-attachment(string);
+    callback add-attachment();
+    callback retry-attachment(string);
+    callback copy-draft();
+    // Each activation needs a fresh scope. Metadata is only used when its
+    // scope matches; a frame is shown only for the same nonempty state token.
+    in property <bool> host-editor-enabled: false;
+    in property <string> host-editor-scope;
+    in property <string> host-editor-state-scope;
+    in property <string> host-editor-state-token;
+    in property <string> host-editor-frame-scope;
+    in property <string> host-editor-frame-token;
+    in property <image> host-editor-frame;
+    in property <length> host-editor-frame-width;
+    in property <length> host-editor-frame-height;
+    in property <length> host-editor-preferred-height: 40px;
+    in property <bool> host-editor-empty: true;
+    in property <bool> host-editor-pointer-selection-enabled: false;
+    in property <bool> host-editor-allow-pending-selection: false;
+    in property <bool> host-editor-can-submit: true;
+    // Set to the current activation scope to request focus. The host clears
+    // it after host-editor-focus-changed(scope, true) acknowledges the request.
+    in property <string> host-editor-focus-request;
+    // Set after callbacks are registered to request the current geometry and
+    // position even if this row was already laid out before registration.
+    in property <string> host-editor-geometry-request;
+    out property <length> host-editor-x: host-input.absolute-position.x;
+    out property <length> host-editor-y: host-input.absolute-position.y;
+    out property <length> host-editor-width: host-input.width;
+    out property <length> host-editor-height: host-input.height;
+    out property <bool> host-editor-focused: host-input.has-focus;
+    out property <length> send-x: save-button.absolute-position.x + save-button.width / 2;
+    out property <length> send-y: save-button.absolute-position.y + save-button.height / 2;
+    callback host-editor-edit(string, AssistantEditorEdit, string, bool) -> bool;
+    callback host-editor-place-caret(string, float, float);
+    callback host-editor-begin-selection(string, float, float, bool) -> bool;
+    callback host-editor-move-selection(string, float, float);
+    callback host-editor-end-selection(string, float, float);
+    callback host-editor-cancel-selection(string);
+    callback host-editor-scroll(string, float) -> bool;
+    callback host-editor-clipboard(string, AssistantEditorClipboard) -> bool;
+    callback host-editor-save(string);
+    callback host-editor-cancel(string);
+    callback host-editor-copy-draft(string);
+    callback host-editor-focus-changed(string, bool);
+    callback host-editor-geometry-changed(string);
+    callback host-editor-position-changed(string);
+
+    // Preserve both action groups at narrow widths without overlap.
+    private property <bool> wrap-actions: root.can-copy-draft
+        && root.width < action-buttons.preferred-width + (root.can-add-attachment ? 88px : 56px);
+    private property <length> action-extra-height: root.wrap-actions ? 36px : 0px;
+    private property <image> blank-image;
+    private property <string> gesture-scope;
+    private property <string> finishing-scope;
+    private property <string> focused-scope;
+    private property <string> finishing-focus-scope;
+    private property <length> legacy-preferred-height: 40px;
+    private property <bool> legacy-focused: false;
+    private property <bool> host-editor-current: root.host-editor-enabled
+        && root.host-editor-scope != ""
+        && root.host-editor-state-scope == root.host-editor-scope
+        && root.host-editor-state-token != "";
+    private property <bool> host-frame-current: root.host-editor-current
+        && root.host-editor-frame-scope == root.host-editor-scope
+        && root.host-editor-frame-token == root.host-editor-state-token;
+    private property <bool> can-save-host: root.host-editor-current && root.host-editor-can-submit
+        && root.attachments-ready && (!root.host-editor-empty || root.retained-attachments.length > 0);
+    function cancel-host-gesture() {
+        if root.gesture-scope != "" {
+            root.finishing-scope = root.gesture-scope;
+            root.gesture-scope = "";
+            root.host-editor-cancel-selection(root.finishing-scope);
+            root.finishing-scope = "";
+        }
+    }
+    public function focus-editor() {
+        if root.host-editor-current { host-input.focus-editor(); }
+        else if !root.host-editor-enabled { input-scope.focus(); }
+    }
+    function apply-host-focus-request() {
+        if root.host-editor-current && root.host-editor-focus-request == root.host-editor-scope {
+            if host-input.has-focus {
+                root.focused-scope = root.host-editor-scope;
+                root.host-editor-focus-changed(root.focused-scope, true);
+            } else {
+                host-input.focus-editor();
+            }
+        }
+    }
+    function report-host-geometry() {
+        // A synchronous geometry callback can switch the active edit session.
+        // Capture each callback's scope before calling out so the second one
+        // cannot be relabeled as belonging to that new session.
+        let geometry-scope = root.host-editor-scope;
+        let position-scope = root.host-editor-scope;
+        root.host-editor-geometry-changed(geometry-scope);
+        root.host-editor-position-changed(position-scope);
+    }
+    changed host-editor-focus-request => { root.apply-host-focus-request(); }
+    changed host-editor-geometry-request => {
+        if root.host-editor-current && root.host-editor-geometry-request == root.host-editor-scope {
+            root.report-host-geometry();
+        }
+    }
+    changed host-editor-scope => {
+        root.cancel-host-gesture();
+        if root.focused-scope != "" {
+            root.finishing-focus-scope = root.focused-scope;
+            root.focused-scope = "";
+            root.host-editor-focus-changed(root.finishing-focus-scope, false);
+            root.finishing-focus-scope = "";
+        }
+    }
+    changed host-editor-enabled => { root.cancel-host-gesture(); }
+    changed host-editor-state-scope => { if !root.host-editor-current { root.cancel-host-gesture(); } }
+    // A recycled row can be laid out before its host state arrives, so no
+    // width or position change is guaranteed after activation.
+    changed host-editor-current => {
+        if root.host-editor-current {
+            root.report-host-geometry();
+            root.apply-host-focus-request();
+        }
+    }
+    // Position can change independently of size when a message row scrolls.
+    // Hosts may coalesce x/y notifications without rebuilding the image.
+    changed host-editor-x => { if root.host-editor-current { root.host-editor-position-changed(root.host-editor-scope); } }
+    changed host-editor-y => { if root.host-editor-current { root.host-editor-position-changed(root.host-editor-scope); } }
+    height: min(246px, max(96px, (root.host-editor-enabled ? max(40px, root.host-editor-preferred-height) : root.legacy-preferred-height) + 56px)) + root.attachments-height + root.action-extra-height;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: (root.host-editor-enabled ? host-input.has-focus : root.legacy-focused) ? AssistantTheme.focus-border : AssistantTheme.border;
+    background: AssistantTheme.composer;
+    forward-focus: input-scope;
+    if root.retained-attachments.length > 0: Text {
+        x: 16px; y: 10px;
+        width: root.width - 32px;
+        text: root.can-remove-attachments ? "Attachments" : "Attachments retained";
+        color: AssistantTheme.muted;
+        font-family: "Inter";
+        font-size: 12px * AssistantTheme.text-scale;
+    }
+    retained-list := AssistantAttachmentList {
+        x: 16px; y: 30px;
+        width: max(0px, root.width - 32px);
+        attachments: root.retained-attachments;
+        can-remove: root.can-remove-attachments;
+        can-retry: root.can-retry-attachment;
+        enabled: root.can-remove-attachments || root.can-retry-attachment;
+        remove(id) => { root.remove-attachment(id); }
+        retry(id) => { root.retry-attachment(id); }
+    }
+    input-scope := FocusScope {
+        x: 16px; y: 12px + root.attachments-height;
+        width: max(0px, root.width - 32px);
+        height: root.height - root.attachments-height - 56px - root.action-extra-height;
+        changed has-focus => {
+            if self.has-focus {
+                if root.host-editor-current { host-input.focus-editor(); }
+            }
+        }
+        capture-key-pressed(event) => {
+            if event.text == Key.Escape {
+                if root.host-editor-enabled { if root.host-editor-scope != "" { root.host-editor-cancel(root.host-editor-scope); } }
+                else { root.cancel(); }
+                return accept;
+            }
+            if !root.host-editor-enabled && event.text == Key.Return && !event.modifiers.shift {
+                if root.attachments-ready && (root.draft != "" || root.retained-attachments.length > 0) { root.save(root.draft); }
+                return accept;
+            }
+            return reject;
+        }
+        if !root.host-editor-enabled: TextInput {
+            private property <bool> focus-requested: input-scope.has-focus;
+            width: parent.width; height: parent.height;
+            text <=> root.draft;
+            single-line: false;
+            wrap: word-wrap;
+            font-family: "Inter";
+            font-size: 16px * AssistantTheme.text-scale;
+            color: AssistantTheme.text;
+            accessible-label: "Edit message";
+            init => {
+                root.legacy-preferred-height = self.preferred-height;
+                self.focus();
+            }
+            changed preferred-height => { root.legacy-preferred-height = self.preferred-height; }
+            changed has-focus => { root.legacy-focused = self.has-focus; }
+            changed focus-requested => { if self.focus-requested { self.focus(); } }
+        }
+        host-input := AssistantEditorSurface {
+            width: parent.width; height: parent.height;
+            visible: root.host-editor-enabled;
+            enabled: root.host-editor-current;
+            frame: root.host-frame-current ? root.host-editor-frame : root.blank-image;
+            frame-width: root.host-frame-current ? root.host-editor-frame-width : 0px;
+            frame-height: root.host-frame-current ? root.host-editor-frame-height : 0px;
+            empty: root.host-editor-current && root.host-editor-empty;
+            placeholder: "";
+            pointer-selection-enabled: root.host-editor-pointer-selection-enabled;
+            allow-pending-selection: root.host-editor-allow-pending-selection;
+            edit(operation, text, extend) => { return root.host-editor-edit(root.host-editor-scope, operation, text, extend); }
+            place-caret(x, y) => { root.host-editor-place-caret(root.host-editor-scope, x, y); }
+            begin-selection(x, y, extend) => {
+                root.cancel-host-gesture();
+                root.gesture-scope = root.host-editor-scope;
+                if root.host-editor-begin-selection(root.gesture-scope, x, y, extend) {
+                    // A synchronous callback can itself change scope.
+                    if root.host-editor-current && root.gesture-scope == root.host-editor-scope {
+                        return true;
+                    }
+                    root.cancel-host-gesture();
+                } else {
+                    root.gesture-scope = "";
+                }
+                return false;
+            }
+            move-selection(x, y) => {
+                if root.gesture-scope != "" && root.gesture-scope == root.host-editor-scope && root.host-editor-current {
+                    root.host-editor-move-selection(root.gesture-scope, x, y);
+                }
+            }
+            end-selection(x, y) => {
+                root.finishing-scope = root.gesture-scope;
+                root.gesture-scope = "";
+                if root.finishing-scope != "" && root.finishing-scope == root.host-editor-scope && root.host-editor-current {
+                    root.host-editor-end-selection(root.finishing-scope, x, y);
+                } else if root.finishing-scope != "" { root.host-editor-cancel-selection(root.finishing-scope); }
+                root.finishing-scope = "";
+            }
+            cancel-selection => { root.cancel-host-gesture(); }
+            scroll(delta) => { return root.host-editor-scroll(root.host-editor-scope, delta); }
+            clipboard(kind) => { return root.host-editor-clipboard(root.host-editor-scope, kind); }
+            submit => { if root.can-save-host { root.host-editor-save(root.host-editor-scope); } }
+            focus-changed(focused) => {
+                if focused && root.host-editor-current {
+                    root.focused-scope = root.host-editor-scope;
+                    root.host-editor-focus-changed(root.focused-scope, true);
+                } else if !focused && root.focused-scope != "" {
+                    root.finishing-focus-scope = root.focused-scope;
+                    root.focused-scope = "";
+                    root.host-editor-focus-changed(root.finishing-focus-scope, false);
+                    root.finishing-focus-scope = "";
+                }
+            }
+            geometry-changed => { if root.host-editor-current { root.host-editor-geometry-changed(root.host-editor-scope); } }
+        }
+    }
+    if root.can-add-attachment: AssistantIconButton {
+        x: 6px; y: root.height - 38px - root.action-extra-height;
+        icon: @image-url("../assets/plus.svg");
+        label: "Add attachment";
+        tooltip: "Add attachment";
+        activated => { root.add-attachment(); }
+    }
+    if root.can-copy-draft: AssistantIconButton {
+        x: root.can-add-attachment ? 38px : 6px;
+        y: root.height - 38px - root.action-extra-height;
+        icon: @image-url("../assets/copy.svg");
+        label: "Copy draft";
+        tooltip: "Copy draft";
+        private property <string> captured-scope;
+        private property <bool> captured-host-mode;
+        enabled: root.host-editor-enabled ? root.host-editor-current && !root.host-editor-empty : root.draft != "";
+        armed => { self.captured-host-mode = root.host-editor-enabled; self.captured-scope = root.host-editor-enabled ? root.host-editor-scope : ""; }
+        activated => {
+            if self.captured-host-mode != root.host-editor-enabled { return; }
+            if root.host-editor-enabled {
+                if self.captured-scope != "" && self.captured-scope == root.host-editor-scope && root.host-editor-current { root.host-editor-copy-draft(self.captured-scope); }
+            } else { root.copy-draft(); }
+        }
+    }
+    action-buttons := HorizontalLayout {
+        x: root.width - self.preferred-width - 8px;
+        y: root.height - 36px;
+        width: self.preferred-width;
+        height: 28px;
+        spacing: 8px;
+        AssistantButton {
+            label: "Cancel";
+            size: AssistantButtonSize.small;
+            variant: AssistantButtonVariant.ghost;
+            private property <string> captured-scope;
+            private property <bool> captured-host-mode;
+            armed => { self.captured-host-mode = root.host-editor-enabled; self.captured-scope = root.host-editor-enabled ? root.host-editor-scope : ""; }
+            activated => {
+                if self.captured-host-mode != root.host-editor-enabled { return; }
+                if root.host-editor-enabled {
+                    if self.captured-scope != "" && self.captured-scope == root.host-editor-scope { root.host-editor-cancel(self.captured-scope); }
+                } else { root.cancel(); }
+            }
+        }
+        save-button := AssistantButton {
+            label: "Send";
+            guard-repeat: true;
+            size: AssistantButtonSize.small;
+            private property <string> captured-scope;
+            private property <bool> captured-host-mode;
+            enabled: root.host-editor-enabled ? root.can-save-host : root.attachments-ready && (root.draft != "" || root.retained-attachments.length > 0);
+            armed => { self.captured-host-mode = root.host-editor-enabled; self.captured-scope = root.host-editor-enabled ? root.host-editor-scope : ""; }
+            activated => {
+                if self.captured-host-mode != root.host-editor-enabled { return; }
+                if root.host-editor-enabled {
+                    if self.captured-scope != "" && self.captured-scope == root.host-editor-scope && root.can-save-host { root.host-editor-save(self.captured-scope); }
+                } else { root.save(root.draft); }
+            }
+        }
+    }
+}

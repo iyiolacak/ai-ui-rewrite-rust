@@ -1,0 +1,243 @@
+/* Tokens: iOS dark system grays on true black. No borders, no shadows, no eyebrows anywhere on this page. */
+:root {
+  --paper: #000000;       /* systemBackground (dark) */
+  --surface: #1c1c1e;     /* secondarySystemBackground: cards, demo frame */
+  --surface-2: #2c2c2e;   /* tertiarySystemBackground: secondary buttons, hover */
+  --ink: #f5f5f7;
+  --muted: #98989d;       /* secondary label */
+  --accent: #fc5f3f;      /* the logo's poppy coral: Rust series */
+  --air: #A3D7FF;         /* air blue: the Rust series on the benchmark charts, where coral reads as a warning */
+  --other: #636366;       /* systemGray: React series */
+  --focus: #0a84ff;       /* systemBlue (dark) */
+  --r-card: 28px;
+  --r-frame: 32px;
+  color-scheme: dark;
+}
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+section[id] { scroll-margin-top: 80px; }
+body { background: var(--paper); color: var(--ink); font-family: "Work Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; line-height: 1.5; text-rendering: optimizeLegibility; -webkit-text-size-adjust: 100%; }
+a { color: var(--ink); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 12px; }
+.topbar { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.topbar > div { height: 60px; gap: 1.5rem; }
+.brand { display: inline-flex; align-items: center; gap: .6rem; font-size: 16px; font-weight: 600; letter-spacing: -.02em; line-height: 1; color: var(--ink); text-decoration: none; }
+.brand img { width: 24px; height: 24px; }
+.topbar nav a { position: relative; padding: 6px 0; font-size: 15px; font-weight: 500; letter-spacing: -.005em; line-height: 1; color: #b5b5bb; text-decoration: none; transition: color .2s; }
+.topbar nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ink); transform: scaleX(0); transform-origin: left; transition: transform .3s cubic-bezier(.22,1,.36,1); }
+.topbar nav a:hover { color: #ffffff; }
+.topbar nav a:hover::after, .topbar nav a:focus-visible::after { transform: scaleX(1); }
+.btn-ghost { display: inline-flex; align-items: center; height: 36px; padding: 0 1rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--ink) 24%, transparent); background: transparent; color: var(--ink); font-size: 15px; font-weight: 500; letter-spacing: -.005em; text-decoration: none; transition: border-color .2s, background .2s; }
+.btn-ghost:hover { border-color: var(--muted); background: var(--surface); }
+.btn-lg { min-height: 56px; padding: 0 1.75rem; font-size: 1.0625rem; letter-spacing: -0.005em; }
+.btn:disabled { opacity: .6; cursor: progress; }
+/* Section headings are centered; card contents stay left-aligned. */
+main > section > h2, main > section > p { text-align: center; margin-inline: auto; text-wrap: balance; }
+main > section > h2 { font-weight: 500; letter-spacing: -0.02em; }
+/* Bar charts drawn by src/lib/bench.ts. The ratio is the story: extra-light, air blue, oversized.
+   Bar labels/values sit a touch heavier (500) so they read at small sizes. */
+.chart text { font: 15px "Work Sans", system-ui, sans-serif; fill: var(--ink); }
+.chart .muted { fill: var(--muted); }
+.chart .rust { fill: var(--air); }
+.chart .other { fill: var(--other); }
+.chart .bar-label { font-weight: 500; }
+.chart .bar-value { font-weight: 500; }
+.chart .strong { font-weight: 200; font-size: 36px; letter-spacing: -0.04em; fill: var(--air); }
+.chart .strong tspan { font-weight: 200; }
+/* Hero. Work Sans throughout, centered; the headline is medium (500). Fluid between a 360px and a 1280px viewport. */
+.hero { padding-block: clamp(3.5rem, 2rem + 6vw, 8rem) clamp(3rem, 2rem + 4vw, 6rem); text-align: center; }
+.hero-title { font-weight: 500; font-size: clamp(1.75rem, 1.1rem + 2.5vw, 3.25rem); line-height: 1.12; letter-spacing: -0.022em; margin: 0 auto; color: var(--ink); font-kerning: normal; font-feature-settings: "kern", "liga"; }
+/* One size throughout. The first line is a single line from 640px up; the claim under it wraps in a balanced block. */
+.hl-top { display: block; text-wrap: balance; position: relative; }
+@media (min-width: 640px) { .hl-top { white-space: nowrap; } }
+.hl-rest { display: block; max-width: 34ch; margin: .12em auto 0; text-wrap: balance; }
+/* Minimalist tooltip for the assistant-ui hover: one pill, no arrow, no border.
+   The tip is a sibling of the link in the heading; the wrapper carries the anchor. */
+.hl-top { position: relative; }
+.hl-link { text-decoration: none; color: inherit; position: relative; }
+.hl-link:hover { color: var(--ink); }
+.hl-link:hover::after,
+.hl-link:focus-visible::after { content: ""; position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%); width: 100%; height: 2px; background: var(--air); border-radius: 1px; opacity: .9; }
+.hl-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+.hl-tip { position: absolute; left: 50%; top: 0; transform: translate(-50%, -128%) scale(.96); opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .28s cubic-bezier(.22, 1, .36, 1); white-space: nowrap; font-size: .42em; font-weight: 500; letter-spacing: 0; line-height: 1.3; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: .45em .9em; z-index: 10; }
+.hl-tip.is-auto { opacity: 1; transform: translate(-50%, -142%) scale(1); }
+@media (hover:hover) and (pointer:fine) { .hl-link:hover ~ .hl-tip { opacity: 1; transform: translate(-50%, -142%) scale(1); } }
+.hl-link:focus-visible ~ .hl-tip { opacity: 1; transform: translate(-50%, -142%) scale(1); }
+.hl-seg { display: inline-block; }
+/* The gear is 1.09x the cap height (0.66em in Work Sans) and centered on the capitals: its bottom edge sits (0.72 - 0.66) / 2 = 0.03em below the baseline. */
+.rust-inline { display: inline-block; height: .72em; width: auto; vertical-align: -.03em; margin: 0; }
+.hero-title .num { color: var(--accent); white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+/* Words of the claim are boxes that the crash (src/scripts/headline-crash.ts) can move with a transform. Inline-block keeps
+   the line breaks and the text exactly as before. */
+[data-crash-word] { display: inline-block; }
+.nowrap { white-space: nowrap; }
+.hero-sub { margin: clamp(1.25rem, 1rem + 1.2vw, 2rem) auto 0; font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.375rem); line-height: 1.5; letter-spacing: -0.005em; max-width: 40ch; text-wrap: balance; color: var(--muted); }
+.hero-actions { margin: clamp(1.75rem, 1.25rem + 2vw, 2.75rem) 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; align-items: center; }
+.hero-method { margin: 1.75rem auto 0; font-size: .9375rem; line-height: 1.55; max-width: 56ch; color: var(--muted); text-wrap: balance; }
+.hero-method code { font-size: .9em; white-space: nowrap; }
+.hero-method a { color: var(--ink); text-underline-offset: 3px; }
+.hero-facts { list-style: none; margin: clamp(3rem, 2rem + 3vw, 5rem) 0 0; padding: 0; display: grid; gap: 1.5rem; font-size: .9375rem; line-height: 1.5; color: var(--muted); }
+.hero-facts strong { display: block; color: var(--ink); font-weight: 500; font-size: 1.0625rem; letter-spacing: -0.005em; }
+@media (min-width: 640px) { .hero-facts { grid-template-columns: repeat(3, 1fr); gap: 2rem; } }
+/* Two desktop screens under the hero, wider than the page so they run off both edges and fade out at the bottom. Left: the
+   chat UI (links to the live demo). Right: the benchmark charts (links to the numbers). */
+body { overflow-x: clip; }
+.screens { --sw: clamp(560px, 62vw, 960px); --gap: clamp(16px, 2vw, 32px); --crop: max(0px, calc((2 * var(--sw) + var(--gap) - 100vw) / 2)); position: relative; width: 100vw; left: 50%; margin-left: -50vw; margin-top: clamp(3rem, 2rem + 4vw, 5.5rem); height: calc(var(--sw) * .56); overflow: clip; -webkit-mask-image: linear-gradient(#000 66%, transparent 100%); mask-image: linear-gradient(#000 66%, transparent 100%); }
+.screens-track { display: flex; justify-content: center; gap: var(--gap); }
+.screen { flex: 0 0 auto; display: block; width: var(--sw); aspect-ratio: 16 / 10; border-radius: clamp(20px, 2.4vw, 32px); overflow: hidden; background: #0f0f10; color: var(--ink); text-align: left; text-decoration: none; }
+.screen img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+.screen-results { --pad: clamp(18px, 3vw, 44px); background: var(--surface); padding: var(--pad); padding-right: calc(var(--pad) + var(--crop)); }
+/* The right screen runs off the edge of the page, so its content keeps clear of the part that is cut off. */
+.screen-results .chart text { font-size: 20px; }
+.screen-title { margin: 0 0 clamp(14px, 2vw, 28px); font-size: clamp(13px, 1.5vw, 20px); font-weight: 500; letter-spacing: -.01em; color: var(--ink); }
+.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 2.4vw, 36px) clamp(18px, 3vw, 44px); }
+.screen-metric { margin: 0 0 .4em; font-size: clamp(10px, 1.1vw, 14px); color: var(--muted); line-height: 1.3; }
+.screen-note { margin: clamp(14px, 2vw, 28px) 0 0; font-size: clamp(9px, 1vw, 13px); color: var(--muted); }
+.screen-note code { font-size: .95em; }
+@media (max-width: 639px) { .screens { --sw: 84vw; } .screens-track { justify-content: flex-start; padding-left: 16px; } }
+/* Demo, in the page right under the hero. On wide screens the screenshot above travels down to it as you scroll
+   (src/scripts/stage.ts) and the frame is pinned, centred, for a while before the page carries on. The slot has the
+   screenshot's shape. */
+.demo-run { margin-top: 2rem; }
+.demo-sticky { display: grid; place-items: center; width: 100%; }
+/* Narrow screens: tall and narrow, never wider than the page. No aspect-ratio here:
+   combined with a min-height it forces the width back out to 16:10 and overflows. */
+.demo-slot { width: min(100%, 1200px); height: clamp(520px, 78vh, 720px); }
+.demo-note { margin: 1rem auto 0; max-width: 56ch; text-align: center; text-wrap: balance; padding-bottom: 5rem; }
+@media (min-width: 900px) and (min-height: 560px) {
+  #demo { padding-bottom: 0; }
+  .demo-run { height: 150vh; margin-top: 0; }
+  /* Centred in the viewport below the 64px top bar, with the same room above and below. */
+  .demo-sticky { position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding-top: 64px; width: 100vw; margin-left: calc(50% - 50vw); }
+  .demo-slot { width: min(94vw, calc((100vh - 64px) * .9 * 1760 / 1102), 1600px); aspect-ratio: 1760 / 1102; height: auto; max-height: calc(100vh - 64px); }
+}
+.demo-frame { position: relative; width: 100%; height: 100%; border-radius: var(--r-frame); overflow: hidden; background: var(--surface); }
+.demo-frame.is-docked { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent), 0 24px 80px rgba(0,0,0,.55); cursor: ns-resize; }
+/* Slint writes an inline pixel size on its canvas; the frame decides the size. pixel-snap.js (loaded by
+   demo.ts) lays the canvas out on whole device pixels and sets data-aui-snap; this is the fallback if it
+   did not load. */
+.demo-frame canvas:not([data-aui-snap]) { display: block; width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; }
+/* Shown only until the first live frame is drawn, then it fades out. */
+.demo-cover { position: absolute; inset: 0; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; transition: opacity .4s ease; }
+.demo-cover.is-live { opacity: 0; pointer-events: none; }
+.demo-cover[hidden] { display: none; }
+/* While it travels the live demo floats over the strip (under the top bar) and ignores the pointer.
+   Transform-only flight: the radius stays constant so scaling never triggers a repaint. */
+.demo-frame.is-flying { z-index: 40; pointer-events: none; transform-origin: 0 0; will-change: transform; contain: layout paint; }
+.stage-hint { position: fixed; z-index: 45; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0; padding: .35rem .85rem; border-radius: 999px; font-size: .8125rem; color: var(--muted); background: var(--surface); opacity: 0; pointer-events: none; transition: opacity .3s; white-space: nowrap; }
+.stage-hint.is-on { opacity: 1; }
+
+/* The scroll counter over the live demo: the ordinal of the message at the top edge of the
+   viewport. A top scrim lets the thread dissolve under the numeral while a gesture jumps the
+   list by hundreds of messages; the numeral fades away once the gesture has settled. The top
+   of the digits is lighter than the base, so the type itself has a fade rather than an edge. */
+.demo-ordinal {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  height: clamp(150px, 21vh, 200px);
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: .55rem;
+  padding-top: clamp(22px, 3.8vh, 34px);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  /* The app's own background is #0f0f0e, so the scrim darkens toward that rather than
+     washing a lighter grey over the thread. It is the element's own background so it paints
+     above the canvas and fades with the numeral. Opacity-only fade: no blur animation,
+     so showing the counter costs one composited fade, not a per-frame filter. */
+  background: linear-gradient(to bottom, rgba(15, 15, 14, .97) 0%, rgba(15, 15, 14, .9) 50%, rgba(15, 15, 14, .5) 78%, rgba(15, 15, 14, 0) 100%);
+  transform: translateY(-8px);
+  transition: opacity .46s cubic-bezier(.22, 1, .36, 1), transform .56s cubic-bezier(.22, 1, .36, 1), visibility 0s linear .46s;
+  will-change: opacity, transform;
+}
+.demo-ordinal.is-visible { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
+.demo-ordinal.is-docked { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
+.demo-spinner { width: 28px; height: 28px; border-radius: 999px; border: 2.5px solid color-mix(in srgb, var(--ink) 22%, transparent); border-top-color: var(--accent); animation: demo-spin .9s linear infinite; margin: 0 auto 1rem; }
+@keyframes demo-spin { to { transform: rotate(360deg); } }
+.demo-status { margin: 0; text-align: center; font-size: 1rem; font-weight: 600; color: var(--ink); }
+.demo-status-sub { margin: .45rem auto 0; max-width: 34ch; text-align: center; font-size: .8125rem; color: var(--muted); }
+.demo-ordinal-value {
+  font-size: clamp(3rem, 3.9vh + 1.9vw, 5.25rem);
+  font-weight: 500;
+  line-height: .9;
+  letter-spacing: -.055em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  color: transparent;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 52%, transparent) 0%, var(--ink) 34%, var(--ink) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform-origin: 50% 38%;
+}
+.demo-ordinal-total {
+  font-size: clamp(.8125rem, .78rem + .15vw, .9375rem);
+  font-weight: 500;
+  letter-spacing: .01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  transform: translateY(-.1em);
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* The hero buttons with a thumbnail: identical size, aspect ratio and layout whatever the label. */
+.btn-demo { display: inline-flex; flex-direction: row; align-items: center; gap: .75rem; box-sizing: border-box; width: 300px; height: 76px; padding: 6px 1rem 6px 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); text-align: left; transition: border-color .15s, transform .15s; }
+.btn-demo:hover { border-color: var(--muted); transform: translateY(-1px); }
+.btn-demo img { display: block; box-sizing: border-box; width: 112px; height: 64px; object-fit: cover; border-radius: 9px; flex: none; }
+.btn-demo span { flex: 1; min-width: 0; padding: 0; font-weight: 600; font-size: 1.0625rem; line-height: 1.25; letter-spacing: -0.005em; color: var(--ink); }
+
+/* The wave over "10,000": each digit lifts and takes a colour on the way, left to right, three times.
+   At rest the digits are the normal text colour; the hue is only in the keyframes. */
+.num-shimmer { white-space: nowrap; --base: var(--ink); }
+.hero-sub .num-shimmer { --base: var(--muted); }
+.num-shimmer i { font-style: normal; display: inline-block; color: var(--base); }
+.num-shimmer.is-wave i { animation: letter-wave 1.6s cubic-bezier(0.45, 0, 0.55, 1) calc(var(--i) * 0.09s) 3 both; }
+/* Never dimmed: the digits stay at full opacity, so no step of the wave is low contrast.
+   Each digit lifts slightly and takes a colour from the wave, then returns to the text colour. */
+@keyframes letter-wave {
+  0%, 100% { transform: translateY(0); color: var(--base); }
+  40% { transform: translateY(-0.06em); color: hsl(calc(var(--i) * 40), 80%, 72%); }
+  75% { transform: translateY(0); color: var(--base); }
+}
+
+/* Accordions: a card with hairline-separated items. Heights animate through grid-template-rows,
+   opening on a fast-out, slow-in curve and closing on an ease-in, so the motion feels deliberate. */
+.acc { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); overflow: hidden; }
+.acc-item + .acc-item { border-top: 1px solid var(--line); }
+.acc-h { margin: 0; font-size: inherit; }
+.acc-trigger { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.25rem 1.5rem; cursor: pointer; font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem); font-weight: 600; letter-spacing: -0.015em; line-height: 1.3; color: var(--ink); transition: color .3s cubic-bezier(0.22, 1, 0.36, 1); }
+.acc-trigger:hover { color: #ffffff; }
+.acc-trigger:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: 0; }
+.acc-icon { position: relative; flex: none; width: 14px; height: 14px; }
+.acc-icon::before, .acc-icon::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; margin-top: -0.75px; background: currentColor; border-radius: 1px; transition: transform .55s cubic-bezier(0.22, 1, 0.36, 1); }
+.acc-icon::after { transform: rotate(90deg); }
+.acc-item.is-open .acc-icon::after { transform: rotate(0deg); }
+.acc-item.is-open .acc-icon::before { transform: rotate(180deg); }
+.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .42s cubic-bezier(0.64, 0, 0.78, 0); }
+.acc-item.is-open .acc-panel { grid-template-rows: 1fr; transition: grid-template-rows .7s cubic-bezier(0.22, 1, 0.36, 1); }
+.acc-inner { min-height: 0; overflow: hidden; }
+.acc-inner p { margin: 0; padding: 0 1.5rem 1.4rem; max-width: 66ch; color: var(--muted); line-height: 1.6; opacity: 0; transform: translateY(-8px); transition: opacity .2s ease, transform .3s cubic-bezier(0.64, 0, 0.78, 0); }
+.acc-item.is-open .acc-inner p { opacity: 1; transform: translateY(0); transition: opacity .5s cubic-bezier(0.22, 1, 0.36, 1) .12s, transform .7s cubic-bezier(0.22, 1, 0.36, 1) .08s; }
+
+
+/* Generic card: a surface panel with a hairline border. */
+.card { border: 1px solid var(--line); border-radius: 16px; padding: 1.5rem; background: var(--surface); }
+
+/* Speed grid: one surface, hairlines between the cells (the gap shows the line colour). */
+.speed-grid { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+@media (min-width: 768px) { .speed-grid { grid-template-columns: 1fr 1fr; } }
+.speed-cell { background: var(--surface); padding: 1.75rem 1.75rem 1.5rem; }
+.speed-cell .chart { display: block; width: 100%; height: auto; margin-top: 1.25rem; overflow: visible; }
+.speed-cell .chart text { font-size: 15px; }
+.speed-cell .chart .bar-label, .speed-cell .chart .bar-value { font-size: 15px; font-weight: 500; }
+.speed-cell .chart .strong { font-size: 36px; font-weight: 200; letter-spacing: -0.04em; }
+/* Mobile: keep the same proportions, just a touch larger so it stays legible. */
+@media (max-width: 767px) {
+  .speed-cell .chart .strong { font-size: 44px; }
+  .speed-cell .chart .bar-label, .speed-cell .chart .bar-value { font-size: 15px; }
+}

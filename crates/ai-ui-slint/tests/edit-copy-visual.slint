@@ -1,0 +1,23 @@
+import { AssistantEditComposer } from "../ui/components/edit-composer.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+
+component Preview inherits Rectangle {
+    background: AssistantTheme.background;
+    AssistantEditComposer {
+        x: 12px; y: 12px; width: parent.width - 24px;
+        draft: "Revised message";
+        can-add-attachment: true;
+        can-copy-draft: true;
+    }
+}
+export component DarkEditCopy inherits Window {
+    width: 300px; height: 190px;
+    Preview { }
+}
+export component LightEditCopy inherits Window {
+    width: 170px; height: 220px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    Preview { }
+}

@@ -1,0 +1,76 @@
+import { AssistantIconButton } from "icon-button.slint";
+import { AssistantTheme } from "../theme.slint";
+
+// Controlled view: the host owns the selected branch and validates each action.
+// Branch numbers are one-based; invalid or single-branch input is not shown.
+export component AssistantBranchPicker inherits Rectangle {
+    in property <int> branch-number;
+    in property <int> branch-count;
+    in property <bool> running: false;
+    out property <bool> has-focus: previous_button.has-focus || next_button.has-focus;
+    out property <bool> has-hover: previous_button.has-hover || next_button.has-hover;
+    callback previous();
+    callback next();
+
+    private property <bool> show-picker: root.branch-count > 1
+        && root.branch-number >= 1 && root.branch-number <= root.branch-count;
+    private property <string> count-label: "\{root.branch-number} / \{root.branch-count}";
+
+    // Two 28 px cells (24 px visuals with 2 px margins) and the count between
+    // them, with the same 4 px gaps between visuals that upstream uses.
+    width: root.show-picker ? 60px * AssistantTheme.hit-scale + measure.preferred-width : 0px;
+    height: root.show-picker ? 32px * AssistantTheme.hit-scale : 0px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+
+    measure := Text {
+        visible: false;
+        text: root.count-label;
+        font-family: "Inter";
+        font-size: 12px * AssistantTheme.text-scale;
+    }
+
+    // Not an `if`: the buttons stay addressable for the row focus state.
+    picker := HorizontalLayout {
+        visible: root.show-picker;
+        width: parent.width;
+        height: parent.height;
+        spacing: 0px;
+        previous_button := AssistantIconButton {
+            control-size: 24px * AssistantTheme.hit-scale;
+            icon-size: 14px * AssistantTheme.text-scale;
+            hit-width: 28px * AssistantTheme.hit-scale;
+            hit-height: 32px * AssistantTheme.hit-scale;
+            bordered: false;
+            label: "Previous branch";
+            tooltip: "Previous branch";
+            icon: @image-url("../assets/chevron-left.svg");
+            enabled: !root.running && root.branch-number > 1;
+            activated => { root.previous(); }
+        }
+        HorizontalLayout {
+            padding-left: 2px;
+            padding-right: 2px;
+            Text {
+                text: root.count-label;
+                font-family: "Inter";
+                font-size: 12px * AssistantTheme.text-scale;
+                color: AssistantTheme.muted;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+        next_button := AssistantIconButton {
+            control-size: 24px * AssistantTheme.hit-scale;
+            icon-size: 14px * AssistantTheme.text-scale;
+            hit-width: 28px * AssistantTheme.hit-scale;
+            hit-height: 32px * AssistantTheme.hit-scale;
+            bordered: false;
+            label: "Next branch";
+            tooltip: "Next branch";
+            icon: @image-url("../assets/chevron-right.svg");
+            enabled: !root.running && root.branch-number < root.branch-count;
+            activated => { root.next(); }
+        }
+    }
+}

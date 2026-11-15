@@ -1,0 +1,55 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantIconButton } from "icon-button.slint";
+
+// The host owns the draft, validation and save/cancel lifecycle. Neither
+// action changes committed data; the host must revalidate the captured target.
+export component AssistantInlineEditor inherits Rectangle {
+    in-out property <string> draft <=> input.text;
+    in property <string> label: "Edit name";
+    in property <bool> enabled: true;
+    callback save(string);
+    callback cancel();
+
+    min-height: 32px;
+    preferred-height: 32px;
+    vertical-stretch: 0;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: input.has-focus ? AssistantTheme.focus-border : AssistantTheme.border;
+    background: AssistantTheme.composer;
+    forward-focus: input;
+    FocusScope {
+        x: 12px; width: max(0px, parent.width - 80px);
+        forward-focus: input;
+        capture-key-pressed(event) => {
+            if event.text == Key.Return && root.enabled { root.save(input.text); return accept; }
+            if event.text == Key.Escape && root.enabled { root.cancel(); return accept; }
+            return reject;
+        }
+        input := TextInput {
+            width: parent.width; height: parent.height;
+            single-line: true;
+            enabled: root.enabled;
+            color: AssistantTheme.text;
+            font-family: "Inter";
+            font-size: 13px;
+            vertical-alignment: center;
+            accessible-label: root.label;
+        }
+    }
+    AssistantIconButton {
+        x: root.width - 68px; y: 0px;
+        icon: @image-url("../assets/check.svg");
+        label: "Save name"; tooltip: "Save name"; bordered: false;
+        enabled: root.enabled;
+        activated => { root.save(input.text); }
+    }
+    AssistantIconButton {
+        x: root.width - 36px; y: 0px;
+        icon: @image-url("../assets/x.svg");
+        label: "Cancel editing name"; tooltip: "Cancel editing name"; bordered: false;
+        enabled: root.enabled;
+        activated => { root.cancel(); }
+    }
+    init => { input.focus(); }
+}

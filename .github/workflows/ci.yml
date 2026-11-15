@@ -1,0 +1,104 @@
+name: ci
+
+# Owner policy: CI stays local (scripts/gate.sh) and never runs on GitHub-hosted runners.
+# This workflow is kept only as a manual, self-hosted-runner template: it does nothing unless
+# someone starts it by hand (workflow_dispatch) on a runner they host.
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUNTIME_CRATES: -p ai-ui-sdk-stream -p ai-ui-core -p ai-ui-stream -p ai-ui-data-stream -p ai-ui-http -p ai-ui-state -p ai-ui-markdown -p ai-ui-clipboard
+
+jobs:
+  check:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - run: cargo doc --no-deps --locked $RUNTIME_CRATES
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  # Each crate's `rust-version` is the oldest toolchain its locked dependencies allow; check it exactly.
+  msrv:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        include:
+          - toolchain: "1.85.0"
+            packages: -p ai-ui-sdk-stream -p ai-ui-core -p ai-ui-stream -p ai-ui-state -p ai-ui-data-stream -p ai-ui-http
+          - toolchain: "1.86.0"
+            packages: -p ai-ui-clipboard
+          - toolchain: "1.88.0"
+            packages: -p ai-ui-markdown
+          - toolchain: "1.92.0"
+            packages: -p ai-ui-markdown-slint -p ai-ui-slint -p ai-ui-example-thread
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
+      - run: cargo check --locked ${{ matrix.packages }}
+
+  # Our client and adapter against a real AI SDK 7 backend, and the imported runtime against the published package.
+  interop:
+    runs-on: self-hosted
+    env:
+      AI_UI_REQUIRE_INTEROP: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci --ignore-scripts
+        working-directory: benchmarks/ai-sdk-stream
+      - run: npm run verify
+        working-directory: benchmarks/ai-sdk-stream
+      - run: cargo test --locked -p ai-ui-http --test interop_ai_sdk
+
+  wasm:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: >
+          cargo build --locked --target wasm32-unknown-unknown
+          -p ai-ui-sdk-stream -p ai-ui-core -p ai-ui-state -p ai-ui-stream
+          -p ai-ui-data-stream -p ai-ui-http -p ai-ui-markdown
+
+  supply-chain:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      # The Slint crates are dual-licensed (see THIRD_PARTY.md) and are checked separately.
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check licenses bans advisories
+          arguments: --workspace --exclude ai-ui-slint --exclude ai-ui-markdown-slint --exclude ai-ui-example-thread
+
+  publish-dry-run:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # `publish = false` stays until the crate names are decided, so this uses `cargo package`,
+      # which builds each crate from its tarball. Only crates without workspace dependencies can
+      # be verified before their dependencies are on crates.io.
+      - run: cargo package --locked -p ai-ui-core -p ai-ui-markdown -p ai-ui-clipboard
+      - run: cargo package --list --locked -p ai-ui-stream -p ai-ui-data-stream -p ai-ui-http -p ai-ui-state

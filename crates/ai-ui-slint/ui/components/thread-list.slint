@@ -1,0 +1,378 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantScrollbar } from "scrollbar.slint";
+
+// Upstream's thread list: a New Thread row, a search field and one row per
+// thread. The host owns the threads, the selection, the filter and every
+// operation; this component reports the index of the row the user acted on.
+// Indices refer to `items` as last supplied, so the host must revalidate them
+// against its own state before acting.
+export struct AssistantThreadListItem {
+    id: string,
+    title: string,
+    running: bool,
+    // Short text shown at the row's right, such as a message count. Empty hides it.
+    detail: string,
+}
+
+component ThreadMenuItem inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <color> tint: AssistantTheme.text;
+    callback activated();
+
+    height: 32px;
+    border-radius: 6px;
+    background: area.has-hover ? AssistantTheme.surface : transparent;
+    Image {
+        x: 8px; y: (parent.height - 16px) / 2;
+        width: 16px; height: 16px;
+        source: root.icon;
+        colorize: root.tint;
+    }
+    Text {
+        x: 32px;
+        width: max(0px, parent.width - 40px);
+        text: root.label;
+        color: root.tint;
+        font-family: "Inter";
+        font-size: 14px;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    area := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.activated(); }
+    }
+}
+
+export component AssistantThreadList inherits Rectangle {
+    in property <[AssistantThreadListItem]> items;
+    in property <int> selected-index: -1;
+    in property <bool> enabled: true;
+    in-out property <string> search: "";
+    callback new-thread();
+    callback select(int);
+    callback rename(int, string);
+    callback archive(int);
+    callback delete(int);
+    // The host filters `items` for the query it receives.
+    callback search-changed(string);
+
+    // The row being renamed, or -1. Its draft is private to this component.
+    private property <int> renaming-index: -1;
+    private property <string> rename-draft;
+    private property <string> rename-original;
+    // True from a user scroll until the list has been still for a moment.
+    private property <bool> scrolling: false;
+    // Keyboard focus inside the list: New Thread, the search field, a row or a rename.
+    // A pointer click selects without taking focus, so the rings show for Tab only.
+    private property <bool> new-focused: false;
+    private property <bool> search-focused: false;
+    private property <bool> row-focused: false;
+    out property <bool> has-focus: root.new-focused || root.search-focused || root.row-focused || root.renaming-index >= 0;
+
+    preferred-width: 256px;
+    min-width: 200px;
+    horizontal-stretch: 0;
+    vertical-stretch: 1;
+
+    function begin-rename(index: int, title: string) {
+        root.rename-draft = title;
+        root.rename-original = title;
+        root.renaming-index = index;
+    }
+    // Enter and blur commit; Escape cancels. Only the first finish for a row
+    // acts, because removing the editor also moves focus out of it. Slint has
+    // no string trim, so the host trims the name and ignores a blank one.
+    function finish-rename(index: int, commit: bool) {
+        if root.renaming-index != index { return; }
+        root.renaming-index = -1;
+        if commit && root.rename-draft != root.rename-original {
+            root.rename(index, root.rename-draft);
+        }
+    }
+
+    changed items => { root.renaming-index = -1; }
+    changed enabled => { if !root.enabled { root.renaming-index = -1; } }
+
+    VerticalLayout {
+        padding: 8px;
+        padding-top: 16px;
+        spacing: 4px;
+
+        Rectangle {
+            height: 32px;
+            border-radius: 6px;
+            border-width: new-focus.has-focus && root.enabled ? 1px : 0px;
+            border-color: AssistantTheme.focus-border;
+            background: new-area.has-hover && root.enabled ? AssistantTheme.surface : transparent;
+            new-focus := FocusScope {
+                enabled: root.enabled;
+                changed has-focus => { root.new-focused = self.has-focus; }
+                key-pressed(event) => {
+                    if event.text == Key.Return || event.text == Key.Space { root.new-thread(); return accept; }
+                    return reject;
+                }
+            }
+            Image {
+                x: 8px; y: (parent.height - 16px) / 2;
+                width: 16px; height: 16px;
+                source: @image-url("../assets/plus.svg");
+                colorize: root.enabled ? AssistantTheme.text : AssistantTheme.disabled;
+            }
+            Text {
+                x: 32px;
+                width: max(0px, parent.width - 40px);
+                text: "New Thread";
+                color: root.enabled ? AssistantTheme.text : AssistantTheme.disabled;
+                font-family: "Inter";
+                font-size: 14px;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            new-area := TouchArea {
+                enabled: root.enabled;
+                mouse-cursor: root.enabled ? pointer : default;
+                clicked => { root.new-thread(); }
+            }
+        }
+
+        if root.items.length > 0 || root.search != "": Rectangle {
+            height: 32px;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: search-input.has-focus ? AssistantTheme.focus-border : AssistantTheme.border;
+            background: AssistantTheme.composer;
+            Image {
+                x: 10px; y: (parent.height - 14px) / 2;
+                width: 14px; height: 14px;
+                source: @image-url("../assets/search.svg");
+                colorize: AssistantTheme.muted;
+            }
+            Text {
+                x: 32px;
+                width: max(0px, parent.width - 40px);
+                visible: root.search == "" && !search-input.has-focus;
+                text: "Search threads";
+                color: AssistantTheme.muted;
+                font-family: "Inter";
+                font-size: 14px;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            search-input := TextInput {
+                x: 32px;
+                width: max(0px, parent.width - 40px);
+                height: parent.height;
+                text <=> root.search;
+                single-line: true;
+                enabled: root.enabled;
+                color: AssistantTheme.text;
+                font-family: "Inter";
+                font-size: 14px;
+                vertical-alignment: center;
+                accessible-label: "Search threads";
+                changed has-focus => { root.search-focused = self.has-focus; }
+                edited => { root.search-changed(self.text); }
+            }
+        }
+
+        // The overlay scrollbar sits over the list's right edge and shows only while scrolling or hovered.
+        Rectangle {
+            vertical-stretch: 1;
+            flick := Flickable {
+                width: parent.width;
+                height: parent.height;
+                content-width: self.width;
+                content-height: list.preferred-height;
+                flicked => {
+                    root.scrolling = true;
+                    scroll-idle.running = false;
+                    scroll-idle.running = true;
+                }
+                list := VerticalLayout {
+                    x: 0px;
+                    width: parent.width;
+                    spacing: 2px;
+                    for item[index] in root.items: row := Rectangle {
+                        height: 32px;
+                        border-radius: 6px;
+                        background: (row-area.has-hover || index == root.selected-index) && root.renaming-index != index
+                            ? AssistantTheme.surface : transparent;
+                        border-width: row-focus.has-focus ? 1px : 0px;
+                        border-color: AssistantTheme.focus-border;
+
+                        // Keyboard only: Enter or Space selects the row, like a click.
+                        row-focus := FocusScope {
+                            enabled: root.enabled && root.renaming-index != index;
+                            changed has-focus => { root.row-focused = self.has-focus; }
+                            key-pressed(event) => {
+                                if event.text == Key.Return || event.text == Key.Space { root.select(index); return accept; }
+                                return reject;
+                            }
+                        }
+
+                        // Declared first so the controls above it take their own clicks.
+                        row-area := TouchArea {
+                            enabled: root.enabled && root.renaming-index != index;
+                            mouse-cursor: pointer;
+                            clicked => { root.select(index); }
+                        }
+                        if item.running: Image {
+                            x: 10px; y: (parent.height - 12px) / 2;
+                            width: 12px; height: 12px;
+                            source: @image-url("../assets/loader-circle.svg");
+                            colorize: AssistantTheme.muted;
+                            // Driven by the frame clock, so nothing ticks while no thread runs.
+                            transform-rotation: mod(animation-tick() / 1ms, 900.0) / 900.0 * 360deg;
+                        }
+                        Text {
+                            x: item.running ? 28px : 10px;
+                            width: max(0px, row.width - self.x - 84px);
+                            visible: root.renaming-index != index;
+                            text: item.title;
+                            color: AssistantTheme.text;
+                            font-family: "Inter";
+                            font-size: 14px;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        Text {
+                            x: row.width - 78px;
+                            width: 44px;
+                            visible: root.renaming-index != index && item.detail != "";
+                            text: item.detail;
+                            color: AssistantTheme.muted;
+                            font-family: "Inter";
+                            font-size: 12px;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+
+                        more := Rectangle {
+                            x: row.width - 30px; y: 4px;
+                            width: 24px; height: 24px;
+                            border-radius: 6px;
+                            visible: root.renaming-index != index
+                                && (row-area.has-hover || more-area.has-hover || index == root.selected-index || menu.is-open);
+                            background: more-area.has-hover && root.enabled ? AssistantTheme.background : transparent;
+                            Image {
+                                x: 4px; y: 4px;
+                                width: 16px; height: 16px;
+                                source: @image-url("../assets/ellipsis.svg");
+                                colorize: root.enabled ? AssistantTheme.text : AssistantTheme.disabled;
+                            }
+                            more-area := TouchArea {
+                                enabled: root.enabled;
+                                mouse-cursor: pointer;
+                                clicked => { menu.show(); }
+                            }
+                        }
+
+                        // A sibling of the button, so the button's visibility can depend on it.
+                        menu := PopupWindow {
+                            x: row.width - 146px;
+                            y: 32px;
+                            width: 140px;
+                            height: 3 * 32px + 10px;
+                            close-policy: close-on-click-outside;
+                            Rectangle {
+                                border-radius: 8px;
+                                border-width: 1px;
+                                border-color: AssistantTheme.border;
+                                background: AssistantTheme.composer;
+                                VerticalLayout {
+                                    padding: 4px;
+                                    ThreadMenuItem {
+                                        icon: @image-url("../assets/pencil.svg");
+                                        label: "Rename";
+                                        activated => {
+                                            menu.close();
+                                            root.begin-rename(index, item.title);
+                                        }
+                                    }
+                                    ThreadMenuItem {
+                                        icon: @image-url("../assets/archive.svg");
+                                        label: "Archive";
+                                        activated => {
+                                            menu.close();
+                                            root.archive(index);
+                                        }
+                                    }
+                                    ThreadMenuItem {
+                                        icon: @image-url("../assets/trash.svg");
+                                        label: "Delete";
+                                        tint: AssistantTheme.error;
+                                        activated => {
+                                            menu.close();
+                                            root.delete(index);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if root.renaming-index == index: Rectangle {
+                            x: 6px; y: 2px;
+                            width: max(0px, row.width - 12px);
+                            height: 28px;
+                            border-radius: 6px;
+                            border-width: 1px;
+                            border-color: AssistantTheme.focus-border;
+                            background: AssistantTheme.composer;
+                            rename-scope := FocusScope {
+                                x: 8px;
+                                width: max(0px, parent.width - 16px);
+                                height: parent.height;
+                                capture-key-pressed(event) => {
+                                    if event.text == Key.Return {
+                                        root.finish-rename(index, true);
+                                        return accept;
+                                    }
+                                    if event.text == Key.Escape {
+                                        root.finish-rename(index, false);
+                                        return accept;
+                                    }
+                                    return reject;
+                                }
+                                rename-input := TextInput {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    text <=> root.rename-draft;
+                                    single-line: true;
+                                    color: AssistantTheme.text;
+                                    font-family: "Inter";
+                                    font-size: 14px;
+                                    vertical-alignment: center;
+                                    accessible-label: "Thread name";
+                                    // Leaving the field commits it, as Enter does.
+                                    changed has-focus => {
+                                        if !self.has-focus { root.finish-rename(index, true); }
+                                    }
+                                }
+                            }
+                            init => { rename-input.focus(); }
+                        }
+                    }
+                }
+            }
+            AssistantScrollbar {
+                x: parent.width - self.width;
+                y: 0px;
+                height: parent.height;
+                content-height: flick.content-height;
+                visible-height: flick.height;
+                content-y <=> flick.content-y;
+                reveal: root.scrolling;
+            }
+            scroll-idle := Timer {
+                interval: 900ms;
+                running: false;
+                triggered => {
+                    root.scrolling = false;
+                    self.running = false;
+                }
+            }
+        }
+    }
+}

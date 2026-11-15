@@ -1,0 +1,9 @@
+# load before: 5.09 5.48 5.24 8/2057 479900
+# start 2026-11-11T14:08:38Z
+  layout + paint per drawn frame: 0-10s 562 frames 4.31 ms, 10-20s 563 frames 3.48 ms, 20-30s 562 frames 2.90 ms, 30-40s 559 frames 3.05 ms, 40-50s 552 frames 3.81 ms, 50-60s 550 frames 5.22 ms
+rss 60.6 MiB, peak 60.6 MiB after opening the thread; rss 63.3 MiB, peak 63.3 MiB at the end; process CPU while streaming 23220 ms
+10000 messages: open (formatted and painted, like for like) 442.7 ms
+10000 messages: history import+first sync 147.8 ms, formatted after 0.29 s; reply streamed in 60.31 s over 17397 iterations
+  app work + layout + software paint per iteration: p50 292.534µs  p95 5.42203ms  p99 10.627134ms  max 38.878049ms  total 23343.6 ms; iterations over 4 ms: 1701
+# exit 0
+# load after: 5.47 5.54 5.28 6/2059 480616

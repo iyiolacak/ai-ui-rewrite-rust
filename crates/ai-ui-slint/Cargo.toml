@@ -1,0 +1,20 @@
+[package]
+name = "ai-ui-slint"
+version = "0.1.0"
+keywords.workspace = true
+categories.workspace = true
+edition.workspace = true
+license.workspace = true
+# Set by dependencies (checked in CI with this exact toolchain).
+rust-version = "1.92"
+description = "Slint components with assistant-ui's look: thread, messages, composer, branch picker, actions, reasoning, tools, Markdown."
+include = ["src/**", "ui/**", "README.md"]
+repository.workspace = true
+readme = "README.md"
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+# Component tests render offscreen with their own software platform.
+slint = { version = "=1.18.1", default-features = false, features = ["std", "backend-winit", "renderer-femtovg-wgpu", "unstable-wgpu-30", "renderer-software", "compat-1-18"] }

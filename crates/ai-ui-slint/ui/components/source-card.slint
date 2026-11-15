@@ -1,0 +1,70 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantFileBadge } from "file-badge.slint";
+import { AssistantIconButton } from "icon-button.slint";
+
+// Presentation with an optional open action. The host owns the original
+// source and all authorization and I/O decisions.
+export component AssistantSourceCard inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <bool> can-open: false;
+    callback open-armed();
+    callback open();
+
+    preferred-width: min(360px, row.preferred-width);
+    min-width: 0px;
+    max-width: 360px;
+    horizontal-stretch: 0;
+    height: 56px * AssistantTheme.hit-scale;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: AssistantTheme.border;
+    background: AssistantTheme.surface;
+    clip: true;
+
+    row := HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 12px;
+        Rectangle {
+            width: 32px; height: root.height;
+            horizontal-stretch: 0; vertical-stretch: 0;
+            AssistantFileBadge { y: (parent.height - self.height) / 2; }
+        }
+        VerticalLayout {
+            spacing: 2px;
+            alignment: center;
+            Text {
+                text: root.title;
+                color: AssistantTheme.text;
+                font-family: "Inter";
+                font-size: 13px * AssistantTheme.text-scale;
+                font-weight: 500;
+                overflow: elide;
+            }
+            if root.detail != "": Text {
+                text: root.detail;
+                color: AssistantTheme.muted;
+                font-family: "Inter";
+                font-size: 12px * AssistantTheme.text-scale;
+                overflow: elide;
+            }
+        }
+        if root.can-open: Rectangle {
+            width: 32px; height: root.height;
+            horizontal-stretch: 0; vertical-stretch: 0;
+            AssistantIconButton {
+                x: -2px;
+                y: (parent.height - self.height) / 2;
+                label: "Open source";
+                tooltip: "Open source";
+                icon: @image-url("../assets/chevron-right.svg");
+                control-size: 28px;
+                icon-size: 16px;
+                bordered: false;
+                armed => { root.open-armed(); }
+                activated => { root.open(); }
+            }
+        }
+    }
+}

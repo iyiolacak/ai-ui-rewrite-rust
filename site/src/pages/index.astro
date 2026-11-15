@@ -1,0 +1,339 @@
+---
+import '../styles/global.css';
+import data from '../../data/benchmarks.json';
+import { barChart, comparison, ratioWhole } from '../lib/bench';
+
+const repo = 'https://github.com/iyiolacak/ai-ui-rewrite-rust';
+const docs = `${repo}/blob/main/docs`;
+const web = Object.fromEntries((data.web?.rows ?? []).map((r) => [r.id, r]));
+// The digits of "10,000", one element each, so the wave can fade them in turn.
+const tenThousand = ['1', '0', ',', '0', '0', '0'];
+const headline = { open: comparison('open-1000'), memory: comparison('memory-1000'), stall: comparison('stall-1000') };
+const speed = [
+  { c: comparison('open-1000'), verb: 'faster' },
+  { c: comparison('memory-1000'), verb: 'less memory' },
+  { c: comparison('cpu-1000'), verb: 'less CPU' },
+  { c: comparison('stall-1000'), verb: 'shorter stalls' },
+];
+const guides = [
+  { title: 'Architecture', href: `${docs}/ARCHITECTURE.md`, text: 'How the crates fit together: core, state, streams, Markdown and the Slint components.' },
+  { title: 'Protocol', href: `${docs}/PROTOCOL.md`, text: 'The wire formats the port speaks, so existing backends keep working.' },
+  { title: 'AI SDK streams', href: `${docs}/AI-SDK-STREAM.md`, text: 'The strict UI message stream reducer, checked against the published package.' },
+  { title: 'Performance record', href: `${docs}/PERFORMANCE.md`, text: 'Every measured change, the ones we rejected, the remaining limits, and how to reproduce them.' },
+  { title: 'Port status', href: `${docs}/STATUS.md`, text: 'What is ported from assistant-ui, what is not yet, and the full benchmark method.' },
+  { title: 'Source and examples', href: repo, text: 'The workspace, the thread example this demo is built from, and the license.' },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" />
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+    <title>AI UI in Rust: assistant-ui rewritten</title>
+    <meta name="description" content="A Rust-native AI UI toolkit, built for conversations that don't stop at 100 messages. Same protocols as assistant-ui, far less CPU and memory." />
+  </head>
+  <body class="antialiased">
+    <header class="topbar">
+      <div class="mx-auto flex w-full max-w-6xl items-center gap-6 px-4 sm:px-6 h-16">
+        <a class="brand" href="/" aria-label="AI UI in Rust, home">
+          <img src="/logo.svg" width="30" height="30" alt="" />
+          <span>AI UI in Rust</span>
+        </a>
+        <div class="ml-auto flex items-center gap-5">
+          <nav class="hidden md:flex items-center gap-7" aria-label="Main">
+            <a href="#speed">Speed</a>
+            <a href="#how">How it’s faster</a>
+            <a href="#demo">Demo</a>
+            <a href="#docs">Docs</a>
+          </nav>
+          <a class="btn btn-ghost" href={repo} rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-6xl px-4 sm:px-6">
+      <section class="hero" aria-labelledby="hero">
+        <h1 id="hero" class="hero-title">
+          <span class="hl-top"><a class="hl-link" href="https://assistant-ui.com" rel="noopener" target="_blank" aria-describedby="hl-tip">assistant-ui</a>, rewritten in <span class="nowrap"><img class="rust-inline" src="/rust-logo-white-outline.svg" width="40" height="40" alt="" />Rust</span></span><span class="hl-tip" id="hl-tip" role="tooltip">The frontend library for AI agents</span>
+          <span class="hl-rest" data-crash><span class="hl-seg"><span data-crash-word>opens</span></span> <span class="hl-seg"><span class="num" data-crash-word data-crash-source><span data-bench="open-1000.ratio-whole">{ratioWhole(headline.open)}</span>×</span> <span data-crash-word>faster</span></span> <span class="hl-seg"><span data-crash-word>and</span> <span data-crash-word>uses</span></span> <span class="hl-seg"><span class="num" data-crash-word><span data-bench="memory-1000.ratio-whole">{ratioWhole(headline.memory)}</span>×</span> <span data-crash-word>less</span> <span data-crash-word>memory</span></span> <span class="hl-seg"><span data-crash-word>than</span> <span data-crash-word>the</span> <span data-crash-word>React</span> <span data-crash-word>original.</span></span></span>
+        </h1>
+        <p class="hero-sub">Stalls while streaming are <span data-bench="stall-1000.ratio-whole">{ratioWhole(headline.stall)}</span>× shorter on a <span class="nowrap">1,000-message thread</span>. Try it with <span class="num-shimmer">{tenThousand.map((c, i) => <i style={`--i:${i}`}>{c}</i>)}</span> messages in your browser.</p>
+        <p class="hero-actions">
+          <a class="btn btn-demo" href="#demo" aria-label="Try it with 10,000 messages">
+            <img src="/thumb-demo.webp" width="224" height="128" alt="" />
+            <span>Try it with <span class="num-shimmer">{tenThousand.map((c, i) => <i style={`--i:${i}`}>{c}</i>)}</span> messages</span>
+          </a>
+          <a class="btn btn-demo" href={repo} aria-label="Source on GitHub">
+            <img src="/thumb-source.webp" width="224" height="128" alt="" />
+            <span>Source on GitHub</span>
+          </a>
+        </p>
+        <p class="hero-method">Measured against the published <code>@assistant-ui/react</code> 0.15, same history and same streamed reply, median of 3 interleaved runs. <a href="#speed">See the numbers and the method</a>.</p>
+        <div class="screens">
+          <div class="screens-track">
+            <a class="screen" href="#demo" aria-label="Open the live demo: a 10,000-message thread, running below">
+              <img src="/demo-preview.webp" width="1760" height="1102" alt="The chat UI: a sidebar of threads and a 10,000-message conversation opened at its first message." decoding="async" />
+            </a>
+            <a class="screen screen-results" href="#speed" aria-label="See the benchmark results against the React original">
+              <div aria-hidden="true">
+                <p class="screen-title">Rust against the React original</p>
+                <div class="results-grid">
+                  {speed.map(({ c, verb }) => (
+                    <figure class="m-0">
+                      <figcaption class="screen-metric">{c.title}</figcaption>
+                      <Fragment set:html={barChart(c, verb)} />
+                    </figure>
+                  ))}
+                </div>
+                <p class="screen-note">Median of 3 interleaved runs against <code>@assistant-ui/react</code> 0.15, 1000-message thread.</p>
+              </div>
+            </a>
+          </div>
+        </div>
+        <ul class="hero-facts" aria-label="What it is">
+          <li><strong>Rust</strong> core, one process, no DOM</li>
+          <li><strong>Same protocols</strong> as assistant-ui backends</li>
+          <li><strong>Native and WebAssembly</strong> from one codebase</li>
+        </ul>
+      </section>
+
+      <section id="demo" aria-labelledby="demo-h">
+        <h2 id="demo-h" class="text-3xl sm:text-4xl font-bold tracking-tight max-w-3xl">10,000 messages. Real Rust.</h2>
+        <div class="demo-run">
+          <div class="demo-sticky">
+            <div class="demo-slot">
+              <div class="demo-frame">
+                <canvas id="canvas" tabindex="0" aria-label="Assistant thread running as WebAssembly"></canvas>
+                <div class="demo-cover" id="demo-cover">
+                  <div class="demo-spinner" aria-hidden="true"></div>
+                  <p class="demo-status" id="demo-status" role="status" aria-live="polite">Loading the demo…</p>
+                  <p class="demo-status-sub" id="demo-status-sub">Downloading 9.2 MiB of WebAssembly — the thread, history and spinner keep the page alive while it loads</p>
+                </div>
+                <div class="demo-ordinal" id="demo-ordinal" aria-hidden="true">
+                  <span class="demo-ordinal-value" id="demo-ordinal-value">1</span>
+                  <span class="demo-ordinal-total" id="demo-ordinal-total">of 10,000 messages</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="demo-note text-sm" style="color: var(--muted)">The real app, compiled to WebAssembly, starts loading as you arrive{web['wasm-gzip'] && web['wasm-raw'] ? ': ' : '.'}{web['wasm-gzip'] && web['wasm-raw'] ? (<><span data-bench="web.wasm-raw">{web['wasm-raw'].value}</span> MiB, <span data-bench="web.wasm-gzip">{web['wasm-gzip'].value}</span> MiB gzipped.</>) : ''} The model is built in; the 10,000-message history and every sidebar thread are generated in your browser, so each run is different text, never one message repeated.</p>
+      </section>
+
+      <section id="speed" class="pb-20" aria-labelledby="speed-h">
+        <h2 id="speed-h" class="text-3xl sm:text-4xl font-bold tracking-tight max-w-3xl">Performance on long threads</h2>
+        <p class="mt-4 text-lg max-w-3xl" style="color: var(--muted)">Measured on a 1,000-message thread with one streamed reply, comparing AI UI in Rust (this repository) against <code>@assistant-ui/react</code> 0.15.<sup><a href="#speed-fn">1</a></sup></p>
+        <div class="speed-grid mt-10">
+          <article class="speed-cell">
+            <div class="flex items-baseline justify-between gap-4">
+              <h3 class="text-xl font-semibold">Thread open time</h3>
+              <span class="text-sm" style="color: var(--muted)">lower is better</span>
+            </div>
+            <figure class="mt-5 m-0">
+              <Fragment set:html={barChart(comparison('open-1000'), 'faster')} />
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Time from navigation until the thread is fully rendered and scrollable.</figcaption>
+            </figure>
+          </article>
+          <article class="speed-cell">
+            <div class="flex items-baseline justify-between gap-4">
+              <h3 class="text-xl font-semibold">Memory at end of stream</h3>
+              <span class="text-sm" style="color: var(--muted)">lower is better</span>
+            </div>
+            <figure class="mt-5 m-0">
+              <Fragment set:html={barChart(comparison('memory-1000'), 'less memory')} />
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Resident memory summed across all Chromium processes, measured at the end of a 60 s stream.</figcaption>
+            </figure>
+          </article>
+          <article class="speed-cell">
+            <div class="flex items-baseline justify-between gap-4">
+              <h3 class="text-xl font-semibold">Longest main-thread stall while streaming</h3>
+              <span class="text-sm" style="color: var(--muted)">lower is better</span>
+            </div>
+            <figure class="mt-5 m-0">
+              <Fragment set:html={barChart(comparison('stall-1000'), 'shorter')} />
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Longest gap between frames during a 60 s stream. Input events can’t be processed during a stall.</figcaption>
+            </figure>
+          </article>
+          <article class="speed-cell">
+            <div class="flex items-baseline justify-between gap-4">
+              <h3 class="text-xl font-semibold">CPU time during streaming</h3>
+              <span class="text-sm" style="color: var(--muted)">lower is better</span>
+            </div>
+            <figure class="mt-5 m-0">
+              <Fragment set:html={barChart(comparison('cpu-1000'), 'less CPU')} />
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">User and system CPU time across the whole process tree over a 60 s stream. Values above 60 s mean more than one core was in use.</figcaption>
+            </figure>
+          </article>
+        </div>
+        <p id="speed-fn" class="mt-8 text-sm max-w-3xl" style="color: var(--muted)"><sup>1</sup> Headless Chromium on a shared 12-core Linux machine under load (load average 10&ndash;21). Median of 3 interleaved runs, with a 9 KB prompt. Ratios are rounded down. Results depend on hardware, browser, thread content and configuration, so absolute timings will vary. Benchmark code and the full method: <a class="underline" href="https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/benchmarks/react-baseline">react-baseline</a>. Reproduce with <code>./compare.sh</code> in that folder; its README lists the arguments.</p>
+        <p class="mt-3 text-sm max-w-3xl" style="color: var(--muted)">assistant-ui is MIT-licensed, &copy; AgentbaseAI Inc. This project is an independent port and isn&rsquo;t affiliated with or endorsed by the assistant-ui or Vercel AI SDK projects. Port status: <a class="underline" href={`${docs}/STATUS.md`}>what is and isn&rsquo;t ported</a>.</p>
+      </section>
+
+      <section id="what" class="pb-20" aria-labelledby="what-h">
+        <h2 id="what-h" class="text-3xl sm:text-4xl font-bold tracking-tight max-w-3xl">What your users actually feel.</h2>
+        <div class="acc mt-10" data-accordion>
+            <div class="acc-item is-open" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="true" aria-controls="what-1-panel" id="what-1-trigger">
+                  <span>Big threads open instantly</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="what-1-panel" role="region" aria-labelledby="what-1-trigger">
+                <div class="acc-inner">
+                  <p>Both UIs show you the newest messages right away. The difference is what happens off-screen. The React version still keeps and re-renders every older message with it — all of them in the DOM and all of them parsed. Ours doesn't. The thread keeps only the newest window on screen, and anything older is paged in only if you scroll back to it. So the whole app stays fast even as the conversation gets longer.</p>
+                </div>
+              </div>
+            </div>
+            <div class="acc-item" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="false" aria-controls="what-2-panel" id="what-2-trigger">
+                  <span>Streaming without stutter</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="what-2-panel" role="region" aria-labelledby="what-2-trigger">
+                <div class="acc-inner">
+                  <p>An answer is arriving word by word. You're still scrolling, typing, and you can hit Cancel any time — the UI never freezes just because the stream is fast. Think of it like a train that stops at every platform: the stream yields between batches so input and painting always get a turn. And when something does stall, it's a brief flicker, not a multi-hundred-millisecond freeze.</p>
+                </div>
+              </div>
+            </div>
+            <div class="acc-item" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="false" aria-controls="what-3-panel" id="what-3-trigger">
+                  <span>Memory that stays small</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="what-3-panel" role="region" aria-labelledby="what-3-trigger">
+                <div class="acc-inner">
+                  <p>Long chats don't balloon. Unchanged messages are shared instead of copied — one copy in memory, many references to it — and when a message is replaced its old memory is freed right away. Your laptop stays snappy, background tabs don't get killed, and switching back to a thread you left hours ago is instant — not a reload.</p>
+                </div>
+              </div>
+            </div>
+            <div class="acc-item" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="false" aria-controls="what-4-panel" id="what-4-trigger">
+                  <span>Fewer CPU cycles, cooler laptops</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="what-4-panel" role="region" aria-labelledby="what-4-trigger">
+                <div class="acc-inner">
+                  <p>Same stream, way less actual work. The React version burns roughly a whole core's worth of CPU for the full minute — that's why your fan kicks up and the battery drains. Ours does the same streaming with about a quarter of that work, so your laptop fan stays quiet, the battery lasts longer, and the app doesn't heat up while you watch a long answer come in.</p>
+                </div>
+              </div>
+            </div>
+        </div>
+      </section>
+
+      <section id="how" class="pb-20" aria-labelledby="how-h">
+        <h2 id="how-h" class="text-3xl sm:text-4xl font-bold tracking-tight max-w-3xl">Four design decisions, no tricks.</h2>
+        <p class="mt-4 max-w-3xl text-base" style="color: var(--muted)">No secret sauce — just four boring, measurable choices. Each one is a few hundred lines, tested, and listed in the <a class="underline" href={`${docs}/PERFORMANCE.md`}>performance record</a> with what we tried and rejected.</p>
+        <div class="acc mt-10" data-accordion>
+            <div class="acc-item is-open" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="true" aria-controls="how-1-panel" id="how-1-trigger">
+                  <span>It redraws only what changed</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="how-1-panel" role="region" aria-labelledby="how-1-trigger">
+                <div class="acc-inner">
+                  <p>Most chat UIs re-check the whole thread on every new word. Ours doesn't — we track <em>which</em> rows changed (just row numbers, capped at 64) and each view remembers where it left off ("I've seen up to here"). On each token we patch only those rows, reading them one by one instead of cloning the whole list. If you switch branches or edit history, we start over once — always correct, just slower for that one change.</p>
+                </div>
+              </div>
+            </div>
+            <div class="acc-item" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="false" aria-controls="how-2-panel" id="how-2-trigger">
+                  <span>Streams yield to the UI</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="how-2-panel" role="region" aria-labelledby="how-2-trigger">
+                <div class="acc-inner">
+                  <p>We never let the stream monopolize the loop: we fold bytes in small batches (at most 64 slices), then yield — heartbeats count too. And we coalesce: many chunks arriving together become one update, not one per chunk. The UI always gets a chance to paint between batches.</p>
+                </div>
+              </div>
+            </div>
+            <div class="acc-item" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="false" aria-controls="how-3-panel" id="how-3-trigger">
+                  <span>Markdown leaves the main thread</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="how-3-panel" role="region" aria-labelledby="how-3-trigger">
+                <div class="acc-inner">
+                  <p>Turning <code>**bold**</code> and tables into pixels is expensive. We split a message once into settled blocks plus a live tail: each settled block is formatted once and cached forever, and only the last few paragraphs get re-formatted as they stream. On native builds the formatting runs on a worker pool, so the UI thread stays free. In the browser it runs inline — but the same "format once, cache forever" rule keeps cost flat.</p>
+                </div>
+              </div>
+            </div>
+            <div class="acc-item" data-acc-item>
+              <h3 class="acc-h">
+                <button class="acc-trigger" type="button" aria-expanded="false" aria-controls="how-4-panel" id="how-4-trigger">
+                  <span>Native code, no DOM</span>
+                  <span class="acc-icon" aria-hidden="true"></span>
+                </button>
+              </h3>
+              <div class="acc-panel" id="how-4-panel" role="region" aria-labelledby="how-4-trigger">
+                <div class="acc-inner">
+                  <p>We don't keep a web page inside the app. Slint draws the thread itself — as a native window on desktop, or on a canvas in the browser via WebAssembly. No DOM nodes to keep alive, no JavaScript engine in the native case, no framework re-flowing the whole tree on every update. The core has no I/O or UI dependencies, so the same code compiles for <code>wasm32</code> unchanged — and the WebAssembly demo you can try below is a 2.8&nbsp;MiB download.</p>
+                </div>
+              </div>
+            </div>
+        </div>
+        <p class="mt-6 text-sm max-w-3xl" style="color: var(--muted)">The full list of changes, with the rejected approaches and their measurements, is in the <a class="underline" href={`${docs}/PERFORMANCE.md`}>performance record</a>.</p>
+      </section>
+
+      <section id="compat" class="pb-20" aria-labelledby="compat-h">
+        <h2 id="compat-h" class="text-3xl sm:text-4xl font-bold tracking-tight max-w-3xl">Same protocols. Your backend doesn't change.</h2>
+        <ul class="mt-10 grid gap-5 sm:grid-cols-3 list-none p-0 m-0">
+          <li class="card" style="color: var(--muted)"><strong class="block text-lg" style="color: var(--ink)">Upstream message shape</strong>Message model, branching and tool calls follow assistant-ui's JSON.</li>
+          <li class="card" style="color: var(--muted)"><strong class="block text-lg" style="color: var(--ink)">Streaming formats</strong>assistant-transport, the legacy data stream and the AI SDK UI message stream.</li>
+          <li class="card" style="color: var(--muted)"><strong class="block text-lg" style="color: var(--ink)">Runs anywhere</strong>The core has no I/O or UI dependencies and builds for WebAssembly.</li>
+        </ul>
+      </section>
+
+      <section id="docs" class="pb-20" aria-labelledby="docs-h">
+        <h2 id="docs-h" class="text-3xl sm:text-4xl font-bold tracking-tight">Read the code, not the marketing.</h2>
+        <ul class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 list-none p-0 m-0">
+          {guides.map((g) => (
+            <li>
+              <a class="underline underline-offset-4 decoration-current/40 hover:decoration-current text-base font-semibold" href={g.href} rel="noopener">{g.title}</a>
+              <p class="mt-2 text-sm" style="color: var(--muted)">{g.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <a class="brand" href="/">
+          <img src="/logo.svg" width="24" height="24" alt="" />
+          <span>AI UI in Rust</span>
+        </a>
+        <p class="text-sm max-w-xl" style="color: var(--muted)">MIT licence. Ported from assistant-ui (MIT, &copy; AgentbaseAI Inc.); not affiliated with the assistant-ui or Vercel AI SDK projects. Slint is used under its own licence terms. Rust and the Rust logo are trademarks of the Rust Foundation, and this project is not affiliated with or endorsed by the Rust Foundation or the Rust Project. The logo is used unmodified, from <a class="underline" href="https://github.com/rust-lang/rust-artwork" rel="noopener">rust-artwork</a>, under <a class="underline" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC BY 4.0</a>; see the <a class="underline" href="https://rustfoundation.org/policy/rust-trademark-policy/" rel="noopener">trademark policy</a>.</p>
+        <nav class="flex gap-5 text-sm" aria-label="Footer">
+          <a href={repo}>GitHub</a>
+          <a href={`${docs}/STATUS.md`}>Docs</a>
+        </nav>
+      </div>
+    </footer>
+    <p class="stage-hint" aria-hidden="true">Scrolling over the demo scrolls the thread. Scroll beside it to carry on.</p>
+    <script src="../scripts/shimmer.ts"></script>
+    <script src="../scripts/accordion.ts"></script>
+    <script src="../scripts/headline-crash.ts"></script>
+    <script src="../scripts/headline-flash.ts"></script>
+    <script src="../scripts/demo.ts"></script>
+    <script src="../scripts/stage.ts"></script>
+    <script src="../scripts/ordinal.ts"></script>
+  </body>
+</html>

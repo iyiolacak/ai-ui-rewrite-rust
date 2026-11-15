@@ -1,0 +1,202 @@
+ 23:00:17 up  3:16,  2 users,  load average: 7.69, 5.21, 4.29
+=== a | --bench 1000 --bench-reply-kb 9 --bench-render | run 1
+  layout + paint per drawn frame: 0-10s 559 frames 1.48 ms, 10-20s 563 frames 1.12 ms, 20-30s 568 frames 0.94 ms, 30-40s 576 frames 0.88 ms, 40-50s 568 frames 1.02 ms, 50-60s 561 frames 2.00 ms
+rss 27.3 MiB, peak 27.3 MiB after opening the thread; rss 30.0 MiB, peak 30.0 MiB at the end; process CPU while streaming 6420 ms
+1000 messages: open (formatted and painted, like for like) 87.9 ms
+1000 messages: history import+first sync 8.8 ms, formatted after 0.08 s; reply streamed in 60.30 s over 26058 iterations
+  app work + layout + software paint per iteration: p50 10.321µs  p95 1.420968ms  p99 2.680488ms  max 10.714357ms  total 6257.3 ms; iterations over 4 ms: 9
+TIME user=6.40 sys=0.15 wall=60.64 maxrss_kb=30020
+=== b | --bench 1000 --bench-reply-kb 9 --bench-render | run 1
+  layout + paint per drawn frame: 0-10s 560 frames 1.33 ms, 10-20s 561 frames 1.01 ms, 20-30s 571 frames 0.95 ms, 30-40s 572 frames 1.03 ms, 40-50s 568 frames 1.10 ms, 50-60s 564 frames 1.99 ms
+rss 27.3 MiB, peak 27.3 MiB after opening the thread; rss 30.1 MiB, peak 30.1 MiB at the end; process CPU while streaming 6200 ms
+1000 messages: open (formatted and painted, like for like) 86.4 ms
+1000 messages: history import+first sync 8.2 ms, formatted after 0.08 s; reply streamed in 60.30 s over 26173 iterations
+  app work + layout + software paint per iteration: p50 9.743µs  p95 1.323276ms  p99 2.697892ms  max 9.846658ms  total 6018.5 ms; iterations over 4 ms: 12
+TIME user=6.18 sys=0.13 wall=60.64 maxrss_kb=30332
+=== b | --bench 1000 --bench-reply-kb 9 --bench-render | run 2
+  layout + paint per drawn frame: 0-10s 561 frames 1.14 ms, 10-20s 562 frames 0.94 ms, 20-30s 572 frames 0.84 ms, 30-40s 576 frames 0.94 ms, 40-50s 567 frames 1.12 ms, 50-60s 560 frames 2.21 ms
+rss 27.5 MiB, peak 27.5 MiB after opening the thread; rss 30.3 MiB, peak 30.3 MiB at the end; process CPU while streaming 6010 ms
+1000 messages: open (formatted and painted, like for like) 89.2 ms
+1000 messages: history import+first sync 8.0 ms, formatted after 0.08 s; reply streamed in 60.30 s over 26281 iterations
+  app work + layout + software paint per iteration: p50 8.305µs  p95 1.246293ms  p99 2.774978ms  max 10.712448ms  total 5835.2 ms; iterations over 4 ms: 12
+TIME user=5.95 sys=0.16 wall=60.64 maxrss_kb=30416
+=== a | --bench 1000 --bench-reply-kb 9 --bench-render | run 2
+  layout + paint per drawn frame: 0-10s 560 frames 1.40 ms, 10-20s 567 frames 1.15 ms, 20-30s 568 frames 1.10 ms, 30-40s 572 frames 0.93 ms, 40-50s 561 frames 1.27 ms, 50-60s 561 frames 2.48 ms
+rss 27.3 MiB, peak 27.3 MiB after opening the thread; rss 30.2 MiB, peak 30.2 MiB at the end; process CPU while streaming 7190 ms
+1000 messages: open (formatted and painted, like for like) 86.9 ms
+1000 messages: history import+first sync 7.6 ms, formatted after 0.08 s; reply streamed in 60.31 s over 25677 iterations
+  app work + layout + software paint per iteration: p50 13.489µs  p95 1.518807ms  p99 3.088583ms  max 9.792397ms  total 7022.4 ms; iterations over 4 ms: 58
+TIME user=7.15 sys=0.15 wall=60.64 maxrss_kb=30364
+=== a | --bench 1000 --bench-reply-kb 9 --bench-render | run 3
+  layout + paint per drawn frame: 0-10s 561 frames 1.42 ms, 10-20s 568 frames 1.07 ms, 20-30s 569 frames 0.93 ms, 30-40s 570 frames 0.95 ms, 40-50s 560 frames 1.23 ms, 50-60s 559 frames 2.26 ms, 60-70s 1 frames 2.97 ms
+rss 27.1 MiB, peak 27.1 MiB after opening the thread; rss 29.9 MiB, peak 29.9 MiB at the end; process CPU while streaming 6800 ms
+1000 messages: open (formatted and painted, like for like) 90.6 ms
+1000 messages: history import+first sync 9.2 ms, formatted after 0.08 s; reply streamed in 60.31 s over 25884 iterations
+  app work + layout + software paint per iteration: p50 10.92µs  p95 1.435013ms  p99 2.872631ms  max 11.031285ms  total 6630.1 ms; iterations over 4 ms: 19
+TIME user=6.81 sys=0.14 wall=60.66 maxrss_kb=30056
+=== b | --bench 1000 --bench-reply-kb 9 --bench-render | run 3
+  layout + paint per drawn frame: 0-10s 559 frames 1.27 ms, 10-20s 563 frames 1.03 ms, 20-30s 569 frames 0.99 ms, 30-40s 575 frames 0.96 ms, 40-50s 563 frames 1.31 ms, 50-60s 560 frames 2.24 ms
+rss 27.4 MiB, peak 27.4 MiB after opening the thread; rss 30.1 MiB, peak 30.1 MiB at the end; process CPU while streaming 6440 ms
+1000 messages: open (formatted and painted, like for like) 86.2 ms
+1000 messages: history import+first sync 8.6 ms, formatted after 0.08 s; reply streamed in 60.30 s over 26078 iterations
+  app work + layout + software paint per iteration: p50 9.043µs  p95 1.356001ms  p99 2.8949ms  max 10.220019ms  total 6278.8 ms; iterations over 4 ms: 27
+TIME user=6.43 sys=0.13 wall=60.63 maxrss_kb=30204
+=== b | --bench 1000 --bench-reply-kb 9 --bench-render | run 4
+  layout + paint per drawn frame: 0-10s 558 frames 1.29 ms, 10-20s 562 frames 1.06 ms, 20-30s 568 frames 1.02 ms, 30-40s 573 frames 0.96 ms, 40-50s 565 frames 1.21 ms, 50-60s 559 frames 2.62 ms
+rss 27.4 MiB, peak 27.4 MiB after opening the thread; rss 30.2 MiB, peak 30.2 MiB at the end; process CPU while streaming 6750 ms
+1000 messages: open (formatted and painted, like for like) 87.0 ms
+1000 messages: history import+first sync 8.3 ms, formatted after 0.08 s; reply streamed in 60.30 s over 25924 iterations
+  app work + layout + software paint per iteration: p50 10.523µs  p95 1.403434ms  p99 3.057204ms  max 10.285946ms  total 6583.1 ms; iterations over 4 ms: 67
+TIME user=6.72 sys=0.15 wall=60.63 maxrss_kb=30208
+=== a | --bench 1000 --bench-reply-kb 9 --bench-render | run 4
+  layout + paint per drawn frame: 0-10s 558 frames 1.31 ms, 10-20s 566 frames 1.04 ms, 20-30s 570 frames 0.95 ms, 30-40s 569 frames 0.98 ms, 40-50s 557 frames 1.46 ms, 50-60s 561 frames 2.54 ms
+rss 27.3 MiB, peak 27.3 MiB after opening the thread; rss 30.1 MiB, peak 30.1 MiB at the end; process CPU while streaming 7060 ms
+1000 messages: open (formatted and painted, like for like) 88.4 ms
+1000 messages: history import+first sync 8.4 ms, formatted after 0.08 s; reply streamed in 60.31 s over 25727 iterations
+  app work + layout + software paint per iteration: p50 11.037µs  p95 1.451281ms  p99 3.119845ms  max 10.440276ms  total 6928.6 ms; iterations over 4 ms: 76
+TIME user=7.06 sys=0.13 wall=60.64 maxrss_kb=30296
+=== a | --bench 1000 --bench-reply-kb 9 --bench-render | run 5
+  layout + paint per drawn frame: 0-10s 560 frames 1.37 ms, 10-20s 563 frames 1.00 ms, 20-30s 571 frames 0.91 ms, 30-40s 573 frames 0.93 ms, 40-50s 565 frames 1.14 ms, 50-60s 558 frames 2.19 ms
+rss 27.3 MiB, peak 27.3 MiB after opening the thread; rss 30.1 MiB, peak 30.1 MiB at the end; process CPU while streaming 6370 ms
+1000 messages: open (formatted and painted, like for like) 92.3 ms
+1000 messages: history import+first sync 12.4 ms, formatted after 0.08 s; reply streamed in 60.30 s over 26116 iterations
+  app work + layout + software paint per iteration: p50 8.532µs  p95 1.318932ms  p99 2.816247ms  max 12.776138ms  total 6216.9 ms; iterations over 4 ms: 15
+TIME user=6.35 sys=0.16 wall=60.65 maxrss_kb=30208
+=== b | --bench 1000 --bench-reply-kb 9 --bench-render | run 5
+  layout + paint per drawn frame: 0-10s 559 frames 1.26 ms, 10-20s 564 frames 0.99 ms, 20-30s 567 frames 0.98 ms, 30-40s 570 frames 1.06 ms, 40-50s 565 frames 1.21 ms, 50-60s 559 frames 2.22 ms
+rss 27.4 MiB, peak 27.4 MiB after opening the thread; rss 30.1 MiB, peak 30.1 MiB at the end; process CPU while streaming 6370 ms
+1000 messages: open (formatted and painted, like for like) 87.4 ms
+1000 messages: history import+first sync 8.3 ms, formatted after 0.08 s; reply streamed in 60.30 s over 26115 iterations
+  app work + layout + software paint per iteration: p50 8.751µs  p95 1.326495ms  p99 2.867651ms  max 10.696089ms  total 6192.9 ms; iterations over 4 ms: 26
+TIME user=6.34 sys=0.13 wall=60.64 maxrss_kb=30244
+=== a | --bench 1000 --bench-reply-kb 9 | run 1
+rss 23.0 MiB, peak 23.0 MiB after opening the thread; rss 25.7 MiB, peak 25.7 MiB at the end; process CPU while streaming 1340 ms
+1000 messages: open (formatted and painted, like for like) 85.1 ms
+1000 messages: history import+first sync 8.1 ms, formatted after 0.08 s; reply streamed in 60.30 s over 28587 iterations
+  app work per iteration: p50 5.575µs  p95 191.087µs  p99 297.519µs  max 878.996µs  total 1061.9 ms; iterations over 4 ms: 0
+TIME user=1.28 sys=0.16 wall=60.63 maxrss_kb=25708
+=== b | --bench 1000 --bench-reply-kb 9 | run 1
+rss 23.2 MiB, peak 23.2 MiB after opening the thread; rss 25.9 MiB, peak 25.9 MiB at the end; process CPU while streaming 950 ms
+1000 messages: open (formatted and painted, like for like) 83.2 ms
+1000 messages: history import+first sync 8.1 ms, formatted after 0.08 s; reply streamed in 60.30 s over 28782 iterations
+  app work per iteration: p50 4.618µs  p95 105.434µs  p99 160.071µs  max 852.457µs  total 703.3 ms; iterations over 4 ms: 0
+TIME user=0.92 sys=0.13 wall=60.63 maxrss_kb=26296
+=== b | --bench 1000 --bench-reply-kb 9 | run 2
+rss 23.1 MiB, peak 23.1 MiB after opening the thread; rss 25.9 MiB, peak 25.9 MiB at the end; process CPU while streaming 1010 ms
+1000 messages: open (formatted and painted, like for like) 81.8 ms
+1000 messages: history import+first sync 7.7 ms, formatted after 0.07 s; reply streamed in 60.30 s over 28747 iterations
+  app work per iteration: p50 3.9µs  p95 119.332µs  p99 214.245µs  max 1.100606ms  total 767.2 ms; iterations over 4 ms: 0
+TIME user=0.96 sys=0.14 wall=60.63 maxrss_kb=25928
+=== a | --bench 1000 --bench-reply-kb 9 | run 2
+rss 22.9 MiB, peak 22.9 MiB after opening the thread; rss 25.5 MiB, peak 25.5 MiB at the end; process CPU while streaming 1480 ms
+1000 messages: open (formatted and painted, like for like) 84.6 ms
+1000 messages: history import+first sync 8.2 ms, formatted after 0.08 s; reply streamed in 60.30 s over 28527 iterations
+  app work per iteration: p50 5.966µs  p95 211.516µs  p99 345.555µs  max 908.768µs  total 1191.7 ms; iterations over 4 ms: 0
+TIME user=1.44 sys=0.15 wall=60.65 maxrss_kb=25380
+=== a | --bench 1000 --bench-reply-kb 9 | run 3
+rss 23.0 MiB, peak 23.0 MiB after opening the thread; rss 25.8 MiB, peak 25.8 MiB at the end; process CPU while streaming 1220 ms
+1000 messages: open (formatted and painted, like for like) 84.2 ms
+1000 messages: history import+first sync 9.1 ms, formatted after 0.08 s; reply streamed in 60.30 s over 28647 iterations
+  app work per iteration: p50 5.076µs  p95 173.401µs  p99 241.335µs  max 683.175µs  total 980.3 ms; iterations over 4 ms: 0
+TIME user=1.21 sys=0.13 wall=60.64 maxrss_kb=25604
+=== b | --bench 1000 --bench-reply-kb 9 | run 3
+rss 23.0 MiB, peak 23.0 MiB after opening the thread; rss 25.6 MiB, peak 25.6 MiB at the end; process CPU while streaming 950 ms
+1000 messages: open (formatted and painted, like for like) 82.3 ms
+1000 messages: history import+first sync 7.5 ms, formatted after 0.07 s; reply streamed in 60.30 s over 28771 iterations
+  app work per iteration: p50 4.39µs  p95 109.01µs  p99 167.239µs  max 649.411µs  total 704.5 ms; iterations over 4 ms: 0
+TIME user=0.94 sys=0.12 wall=60.64 maxrss_kb=25684
+=== b | --bench 1000 --bench-reply-kb 9 | run 4
+rss 23.1 MiB, peak 23.1 MiB after opening the thread; rss 25.6 MiB, peak 25.6 MiB at the end; process CPU while streaming 920 ms
+1000 messages: open (formatted and painted, like for like) 81.8 ms
+1000 messages: history import+first sync 7.9 ms, formatted after 0.07 s; reply streamed in 60.30 s over 28783 iterations
+  app work per iteration: p50 3.638µs  p95 107.887µs  p99 170.791µs  max 594.018µs  total 685.5 ms; iterations over 4 ms: 0
+TIME user=0.89 sys=0.13 wall=60.63 maxrss_kb=25636
+=== a | --bench 1000 --bench-reply-kb 9 | run 4
+rss 22.7 MiB, peak 22.7 MiB after opening the thread; rss 25.5 MiB, peak 25.5 MiB at the end; process CPU while streaming 1090 ms
+1000 messages: open (formatted and painted, like for like) 84.5 ms
+1000 messages: history import+first sync 8.1 ms, formatted after 0.08 s; reply streamed in 60.30 s over 28709 iterations
+  app work per iteration: p50 3.856µs  p95 151.254µs  p99 217.547µs  max 641.178µs  total 853.2 ms; iterations over 4 ms: 0
+TIME user=1.05 sys=0.14 wall=60.64 maxrss_kb=25620
+=== a | --bench 1000 --bench-reply-kb 9 | run 5
+rss 22.9 MiB, peak 22.9 MiB after opening the thread; rss 25.7 MiB, peak 25.7 MiB at the end; process CPU while streaming 1000 ms
+1000 messages: open (formatted and painted, like for like) 84.1 ms
+1000 messages: history import+first sync 7.3 ms, formatted after 0.08 s; reply streamed in 60.30 s over 28748 iterations
+  app work per iteration: p50 3.109µs  p95 139.291µs  p99 197.565µs  max 762.639µs  total 777.9 ms; iterations over 4 ms: 0
+TIME user=0.96 sys=0.15 wall=60.64 maxrss_kb=25712
+=== b | --bench 1000 --bench-reply-kb 9 | run 5
+rss 23.1 MiB, peak 23.1 MiB after opening the thread; rss 25.7 MiB, peak 25.7 MiB at the end; process CPU while streaming 830 ms
+1000 messages: open (formatted and painted, like for like) 82.7 ms
+1000 messages: history import+first sync 8.2 ms, formatted after 0.07 s; reply streamed in 60.30 s over 28839 iterations
+  app work per iteration: p50 3.003µs  p95 94.676µs  p99 142.273µs  max 605.221µs  total 602.5 ms; iterations over 4 ms: 0
+TIME user=0.79 sys=0.13 wall=60.63 maxrss_kb=25568
+=== a | --bench 200 --bench-reply-kb 40 --bench-render | run 1
+  layout + paint per drawn frame: 0-10s 559 frames 1.26 ms, 10-20s 563 frames 0.91 ms, 20-30s 565 frames 0.83 ms, 30-40s 562 frames 0.83 ms, 40-50s 566 frames 0.84 ms, 50-60s 566 frames 0.84 ms, 60-70s 1 frames 0.74 ms
+rss 21.4 MiB, peak 21.4 MiB after opening the thread; rss 24.5 MiB, peak 24.5 MiB at the end; process CPU while streaming 6340 ms
+200 messages: open (formatted and painted, like for like) 31.4 ms
+200 messages: history import+first sync 1.5 ms, formatted after 0.03 s; reply streamed in 60.30 s over 26086 iterations
+  app work + layout + software paint per iteration: p50 3.391µs  p95 1.298398ms  p99 1.799128ms  max 35.284209ms  total 6259.1 ms; iterations over 4 ms: 8
+TIME user=6.27 sys=0.13 wall=60.57 maxrss_kb=23740
+=== b | --bench 200 --bench-reply-kb 40 --bench-render | run 1
+  layout + paint per drawn frame: 0-10s 559 frames 1.25 ms, 10-20s 564 frames 0.91 ms, 20-30s 567 frames 0.82 ms, 30-40s 561 frames 0.81 ms, 40-50s 568 frames 0.81 ms, 50-60s 566 frames 0.83 ms
+rss 21.8 MiB, peak 21.8 MiB after opening the thread; rss 24.9 MiB, peak 24.9 MiB at the end; process CPU while streaming 6290 ms
+200 messages: open (formatted and painted, like for like) 30.3 ms
+200 messages: history import+first sync 1.6 ms, formatted after 0.03 s; reply streamed in 60.30 s over 26108 iterations
+  app work + layout + software paint per iteration: p50 3.452µs  p95 1.297137ms  p99 2.156452ms  max 35.614025ms  total 6209.9 ms; iterations over 4 ms: 8
+TIME user=6.24 sys=0.11 wall=60.57 maxrss_kb=24776
+=== b | --bench 200 --bench-reply-kb 40 --bench-render | run 2
+  layout + paint per drawn frame: 0-10s 559 frames 1.25 ms, 10-20s 562 frames 0.91 ms, 20-30s 566 frames 0.88 ms, 30-40s 562 frames 0.85 ms, 40-50s 566 frames 0.82 ms, 50-60s 566 frames 0.83 ms
+rss 21.8 MiB, peak 21.8 MiB after opening the thread; rss 24.9 MiB, peak 24.9 MiB at the end; process CPU while streaming 6390 ms
+200 messages: open (formatted and painted, like for like) 31.1 ms
+200 messages: history import+first sync 1.5 ms, formatted after 0.03 s; reply streamed in 60.30 s over 26067 iterations
+  app work + layout + software paint per iteration: p50 3.788µs  p95 1.319409ms  p99 1.941349ms  max 34.18115ms  total 6309.0 ms; iterations over 4 ms: 8
+TIME user=6.33 sys=0.11 wall=60.57 maxrss_kb=24464
+=== a | --bench 200 --bench-reply-kb 40 --bench-render | run 2
+  layout + paint per drawn frame: 0-10s 559 frames 1.26 ms, 10-20s 564 frames 0.91 ms, 20-30s 563 frames 0.85 ms, 30-40s 562 frames 0.84 ms, 40-50s 565 frames 0.83 ms, 50-60s 567 frames 0.84 ms
+rss 21.7 MiB, peak 21.7 MiB after opening the thread; rss 25.0 MiB, peak 25.0 MiB at the end; process CPU while streaming 6380 ms
+200 messages: open (formatted and painted, like for like) 30.6 ms
+200 messages: history import+first sync 1.6 ms, formatted after 0.03 s; reply streamed in 60.30 s over 26069 iterations
+  app work + layout + software paint per iteration: p50 3.552µs  p95 1.299843ms  p99 1.796116ms  max 34.731121ms  total 6291.2 ms; iterations over 4 ms: 8
+TIME user=6.32 sys=0.12 wall=60.57 maxrss_kb=24804
+=== a | --bench 200 --bench-reply-kb 40 --bench-render | run 3
+  layout + paint per drawn frame: 0-10s 559 frames 1.25 ms, 10-20s 564 frames 0.92 ms, 20-30s 565 frames 0.85 ms, 30-40s 561 frames 0.82 ms, 40-50s 567 frames 0.81 ms, 50-60s 566 frames 0.84 ms
+rss 21.7 MiB, peak 21.7 MiB after opening the thread; rss 24.8 MiB, peak 24.8 MiB at the end; process CPU while streaming 6340 ms
+200 messages: open (formatted and painted, like for like) 30.6 ms
+200 messages: history import+first sync 1.4 ms, formatted after 0.03 s; reply streamed in 60.30 s over 26089 iterations
+  app work + layout + software paint per iteration: p50 3.465µs  p95 1.298681ms  p99 1.820466ms  max 34.989496ms  total 6255.1 ms; iterations over 4 ms: 8
+TIME user=6.29 sys=0.11 wall=60.57 maxrss_kb=24368
+=== b | --bench 200 --bench-reply-kb 40 --bench-render | run 3
+  layout + paint per drawn frame: 0-10s 558 frames 1.28 ms, 10-20s 563 frames 0.90 ms, 20-30s 564 frames 0.85 ms, 30-40s 561 frames 1.00 ms, 40-50s 566 frames 1.14 ms, 50-60s 567 frames 1.33 ms
+rss 21.9 MiB, peak 21.9 MiB after opening the thread; rss 25.0 MiB, peak 25.0 MiB at the end; process CPU while streaming 7350 ms
+200 messages: open (formatted and painted, like for like) 31.2 ms
+200 messages: history import+first sync 1.6 ms, formatted after 0.03 s; reply streamed in 60.31 s over 25483 iterations
+  app work + layout + software paint per iteration: p50 8.479µs  p95 1.559947ms  p99 2.287445ms  max 34.848388ms  total 7324.4 ms; iterations over 4 ms: 18
+TIME user=7.28 sys=0.13 wall=60.58 maxrss_kb=24836
+=== b | --bench 200 --bench-reply-kb 40 --bench-render | run 4
+  layout + paint per drawn frame: 0-10s 559 frames 2.22 ms, 10-20s 563 frames 1.48 ms, 20-30s 562 frames 1.36 ms, 30-40s 563 frames 1.32 ms, 40-50s 559 frames 2.42 ms, 50-60s 562 frames 1.59 ms
+rss 22.0 MiB, peak 22.0 MiB after opening the thread; rss 24.9 MiB, peak 24.9 MiB at the end; process CPU while streaming 10340 ms
+200 messages: open (formatted and painted, like for like) 33.6 ms
+200 messages: history import+first sync 3.1 ms, formatted after 0.03 s; reply streamed in 60.31 s over 23312 iterations
+  app work + layout + software paint per iteration: p50 26.652µs  p95 2.195215ms  p99 3.585122ms  max 42.886569ms  total 10894.4 ms; iterations over 4 ms: 165
+TIME user=10.22 sys=0.24 wall=60.62 maxrss_kb=24392
+=== a | --bench 200 --bench-reply-kb 40 --bench-render | run 4
+  layout + paint per drawn frame: 0-10s 563 frames 2.27 ms, 10-20s 567 frames 1.14 ms, 20-30s 567 frames 0.99 ms, 30-40s 564 frames 1.24 ms, 40-50s 561 frames 1.80 ms, 50-60s 563 frames 1.72 ms
+rss 21.7 MiB, peak 21.7 MiB after opening the thread; rss 24.7 MiB, peak 24.7 MiB at the end; process CPU while streaming 9630 ms
+200 messages: open (formatted and painted, like for like) 33.7 ms
+200 messages: history import+first sync 2.7 ms, formatted after 0.03 s; reply streamed in 60.31 s over 24089 iterations
+  app work + layout + software paint per iteration: p50 21.231µs  p95 2.000997ms  p99 2.86596ms  max 54.990314ms  total 9714.6 ms; iterations over 4 ms: 45
+TIME user=9.55 sys=0.21 wall=60.63 maxrss_kb=24436
+=== a | --bench 200 --bench-reply-kb 40 --bench-render | run 5
+  layout + paint per drawn frame: 0-10s 562 frames 2.20 ms, 10-20s 562 frames 1.71 ms, 20-30s 563 frames 1.54 ms, 30-40s 562 frames 1.47 ms, 40-50s 563 frames 1.48 ms, 50-60s 562 frames 1.53 ms
+rss 21.6 MiB, peak 21.6 MiB after opening the thread; rss 24.5 MiB, peak 24.5 MiB at the end; process CPU while streaming 10680 ms
+200 messages: open (formatted and painted, like for like) 35.7 ms
+200 messages: history import+first sync 2.6 ms, formatted after 0.03 s; reply streamed in 60.31 s over 23628 iterations
+  app work + layout + software paint per iteration: p50 34.896µs  p95 2.119706ms  p99 2.847043ms  max 68.97574ms  total 10596.6 ms; iterations over 4 ms: 32
+TIME user=10.55 sys=0.26 wall=60.63 maxrss_kb=24472
+=== b | --bench 200 --bench-reply-kb 40 --bench-render | run 5
+  layout + paint per drawn frame: 0-10s 564 frames 2.11 ms, 10-20s 563 frames 1.70 ms, 20-30s 563 frames 1.58 ms, 30-40s 564 frames 1.21 ms, 40-50s 560 frames 1.26 ms, 50-60s 566 frames 1.14 ms
+rss 21.6 MiB, peak 21.6 MiB after opening the thread; rss 24.5 MiB, peak 24.5 MiB at the end; process CPU while streaming 9670 ms
+200 messages: open (formatted and painted, like for like) 32.9 ms
+200 messages: history import+first sync 1.9 ms, formatted after 0.03 s; reply streamed in 60.30 s over 24185 iterations
+  app work + layout + software paint per iteration: p50 22.429µs  p95 1.924734ms  p99 2.741619ms  max 48.086101ms  total 9624.9 ms; iterations over 4 ms: 31
+TIME user=9.55 sys=0.20 wall=60.59 maxrss_kb=24468
+ 23:36:40 up  3:52,  2 users,  load average: 7.66, 5.89, 4.04

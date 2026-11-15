@@ -1,0 +1,26 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantThreadSelector } from "../ui/components/thread-selector.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+
+component SelectorExamples inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 24px;
+        spacing: 12px;
+        Text { text: "CONVERSATIONS"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        AssistantThreadSelector { model: ["Project planning", "Research notes"]; selected-index: 0; }
+        AssistantThreadSelector { model: ["A longer conversation title that will be truncated"]; selected-index: 0; }
+        AssistantThreadSelector { model: []; placeholder: "No conversations"; }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkSelectors inherits Window {
+    preferred-width: 300px; preferred-height: 210px;
+    SelectorExamples { width: parent.width; height: parent.height; }
+}
+export component LightSelectors inherits Window {
+    preferred-width: 300px; preferred-height: 210px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    SelectorExamples { width: parent.width; height: parent.height; }
+}

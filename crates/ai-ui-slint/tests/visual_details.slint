@@ -1,0 +1,32 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantAttachmentChip } from "../ui/components/attachment-chip.slint";
+import { AssistantSourceCard } from "../ui/components/source-card.slint";
+import { AssistantToolFallback } from "../ui/components/tool-fallback.slint";
+import { AssistantApproval } from "../ui/components/approval.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+
+component Details inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 24px;
+        spacing: 16px;
+        Text { text: "ATTACHMENTS AND SOURCES"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        AssistantAttachmentChip { name: "Composition reference.png"; detail: "1.8 MB · Ready"; removable: true; }
+        AssistantAttachmentChip { name: "A very long filename that should be truncated neatly.pdf"; detail: "Uploading · 60%"; state: uploading; progress: 0.6; removable: true; }
+        AssistantSourceCard { title: "Layout and typography notes"; detail: "Reference document · 12 pages"; }
+        Text { text: "TOOL ACTIVITY"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        AssistantToolFallback { structured: true; arguments: "{\n  \"query\": \"typography references\"\n}"; detail: "Searching your library"; has-result: true; result: "3 references found"; }
+        AssistantApproval { prompt: "Allow this action?"; can-approve: true; can-deny: true; error: "The request could not be submitted."; }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkDetails inherits Window {
+    preferred-width: 420px; preferred-height: 660px;
+    Details { width: parent.width; height: parent.height; }
+}
+export component LightDetails inherits Window {
+    preferred-width: 420px; preferred-height: 660px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    Details { width: parent.width; height: parent.height; }
+}

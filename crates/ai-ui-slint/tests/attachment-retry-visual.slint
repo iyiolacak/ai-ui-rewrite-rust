@@ -1,0 +1,56 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantAttachmentChip, AssistantAttachmentState } from "../ui/components/attachment-chip.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+import { AssistantComposer } from "../ui/components/composer.slint";
+import { AssistantThread } from "../ui/components/thread.slint";
+import { AssistantEditComposer } from "../ui/components/edit-composer.slint";
+import { MessageRole } from "../ui/models.slint";
+
+component RetryDetails inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 20px; spacing: 12px;
+        Text { text: "ATTACHMENTS"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        AssistantAttachmentChip { name: "Composition references and notes.pdf"; detail: "Upload failed"; state: AssistantAttachmentState.failed; retryable: true; removable: true; }
+        AssistantAttachmentChip { name: "Pending reconciliation.mov"; detail: "Outcome unknown"; state: AssistantAttachmentState.failed; removable: true; }
+        AssistantAttachmentChip { name: "Preview.png"; state: AssistantAttachmentState.uploading; progress: 0.6; retryable: true; removable: true; }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkRetryDetails inherits Window {
+    preferred-width: 320px; preferred-height: 220px;
+    RetryDetails { width: parent.width; height: parent.height; }
+}
+export component LightRetryDetails inherits Window {
+    preferred-width: 280px; preferred-height: 220px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    RetryDetails { width: parent.width; height: parent.height; }
+}
+export component ComposerRetryFixture inherits Window {
+    preferred-width: 320px; preferred-height: 240px; background: AssistantTheme.background;
+    AssistantComposer {
+        x: 20px; y: 20px; width: 280px;
+        can-retry-attachment: true;
+        attachment-scope: "draft-a";
+        attachments: [{ id: "file-a", name: "A very long document title for retry.pdf", detail: "Upload failed", state: AssistantAttachmentState.failed, removable: true, retryable: true }];
+    }
+}
+export component ThreadRetryFixture inherits Window {
+    preferred-width: 400px; preferred-height: 240px; background: AssistantTheme.background;
+    AssistantThread {
+        width: parent.width; height: parent.height;
+        messages: [{ id: "message-a", branch-token: "branch-a", role: MessageRole.user }];
+        edit-token: "edit-a"; edit-branch-token: "branch-a"; edit-draft: "Draft";
+        edit-attachments-enabled: true; can-retry-edit-attachment: true;
+        edit-attachments: [{ id: "file-a", name: "A very long document title for retry.pdf", detail: "Upload failed", state: AssistantAttachmentState.failed, removable: true, retryable: true }];
+    }
+}
+export component EditRetryFixture inherits Window {
+    preferred-width: 320px; preferred-height: 240px; background: AssistantTheme.background;
+    AssistantEditComposer {
+        x: 20px; y: 20px; width: 280px; draft: "Draft";
+        can-retry-attachment: true; can-remove-attachments: false;
+        retained-attachments: [{ id: "file-a", name: "A very long document title for retry.pdf", detail: "Upload failed", state: AssistantAttachmentState.failed, removable: true, retryable: true }];
+    }
+}

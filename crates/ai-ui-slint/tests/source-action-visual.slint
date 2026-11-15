@@ -1,0 +1,21 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantSourceCard } from "../ui/components/source-card.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+component Examples inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 20px; spacing: 12px;
+        Text { text: "SOURCES"; font-family: "Inter"; font-size: 11px; color: AssistantTheme.muted; }
+        AssistantSourceCard { title: "An intentionally long source title that must elide"; detail: "Documentation · example.org"; can-open: true; }
+        AssistantSourceCard { title: "Reference document"; detail: "Retained for this conversation"; }
+        AssistantSourceCard { title: "A source without a subtitle"; can-open: true; }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkSources inherits Window { preferred-width: 320px; preferred-height: 250px; Examples { } }
+export component LightSources inherits Window {
+    preferred-width: 320px; preferred-height: 250px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    Examples { }
+}

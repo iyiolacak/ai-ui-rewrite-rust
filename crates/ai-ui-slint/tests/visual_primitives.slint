@@ -1,0 +1,45 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantButton, AssistantButtonVariant, AssistantButtonSize } from "../ui/components/button.slint";
+import { AssistantIconButton } from "../ui/components/icon-button.slint";
+import { AssistantDisclosureButton } from "../ui/components/disclosure-button.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+
+component Controls inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 24px;
+        spacing: 18px;
+        Text { text: "BUTTONS"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        HorizontalLayout {
+            spacing: 10px;
+            AssistantButton { label: "Continue"; variant: AssistantButtonVariant.primary; }
+            AssistantButton { label: "Cancel"; variant: AssistantButtonVariant.outline; }
+            AssistantButton { label: "Secondary"; variant: AssistantButtonVariant.secondary; }
+            AssistantButton { label: "Ghost"; variant: AssistantButtonVariant.ghost; }
+            AssistantButton { label: "Disabled"; enabled: false; }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            AssistantButton { label: "Small"; size: AssistantButtonSize.small; }
+            AssistantIconButton { label: "Add"; icon: @image-url("../ui/assets/plus.svg"); }
+            AssistantIconButton { label: "Back"; icon: @image-url("../ui/assets/chevron-left.svg"); bordered: false; control-size: 24px; icon-size: 14px; }
+            AssistantIconButton { label: "Unavailable"; icon: @image-url("../ui/assets/plus.svg"); enabled: false; }
+            Rectangle { horizontal-stretch: 1; }
+        }
+        Text { text: "DISCLOSURE"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        AssistantDisclosureButton { label: "Waiting on tool: search"; icon: @image-url("../ui/assets/loader-circle.svg"); }
+        AssistantDisclosureButton { label: "Reasoning"; icon: @image-url("../ui/assets/brain.svg"); expanded: true; }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkControls inherits Window {
+    preferred-width: 640px; preferred-height: 300px;
+    Controls { width: parent.width; height: parent.height; }
+}
+export component LightControls inherits Window {
+    preferred-width: 640px; preferred-height: 300px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    Controls { width: parent.width; height: parent.height; }
+}

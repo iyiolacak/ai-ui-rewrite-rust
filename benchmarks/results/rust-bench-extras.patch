@@ -1,0 +1,169 @@
+diff --git a/benchmarks/react-baseline/bench.mjs b/benchmarks/react-baseline/bench.mjs
+index b1388c2..4ba128a 100644
+--- a/benchmarks/react-baseline/bench.mjs
++++ b/benchmarks/react-baseline/bench.mjs
+@@ -141,7 +141,7 @@ await page.goto("http://127.0.0.1:" + port + "/" +
+ await page.waitForFunction(
+   (n) => document.querySelectorAll("[data-role]").length >= n,
+   HISTORY,
+-  { timeout: 120_000, polling: 50 },
++  { timeout: Number(process.env.OPEN_TIMEOUT_MS ?? 120_000), polling: 50 },
+ );
+ await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+ const openMs = Date.now() - navigated;
+diff --git a/examples/thread/src/bench.rs b/examples/thread/src/bench.rs
+index 68a3089..21e66bf 100644
+--- a/examples/thread/src/bench.rs
++++ b/examples/thread/src/bench.rs
+@@ -11,6 +11,7 @@ use crate::Tasks;
+ use ai_ui_core::{ExportedMessage, ExportedRepository, MessageId, ThreadList, ThreadMessage};
+ use serde::Deserialize;
+ use slint::platform::software_renderer::{MinimalSoftwareWindow, PremultipliedRgbaColor};
++use slint::platform::WindowAdapter as _;
+ use std::rc::Rc;
+ use std::sync::Arc;
+ use std::task::{Context, Waker};
+@@ -157,6 +158,7 @@ pub struct Render {
+     buffer: Vec<PremultipliedRgbaColor>,
+     width: usize,
+     last: Option<Instant>,
++    drew: bool,
+ }
+ 
+ impl Render {
+@@ -166,6 +168,7 @@ impl Render {
+             buffer: vec![PremultipliedRgbaColor::default(); (width * height) as usize],
+             width: width as usize,
+             last: None,
++            drew: false,
+         }
+     }
+     /// Draw now, ignoring the refresh cap: how long layout and paint took.
+@@ -182,10 +185,11 @@ impl Render {
+             return None;
+         }
+         let (buffer, width) = (&mut self.buffer, self.width);
+-        self.window
+-            .draw_if_needed(|renderer| {
+-                renderer.render(buffer, width);
+-            })
++        let drew = self.window.draw_if_needed(|renderer| {
++            renderer.render(buffer, width);
++        });
++        self.drew = drew;
++        drew
+             .then(|| {
+                 self.last = Some(start);
+                 start.elapsed()
+@@ -305,6 +309,49 @@ pub fn run(
+         );
+         return Ok(());
+     }
++    if let (Ok(n), Some(r)) = (std::env::var("AI_UI_BENCH_SCROLL"), render.as_mut()) {
++        use slint::platform::WindowEvent;
++        let n: usize = n.parse().unwrap_or(600);
++        let notch: f32 = std::env::var("AI_UI_BENCH_SCROLL_PX").ok().and_then(|v| v.parse().ok()).unwrap_or(400.0);
++        let pos = slint::LogicalPosition::new(450.0, 400.0);
++        r.window.dispatch_event(WindowEvent::PointerMoved { position: pos });
++        r.force();
++        let mut work: Vec<Duration> = Vec::new();
++        let mut drawn_frames = 0;
++        let begin = Instant::now();
++        for i in 0..n {
++            let due = begin + REFRESH * (i as u32);
++            while Instant::now() < due {
++                std::thread::sleep(Duration::from_micros(300));
++            }
++            let t = Instant::now();
++            r.window.dispatch_event(WindowEvent::PointerScrolled { position: pos, delta_x: 0.0, delta_y: notch });
++            slint::platform::update_timers_and_animations();
++            tasks.run();
++            r.force();
++            if r.drew {
++                drawn_frames += 1;
++            }
++            work.push(t.elapsed());
++        }
++        let mut sw = work.clone();
++        sw.sort();
++        println!(
++            "SCROLL {messages} messages: {n} notches of {notch} px, one per 16.7 ms; frames {drawn_frames}; scroll-event + update + layout + software paint per frame p50 {:.2} ms p95 {:.2} ms p99 {:.2} ms max {:.2} ms; frames over 16.7 ms: {}; {}",
++            percentile(&sw, 0.5).as_secs_f64() * 1e3,
++            percentile(&sw, 0.95).as_secs_f64() * 1e3,
++            percentile(&sw, 0.99).as_secs_f64() * 1e3,
++            sw.last().copied().unwrap_or_default().as_secs_f64() * 1e3,
++            sw.iter().filter(|d| **d > REFRESH).count(),
++            memory()
++        );
++        if let Ok(path) = std::env::var("AI_UI_BENCH_PNG") {
++            let _ = crate::shot::save_now(r.window.window(), &path);
++        }
++        if std::env::var("AI_UI_BENCH_SCROLL_ONLY").is_ok() {
++            return Ok(());
++        }
++    }
+     // The demo model quotes the prompt in its reply, so a long prompt of
+     // paragraphs makes a long reply.
+     let prompt = if reply_kb == 0 {
+@@ -322,12 +369,37 @@ pub fn run(
+     let mut buckets: Vec<(u32, Duration)> = Vec::new();
+     let cpu_before = cpu_ms();
+     let started = Instant::now();
+-    while started.elapsed() < Duration::from_secs(60) {
++    let window_s: u64 = std::env::var("AI_UI_BENCH_WINDOW_S").ok().and_then(|v| v.parse().ok()).unwrap_or(60);
++    let typing = std::env::var("AI_UI_BENCH_TYPE").is_ok();
++    let mut next_sample = 5u64;
++    let mut keys_sent = 0u32;
++    let mut pending_key: Option<Instant> = None;
++    let mut key_latency: Vec<Duration> = Vec::new();
++    while started.elapsed() < Duration::from_secs(window_s) {
+         let t = Instant::now();
++        if started.elapsed().as_secs() >= next_sample && std::env::var("AI_UI_BENCH_SAMPLES").is_ok() {
++            println!("SAMPLE t={}s cpu_ms={:.0} {}", next_sample, cpu_ms() - cpu_before, memory());
++            next_sample += 5;
++        }
++        if typing && pending_key.is_none() && keys_sent < 100 {
++            let due = Duration::from_secs(5) + Duration::from_millis(150 * u64::from(keys_sent));
++            if started.elapsed() >= due {
++                if let Some(r) = render.as_ref() {
++                    use slint::platform::WindowEvent;
++                    pending_key = Some(Instant::now());
++                    r.window.dispatch_event(WindowEvent::KeyPressed { text: "x".into() });
++                    r.window.dispatch_event(WindowEvent::KeyReleased { text: "x".into() });
++                    keys_sent += 1;
++                }
++            }
++        }
+         slint::platform::update_timers_and_animations();
+         tasks.run();
+         let done = run.as_mut().poll(&mut cx).is_ready();
+         if let Some(drawn) = frame(&mut render) {
++            if let Some(k) = pending_key.take() {
++                key_latency.push(k.elapsed());
++            }
+             let bucket = (started.elapsed().as_secs() / 10) as usize;
+             if buckets.len() <= bucket {
+                 buckets.resize(bucket + 1, (0, Duration::ZERO));
+@@ -342,6 +414,22 @@ pub fn run(
+         std::thread::sleep(Duration::from_millis(2));
+     }
+     let cpu_stream = cpu_ms() - cpu_before;
++    if typing {
++        let mut k = key_latency.clone();
++        k.sort();
++        println!(
++            "KEYS sent {} painted {} key-to-paint p50 {:.2} ms p95 {:.2} ms max {:.2} ms all_ms {:?}",
++            keys_sent,
++            k.len(),
++            percentile(&k, 0.5).as_secs_f64() * 1e3,
++            percentile(&k, 0.95).as_secs_f64() * 1e3,
++            k.last().copied().unwrap_or_default().as_secs_f64() * 1e3,
++            key_latency.iter().map(|d| (d.as_secs_f64() * 1e4).round() / 10.0).collect::<Vec<_>>()
++        );
++        if let (Some(r), Ok(path)) = (render.as_ref(), std::env::var("AI_UI_BENCH_PNG")) {
++            let _ = crate::shot::save_now(r.window.window(), &path);
++        }
++    }
+     if !buckets.is_empty() {
+         let line: Vec<String> = buckets
+             .iter()

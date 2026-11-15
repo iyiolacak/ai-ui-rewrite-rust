@@ -1,0 +1,25 @@
+import { AssistantTheme } from "../theme.slint";
+
+// Long text as consecutive chunks (see `ChatPart.body-chunks`). Each chunk's
+// height is a property, so the layout reads cached values and a change to one
+// chunk re-measures only that chunk instead of the whole text.
+export component AssistantChunkedText inherits VerticalLayout {
+    in property <[string]> chunks;
+    in property <color> color: AssistantTheme.text;
+    in property <length> font-size: 16px * AssistantTheme.text-scale;
+    in property <float> line-height-factor: 1.25;
+    for chunk in root.chunks: Rectangle {
+        height: measured;
+        property <length> measured: chunk-text.preferred-height;
+        chunk-text := Text {
+            width: parent.width;
+            height: parent.height;
+            text: chunk;
+            color: root.color;
+            font-family: "Inter";
+            font-size: root.font-size;
+            line-height-factor: root.line-height-factor;
+            wrap: word-wrap;
+        }
+    }
+}

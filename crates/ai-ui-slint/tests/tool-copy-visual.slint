@@ -1,0 +1,36 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantToolFallback } from "../ui/components/tool-fallback.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+
+component ToolPreview inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 20px; spacing: 8px;
+        Text { text: "TOOL ACTIVITY"; color: AssistantTheme.muted; font-family: "Inter"; font-size: 11px; }
+        AssistantToolFallback {
+            structured: true;
+            arguments: "{\n  \"query\": \"composition references\"\n}";
+            detail: "Searching your library";
+            has-result: true;
+            result-label: "Result";
+            result: "Three references found";
+            can-copy-arguments: true;
+            can-copy-result: true;
+            conversation-revision: 1;
+            message-id: "message";
+            branch-token: "branch";
+            part-id: "part";
+        }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkToolCopy inherits Window {
+    width: 360px; height: 500px;
+    ToolPreview { width: parent.width; height: parent.height; }
+}
+export component LightToolCopy inherits Window {
+    width: 280px; height: 500px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    ToolPreview { width: parent.width; height: parent.height; }
+}

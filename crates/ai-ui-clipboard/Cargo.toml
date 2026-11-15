@@ -1,0 +1,21 @@
+[package]
+name = "ai-ui-clipboard"
+version = "0.1.0"
+license.workspace = true
+# Set by dependencies (checked in CI with this exact toolchain).
+rust-version = "1.86"
+keywords.workspace = true
+categories.workspace = true
+description = "Clipboard access for assistant-ui apps on native and in the browser, reporting whether a copy worked."
+edition.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[target.'cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))'.dependencies]
+arboard = { version = "3", default-features = false, features = ["wayland-data-control"] }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Navigator", "Window"] }

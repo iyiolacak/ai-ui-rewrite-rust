@@ -1,0 +1,38 @@
+import { MessageFeedback } from "../models.slint";
+import { AssistantIconButton } from "icon-button.slint";
+import { AssistantTheme } from "../theme.slint";
+
+// Controlled by the host: activation requests a choice and does not change state.
+export component AssistantFeedback inherits HorizontalLayout {
+    in property <MessageFeedback> feedback: MessageFeedback.none;
+    in property <bool> enabled: true;
+    out property <bool> has-focus: good.has-focus || bad.has-focus;
+    out property <bool> has-hover: good.has-hover || bad.has-hover;
+    callback submit(MessageFeedback);
+    spacing: 0px;
+    good := AssistantIconButton {
+        icon: @image-url("../assets/thumbs-up.svg");
+        label: "Good response";
+        tooltip: "Good response";
+        control-size: 24px * AssistantTheme.hit-scale; icon-size: 14px * AssistantTheme.text-scale; bordered: false;
+        hit-height: 32px * AssistantTheme.hit-scale;
+        // A 28 px pitch keeps the 4 px gap between 24 px visuals.
+        hit-width: 28px * AssistantTheme.hit-scale;
+        guard-repeat: true;
+        selected: root.feedback == MessageFeedback.positive;
+        enabled: root.enabled;
+        activated => { root.submit(MessageFeedback.positive); }
+    }
+    bad := AssistantIconButton {
+        icon: @image-url("../assets/thumbs-down.svg");
+        label: "Bad response";
+        tooltip: "Bad response";
+        control-size: 24px * AssistantTheme.hit-scale; icon-size: 14px * AssistantTheme.text-scale; bordered: false;
+        hit-height: 32px * AssistantTheme.hit-scale;
+        hit-width: 28px * AssistantTheme.hit-scale;
+        guard-repeat: true;
+        selected: root.feedback == MessageFeedback.negative;
+        enabled: root.enabled;
+        activated => { root.submit(MessageFeedback.negative); }
+    }
+}

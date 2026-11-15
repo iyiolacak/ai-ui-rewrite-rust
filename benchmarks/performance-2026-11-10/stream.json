@@ -1,0 +1,305 @@
+{
+  "method": "Five interleaved pairs; each executable test reports median of nine repetitions; before binary contains corrected IntoIter read harness and new decoder-only benchmark before production optimizations. Same installed Rust stable 1.99.1 release (LTO, codegen-units=1), Linux x86_64. Other agents paused compilation and benchmarks.",
+  "baseline_commit": "54c371fa44ad193b6ae8466d00c0ea0f4e8af50b",
+  "summary": [
+    {
+      "metric": "ui_decode",
+      "reads": "1",
+      "before_ms": 16.654,
+      "after_ms": 12.879,
+      "speedup": 1.2931128193182702,
+      "percent_less_time": 22.66722709259037,
+      "before_samples_ms": [
+        16.932,
+        17.081,
+        16.389,
+        16.415,
+        16.654
+      ],
+      "after_samples_ms": [
+        12.879,
+        13.387,
+        12.378,
+        12.864,
+        12.883
+      ]
+    },
+    {
+      "metric": "transport_decode",
+      "reads": "1",
+      "before_ms": 29.548,
+      "after_ms": 27.776,
+      "speedup": 1.0637960829493087,
+      "percent_less_time": 5.9970217950453435,
+      "before_samples_ms": [
+        29.548,
+        30.655,
+        29.382,
+        29.517,
+        30.077
+      ],
+      "after_samples_ms": [
+        27.58,
+        28.941,
+        27.014,
+        27.776,
+        28.261
+      ]
+    },
+    {
+      "metric": "ui_decode",
+      "reads": "64",
+      "before_ms": 9.384,
+      "after_ms": 4.832,
+      "speedup": 1.9420529801324504,
+      "percent_less_time": 48.50809889173061,
+      "before_samples_ms": [
+        9.546,
+        9.517,
+        9.381,
+        9.302,
+        9.384
+      ],
+      "after_samples_ms": [
+        4.832,
+        4.957,
+        4.647,
+        4.82,
+        5.086
+      ]
+    },
+    {
+      "metric": "transport_decode",
+      "reads": "64",
+      "before_ms": 12.123,
+      "after_ms": 8.36,
+      "speedup": 1.4501196172248805,
+      "percent_less_time": 31.04017157469273,
+      "before_samples_ms": [
+        12.05,
+        12.751,
+        12.123,
+        11.978,
+        12.409
+      ],
+      "after_samples_ms": [
+        8.167,
+        8.885,
+        7.814,
+        8.36,
+        8.722
+      ]
+    },
+    {
+      "metric": "ui_decode",
+      "reads": "4096",
+      "before_ms": 7.975,
+      "after_ms": 4.725,
+      "speedup": 1.687830687830688,
+      "percent_less_time": 40.75235109717868,
+      "before_samples_ms": [
+        7.868,
+        8.139,
+        7.975,
+        7.748,
+        8.198
+      ],
+      "after_samples_ms": [
+        4.725,
+        4.956,
+        4.584,
+        4.661,
+        4.82
+      ]
+    },
+    {
+      "metric": "transport_decode",
+      "reads": "4096",
+      "before_ms": 12.062,
+      "after_ms": 9.589,
+      "speedup": 1.2578996767129,
+      "percent_less_time": 20.50240424473553,
+      "before_samples_ms": [
+        12.062,
+        12.32,
+        11.929,
+        11.991,
+        12.477
+      ],
+      "after_samples_ms": [
+        9.445,
+        10.346,
+        9.201,
+        9.589,
+        9.786
+      ]
+    },
+    {
+      "metric": "run_stream",
+      "reads": "4 KB reads",
+      "before_ms": 7.95,
+      "after_ms": 5.06,
+      "speedup": 1.5711462450592888,
+      "percent_less_time": 36.35220125786164,
+      "before_samples_ms": [
+        7.98,
+        8.57,
+        7.86,
+        7.95,
+        7.75
+      ],
+      "after_samples_ms": [
+        5.07,
+        5.06,
+        4.82,
+        5.11,
+        4.92
+      ]
+    },
+    {
+      "metric": "run_stream",
+      "reads": "one read per event",
+      "before_ms": 8.81,
+      "after_ms": 5.47,
+      "speedup": 1.610603290676417,
+      "percent_less_time": 37.91146424517594,
+      "before_samples_ms": [
+        8.79,
+        9.11,
+        9.17,
+        8.81,
+        8.64
+      ],
+      "after_samples_ms": [
+        5.85,
+        6.22,
+        5.23,
+        5.47,
+        5.42
+      ]
+    }
+  ],
+  "records": [
+    {
+      "pair": 1,
+      "build": "before",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 16.932 ms, assistant-transport 29.548 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 9.546 ms, assistant-transport 12.050 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 7.868 ms, assistant-transport 12.062 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.80s\n\n"
+    },
+    {
+      "pair": 1,
+      "build": "before",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 7.98 ms over 9 runs, 3 results yielded\none read per event: median 8.79 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.16s\n\n"
+    },
+    {
+      "pair": 1,
+      "build": "after",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 12.879 ms, assistant-transport 27.580 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 4.832 ms, assistant-transport 8.167 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 4.725 ms, assistant-transport 9.445 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.61s\n\n"
+    },
+    {
+      "pair": 1,
+      "build": "after",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 5.07 ms over 9 runs, 3 results yielded\none read per event: median 5.85 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.11s\n\n"
+    },
+    {
+      "pair": 2,
+      "build": "after",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 13.387 ms, assistant-transport 28.941 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 4.957 ms, assistant-transport 8.885 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 4.956 ms, assistant-transport 10.346 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.66s\n\n"
+    },
+    {
+      "pair": 2,
+      "build": "after",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 5.06 ms over 9 runs, 3 results yielded\none read per event: median 6.22 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.11s\n\n"
+    },
+    {
+      "pair": 2,
+      "build": "before",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 17.081 ms, assistant-transport 30.655 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 9.517 ms, assistant-transport 12.751 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 8.139 ms, assistant-transport 12.320 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.82s\n\n"
+    },
+    {
+      "pair": 2,
+      "build": "before",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 8.57 ms over 9 runs, 3 results yielded\none read per event: median 9.11 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.17s\n\n"
+    },
+    {
+      "pair": 3,
+      "build": "before",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 16.389 ms, assistant-transport 29.382 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 9.381 ms, assistant-transport 12.123 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 7.975 ms, assistant-transport 11.929 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.79s\n\n"
+    },
+    {
+      "pair": 3,
+      "build": "before",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 7.86 ms over 9 runs, 3 results yielded\none read per event: median 9.17 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.16s\n\n"
+    },
+    {
+      "pair": 3,
+      "build": "after",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 12.378 ms, assistant-transport 27.014 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 4.647 ms, assistant-transport 7.814 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 4.584 ms, assistant-transport 9.201 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.59s\n\n"
+    },
+    {
+      "pair": 3,
+      "build": "after",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 4.82 ms over 9 runs, 3 results yielded\none read per event: median 5.23 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.09s\n\n"
+    },
+    {
+      "pair": 4,
+      "build": "after",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 12.864 ms, assistant-transport 27.776 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 4.820 ms, assistant-transport 8.360 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 4.661 ms, assistant-transport 9.589 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.62s\n\n"
+    },
+    {
+      "pair": 4,
+      "build": "after",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 5.11 ms over 9 runs, 3 results yielded\none read per event: median 5.47 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.10s\n\n"
+    },
+    {
+      "pair": 4,
+      "build": "before",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 16.415 ms, assistant-transport 29.517 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 9.302 ms, assistant-transport 11.978 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 7.748 ms, assistant-transport 11.991 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.79s\n\n"
+    },
+    {
+      "pair": 4,
+      "build": "before",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 7.95 ms over 9 runs, 3 results yielded\none read per event: median 8.81 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.16s\n\n"
+    },
+    {
+      "pair": 5,
+      "build": "before",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 16.654 ms, assistant-transport 30.077 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 9.384 ms, assistant-transport 12.409 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 8.198 ms, assistant-transport 12.477 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.80s\n\n"
+    },
+    {
+      "pair": 5,
+      "build": "before",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 7.75 ms over 9 runs, 3 results yielded\none read per event: median 8.64 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.15s\n\n"
+    },
+    {
+      "pair": 5,
+      "build": "after",
+      "test": "protocol_decode_and_fold_throughput",
+      "output": "\nrunning 1 test\n   1 byte reads, 10,000 deltas: UI 12.883 ms, assistant-transport 28.261 ms (median of 9)\n  64 byte reads, 10,000 deltas: UI 5.086 ms, assistant-transport 8.722 ms (median of 9)\n4096 byte reads, 10,000 deltas: UI 4.820 ms, assistant-transport 9.786 ms (median of 9)\ntest protocol_decode_and_fold_throughput ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.63s\n\n"
+    },
+    {
+      "pair": 5,
+      "build": "after",
+      "test": "ui_stream_text_workload_like_the_ai_sdk_harness",
+      "output": "\nrunning 1 test\n4 KB reads: median 4.92 ms over 9 runs, 3 results yielded\none read per event: median 5.42 ms over 9 runs, 157 results yielded\ntest ui_stream_text_workload_like_the_ai_sdk_harness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.10s\n\n"
+    }
+  ],
+  "candidate_source_commit": "e9219baa25173b3240bd534f965b0d92b2721a1b"
+}

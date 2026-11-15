@@ -1,0 +1,30 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantSuggestions } from "../ui/components/suggestion.slint";
+import { AssistantTheme, AssistantColorScheme } from "../ui/theme.slint";
+
+component Welcome inherits Rectangle {
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 24px; spacing: 14px;
+        Text { text: "How can I help you today?"; color: AssistantTheme.text; font-family: "Inter"; font-size: 20px; font-weight: 500; }
+        AssistantSuggestions {
+            scope: "example";
+            suggestions: [
+                { id: "summary", title: "Summarize some text" },
+                { id: "brainstorm", title: "Brainstorm ideas" },
+                { id: "long", title: "A longer example that should remain legible at narrow widths" },
+            ];
+        }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+export component DarkWelcome inherits Window {
+    preferred-width: 360px; preferred-height: 300px;
+    Welcome { width: parent.width; height: parent.height; }
+}
+export component LightWelcome inherits Window {
+    preferred-width: 320px; preferred-height: 300px;
+    init => { AssistantTheme.scheme = AssistantColorScheme.light; }
+    Welcome { width: parent.width; height: parent.height; }
+}

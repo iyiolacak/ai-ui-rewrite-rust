@@ -1,0 +1,10 @@
+target/
+**/target/
+
+node_modules/
+/dist-web/
+__pycache__/
+*.pyc
+
+# Local agent state
+.claude/

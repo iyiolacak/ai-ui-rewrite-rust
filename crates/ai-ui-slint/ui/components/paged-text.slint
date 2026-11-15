@@ -1,0 +1,70 @@
+import { AssistantIconButton } from "icon-button.slint";
+import { AssistantTheme } from "../theme.slint";
+
+// Controlled presentation for a host-selected, bounded text page. The host
+// retains the full source, chooses safe page boundaries and validates actions.
+// Numbers are one-based; this component never derives or stores source pages.
+export component AssistantPagedText inherits Rectangle {
+    in property <string> page-text;
+    in property <int> page-number: 1;
+    in property <int> page-count: 1;
+    in property <bool> enabled: true;
+    callback navigation-armed();
+    callback previous();
+    callback next();
+
+    private property <bool> valid-page: root.page-count >= 1
+        && root.page-number >= 1 && root.page-number <= root.page-count;
+    private property <bool> show-navigation: root.page-count > 1;
+
+    height: content.preferred-height;
+    preferred-height: content.preferred-height;
+    content := VerticalLayout {
+        spacing: 8px;
+        Text {
+            text: root.page-text;
+            color: AssistantTheme.text;
+            font-family: "Inter";
+            font-size: 16px * AssistantTheme.text-scale;
+            font-weight: 400;
+            line-height-factor: 1.25;
+            wrap: word-wrap;
+        }
+        if root.show-navigation: HorizontalLayout {
+            // 32 px targets with 24 px visuals: start 4 px left so the drawn
+            // chevrons stay where they were.
+            x: -4px;
+            spacing: 0px;
+            alignment: start;
+            AssistantIconButton {
+                control-size: 24px;
+                icon-size: 14px;
+                bordered: false;
+                label: "Previous page";
+                tooltip: "Previous page";
+                icon: @image-url("../assets/chevron-left.svg");
+                enabled: root.enabled && root.valid-page && root.page-number > 1;
+                armed => { root.navigation-armed(); }
+                activated => { root.previous(); }
+            }
+            Text {
+                text: root.valid-page ? "Page \{root.page-number} of \{root.page-count}" : "Page unavailable";
+                font-family: "Inter";
+                font-size: 12px * AssistantTheme.text-scale;
+                color: AssistantTheme.muted;
+                vertical-alignment: center;
+            }
+            AssistantIconButton {
+                control-size: 24px;
+                icon-size: 14px;
+                bordered: false;
+                label: "Next page";
+                tooltip: "Next page";
+                icon: @image-url("../assets/chevron-right.svg");
+                enabled: root.enabled && root.valid-page && root.page-number < root.page-count;
+                armed => { root.navigation-armed(); }
+                activated => { root.next(); }
+            }
+        }
+    }
+}

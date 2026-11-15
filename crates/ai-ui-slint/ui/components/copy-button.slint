@@ -1,0 +1,22 @@
+import { AssistantIconButton } from "icon-button.slint";
+
+// Presentation only. The host owns clipboard I/O, confirmation and expiry.
+export component AssistantCopyButton inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <bool> copied: false;
+    callback activated();
+
+    width: button.width;
+    height: button.height;
+    button := AssistantIconButton {
+        control-size: 24px;
+        icon-size: 16px;
+        corner-radius: 6px;
+        bordered: false;
+        icon: root.copied ? @image-url("../assets/check.svg") : @image-url("../assets/copy.svg");
+        label: root.copied ? "Copied" : "Copy";
+        tooltip: "Copy";
+        enabled: root.enabled;
+        activated => { if !root.copied { root.activated(); } }
+    }
+}

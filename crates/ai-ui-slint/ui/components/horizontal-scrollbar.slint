@@ -1,0 +1,74 @@
+import { AssistantTheme } from "../theme.slint";
+
+// Controlled horizontal scrollbar. The owner retains the extent and offset;
+// vertical wheel events are rejected so an enclosing thread can handle them.
+export component AssistantHorizontalScrollbar inherits Rectangle {
+    in property <length> content-width;
+    in property <length> visible-width;
+    in-out property <length> content-x;
+    // Native overlay behaviour: the thumb shows while hovered or dragged, or
+    // briefly after the content scrolls; `reveal` lets the owner show it too.
+    in property <bool> reveal: false;
+    callback scrolled();
+    private property <bool> awake: false;
+    changed content-x => {
+        root.awake = true;
+        sleep.running = false;
+        sleep.running = true;
+    }
+    sleep := Timer {
+        interval: 900ms;
+        running: false;
+        triggered => { self.running = false; root.awake = false; }
+    }
+
+    private property <length> maximum: max(0px, root.content-width - root.visible-width);
+    private property <length> thumb-width: root.maximum > 0px && root.content-width > 0px
+        ? min(root.width, max(24px, root.width * root.visible-width / root.content-width)) : root.width;
+    private property <length> travel: max(0px, root.width - root.thumb-width);
+    private property <length> thumb-x: root.maximum > 0px ? root.travel * clamp(-root.content-x / root.maximum, 0, 1) : 0px;
+
+    height: 12px;
+    visible: root.maximum > 0px;
+    background: transparent;
+
+    function scroll-to(position: length) -> bool {
+        let next = clamp(position, -root.maximum, 0px);
+        if next == root.content-x { return false; }
+        root.content-x = next;
+        root.scrolled();
+        return true;
+    }
+
+    Rectangle {
+        x: root.thumb-x;
+        y: (parent.height - self.height) / 2;
+        width: root.thumb-width;
+        height: input.has-hover || input.pressed ? 6px : 4px;
+        border-radius: 3px;
+        background: AssistantTheme.focus-border;
+        opacity: root.reveal || root.awake || input.has-hover || input.pressed ? 1 : 0;
+        animate opacity { duration: 150ms; }
+    }
+    input := TouchArea {
+        property <length> previous-x;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
+                self.previous-x = self.mouse-x;
+                if (self.mouse-x < root.thumb-x || self.mouse-x > root.thumb-x + root.thumb-width) && root.travel > 0px {
+                    root.scroll-to(-root.maximum * clamp((self.mouse-x - root.thumb-width / 2) / root.travel, 0, 1));
+                }
+            }
+        }
+        moved => {
+            if self.pressed && root.travel > 0px {
+                root.scroll-to(root.content-x - (self.mouse-x - self.previous-x) * root.maximum / root.travel);
+                self.previous-x = self.mouse-x;
+            }
+        }
+        scroll-event(event) => {
+            if event.delta-x != 0px && root.scroll-to(root.content-x + event.delta-x) { return accept; }
+            return reject;
+        }
+    }
+}

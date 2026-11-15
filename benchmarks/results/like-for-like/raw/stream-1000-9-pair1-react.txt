@@ -1,0 +1,5 @@
+# load before: 3.96 4.68 5.55 4/2074 451949
+# start 2026-11-11T13:37:07Z
+{"engine":"react","history":1000,"reply_kb":9,"window_s":60,"open_ms":2930,"open_formatted_ms":2962,"open_main_thread_ms":2765,"stream_process_cpu_ms":73380,"stream_main_thread_ms":60389,"stream_script_ms":37235,"stream_layout_ms":161,"stream_style_ms":10,"frames":3248,"frame_p50_ms":16.7,"frame_p95_ms":33.3,"frame_p99_ms":33.4,"frame_max_ms":883.3,"frames_over_33ms":105,"js_heap_mib":381,"memory_opened":{"processes":9,"rss_mib":1235.1,"pss_mib":612.4},"memory_end":{"processes":9,"rss_mib":1526.6,"pss_mib":895.4},"last_message_chars":10555}
+# exit 0
+# load after: 4.60 4.70 5.50 3/2081 453266

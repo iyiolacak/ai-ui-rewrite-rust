@@ -1,0 +1,174 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantScrollbar } from "scrollbar.slint";
+import { AssistantChunkedText } from "chunked-text.slint";
+
+// A bounded reasoning viewport. The host owns the text, streaming status and
+// disclosure state. Its conversation revision must change on scope/thread
+// changes so a recycled delegate cannot inherit another conversation's scroll.
+export component AssistantReasoningPreview inherits Rectangle {
+    in property <string> text;
+    // When not empty, shown instead of `text`: the same text in consecutive
+    // chunks, so a streamed update re-wraps only the chunk that changed.
+    in property <[string]> chunks;
+    in property <bool> streaming;
+    in property <int> conversation-revision;
+    in property <string> message-id;
+    in property <string> part-id;
+    out property <bool> following: true;
+    out property <length> content-y: viewport.content-y;
+    out property <length> content-height: viewport.content-height;
+    out property <length> visible-height: viewport.height;
+    private property <bool> user-scrolling: false;
+    private property <length> last-y: 0px;
+
+    // Upstream's max-h-64 is 256 CSS pixels, with 24px start and 8px vertical padding.
+    height: min(256px, body.preferred-height + 16px);
+    preferred-height: min(256px, body.preferred-height + 16px);
+    clip: true;
+
+    function reset-following() {
+        settle.running = false;
+        root.user-scrolling = false;
+        root.following = true;
+        // A recycled delegate may receive identity and streaming bindings in
+        // either order. Reconcile once more after this batch has settled.
+        identity-settle.running = false;
+        identity-settle.running = true;
+        root.reset-position();
+    }
+    function reset-position() {
+        if root.streaming {
+            root.scroll-to-bottom();
+        } else {
+            // A completed part is not auto-followed. A recycled delegate must
+            // still begin the new identity at the top, not the previous offset.
+            viewport.content-y = 0px;
+            root.last-y = 0px;
+        }
+    }
+    public function scroll-to-bottom() {
+        settle.running = false;
+        root.user-scrolling = false;
+        root.following = true;
+        viewport.content-y = min(0px, viewport.height - viewport.content-height);
+        root.last-y = viewport.content-y;
+    }
+    function user-scrolled() {
+        root.user-scrolling = true;
+        settle.running = false;
+        settle.running = true;
+    }
+    changed conversation-revision => { root.reset-following(); }
+    changed message-id => { root.reset-following(); }
+    changed part-id => { root.reset-following(); }
+    init => { root.reset-following(); }
+    // Starting a stream follows its latest content immediately, but it must
+    // not schedule an identity reset: a same-part stream can finish before
+    // the next event-loop turn without becoming a different completed part.
+    changed streaming => { if root.streaming { root.scroll-to-bottom(); } }
+
+    identity-settle := Timer {
+        interval: 0ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            if !root.user-scrolling { root.reset-position(); }
+        }
+    }
+    settle := Timer {
+        interval: 250ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            // Content may grow while a return-to-bottom gesture is settling.
+            // Preserve the reader's last follow intent and catch up once the
+            // gesture is done. An explicit move away remains detached.
+            let should-follow = root.following || viewport.content-y <= min(0px, viewport.height - viewport.content-height) + 1px;
+            root.user-scrolling = false;
+            // The last chunk can arrive before streaming turns false, but
+            // after the reader reached the end. Honor that pending intent
+            // even if the stream has completed by the time we settle.
+            if should-follow {
+                root.scroll-to-bottom();
+            }
+        }
+    }
+    viewport := Flickable {
+        width: parent.width;
+        height: parent.height;
+        content-width: self.width;
+        content-height: max(self.height, body.preferred-height + 16px);
+        mouse-drag-pan-enabled: false;
+        flicked => {
+            root.user-scrolled();
+            // Touch may have updated content-y before flicked is delivered.
+            // Wheel animation can also continue afterward, in which case the
+            // content-y observer below updates intent as it moves.
+            root.following = self.content-y <= min(0px, self.height - self.content-height) + 1px;
+            root.last-y = self.content-y;
+        }
+        changed content-y => {
+            if root.user-scrolling {
+                if self.content-y > root.last-y { root.following = false; }
+                if self.content-y <= min(0px, self.height - self.content-height) + 1px {
+                    root.following = true;
+                }
+                settle.running = false;
+                settle.running = true;
+            }
+            root.last-y = self.content-y;
+        }
+        changed content-height => {
+            if root.streaming && root.following && !root.user-scrolling { root.scroll-to-bottom(); }
+        }
+        changed height => {
+            if root.streaming && root.following && !root.user-scrolling { root.scroll-to-bottom(); }
+        }
+        body := VerticalLayout {
+            x: 24px; y: 8px;
+            width: max(0px, root.width - 38px);
+            height: self.preferred-height;
+            if root.chunks.length == 0: Text {
+                text: root.text;
+                color: AssistantTheme.muted;
+                font-family: "Inter";
+                font-size: 14px * AssistantTheme.text-scale;
+                line-height-factor: 1.625;
+                wrap: word-wrap;
+            }
+            if root.chunks.length > 0: AssistantChunkedText {
+                chunks: root.chunks;
+                color: AssistantTheme.muted;
+                font-size: 14px * AssistantTheme.text-scale;
+                line-height-factor: 1.625;
+            }
+        }
+    }
+    // Match the upstream background fades without adding an input handler:
+    // scrolling and pointer events continue to reach the underlying viewport.
+    Rectangle {
+        x: 0px; y: 0px;
+        width: parent.width; height: min(32px, parent.height);
+        background: @linear-gradient(180deg, AssistantTheme.background, AssistantTheme.background.transparentize(1));
+    }
+    if root.streaming : Rectangle {
+        x: 0px; y: parent.height - self.height;
+        width: parent.width; height: min(32px, parent.height);
+        background: @linear-gradient(0deg, AssistantTheme.background, AssistantTheme.background.transparentize(1));
+    }
+    AssistantScrollbar {
+        x: parent.width - self.width;
+        height: parent.height;
+        content-height: viewport.content-height;
+        visible-height: viewport.height;
+        content-y <=> viewport.content-y;
+        reveal: root.user-scrolling;
+        // The scrollbar updates content-y before its callback; derive intent
+        // from the resulting position rather than waiting for another change.
+        scrolled => {
+            root.user-scrolled();
+            root.following = viewport.content-y <= min(0px, viewport.height - viewport.content-height) + 1px;
+            root.last-y = viewport.content-y;
+        }
+    }
+}

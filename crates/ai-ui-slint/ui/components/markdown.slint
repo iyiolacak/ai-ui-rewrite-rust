@@ -1,0 +1,200 @@
+import { AssistantTheme } from "../theme.slint";
+import { AssistantCopyButton } from "copy-button.slint";
+import { AssistantHorizontalScrollbar } from "horizontal-scrollbar.slint";
+
+// These are presentation records. The host supplies styled text and owns the
+// lifetime, safety and execution of link and clipboard actions.
+export enum MarkdownBlockKind { paragraph, heading, code, rule, table-header, table-row }
+export enum MarkdownAlignment { left, center, right }
+export struct MarkdownCell { text: styled-text, alignment: MarkdownAlignment }
+export struct MarkdownBlock {
+    kind: MarkdownBlockKind,
+    depth: int,
+    quote-depth: int,
+    heading-level: int,
+    text: styled-text,
+    code: string,
+    language: string,
+    cells: [MarkdownCell],
+    // Optional host-issued, scope-specific identity. A nonempty token opts in
+    // to the indexed callback; the host validates it before copying.
+    copy-token: string,
+    // True only after the host confirms a successful clipboard write.
+    copied: bool,
+}
+
+component MarkdownTextBlock inherits Rectangle {
+    in property <MarkdownBlock> block;
+    callback link-activated(string);
+    private property <length> indentation: min(max(root.block.depth, 0), 8) * 16px;
+    private property <length> quote-indentation: min(max(root.block.quote-depth, 0), 8) * 12px;
+    height: text.preferred-height;
+    preferred-height: text.preferred-height;
+    text := StyledText {
+        x: root.indentation + root.quote-indentation;
+        width: max(0px, root.width - self.x);
+        text: root.block.text;
+        default-color: root.block.quote-depth > 0 ? AssistantTheme.muted : AssistantTheme.text;
+        link-color: AssistantTheme.text;
+        default-font-family: "Inter";
+        default-font-size: (root.block.kind == MarkdownBlockKind.heading
+            ? (root.block.heading-level <= 1 ? 24px : root.block.heading-level == 2 ? 20px : 18px)
+            : 16px) * AssistantTheme.text-scale;
+        link-clicked(link) => { root.link-activated(link); }
+    }
+}
+
+component MarkdownCodeBlock inherits Rectangle {
+    in property <MarkdownBlock> block;
+    in property <bool> can-copy-code;
+    callback copy-code(string);
+    callback copy-code-block(string, string);
+    private property <length> indentation: min(max(root.block.depth, 0), 8) * 16px + min(max(root.block.quote-depth, 0), 8) * 12px;
+    height: shell.height;
+    preferred-height: shell.height;
+    shell := Rectangle {
+        x: root.indentation;
+        width: max(0px, root.width - root.indentation);
+        height: code-text.preferred-height + 64px + (code-view.content-width > code-view.width ? 12px : 0px);
+        background: AssistantTheme.composer;
+        border-width: 1px;
+        border-color: AssistantTheme.border.transparentize(0.5);
+        border-radius: 12px;
+        clip: true;
+        Rectangle {
+            x: 0px; y: 0px;
+            width: parent.width; height: 36px;
+            background: AssistantTheme.surface.transparentize(0.5);
+        }
+        Text {
+            x: 14px; y: 6px;
+            width: max(0px, parent.width - 58px);
+            height: 24px;
+            text: root.block.language;
+            font-family: "Inter";
+            font-size: 12px * AssistantTheme.text-scale;
+            font-weight: 500;
+            color: AssistantTheme.muted;
+            overflow: elide;
+            vertical-alignment: center;
+        }
+        AssistantCopyButton {
+            x: max(0px, parent.width - self.width - 10px);
+            y: 2px;
+            enabled: root.can-copy-code && root.block.code != "";
+            copied: root.block.copied;
+            activated => {
+                if root.block.copy-token == "" { root.copy-code(root.block.code); }
+                else { root.copy-code-block(root.block.copy-token, root.block.code); }
+            }
+        }
+        code-view := Flickable {
+            x: 14px; y: 50px;
+            width: max(0px, parent.width - 28px);
+            height: code-text.preferred-height;
+            content-width: max(self.width, code-text.preferred-width);
+            content-height: self.height;
+            mouse-drag-pan-enabled: false;
+            code-text := Text {
+                x: 0px; y: 0px;
+                width: max(code-view.width, self.preferred-width);
+                text: root.block.code;
+                font-family: AssistantTheme.mono-family;
+                font-size: 13px * AssistantTheme.text-scale;
+                color: AssistantTheme.text;
+                wrap: no-wrap;
+            }
+        }
+        AssistantHorizontalScrollbar {
+            x: 14px; y: code-view.y + code-view.height;
+            width: code-view.width;
+            content-width: code-view.content-width;
+            visible-width: code-view.width;
+            content-x <=> code-view.content-x;
+        }
+    }
+}
+
+component MarkdownTableRow inherits Rectangle {
+    in property <MarkdownBlock> block;
+    callback link-activated(string);
+    private property <length> indentation: min(max(root.block.depth, 0), 8) * 16px + min(max(root.block.quote-depth, 0), 8) * 12px;
+    height: row.preferred-height + 16px;
+    preferred-height: row.preferred-height + 16px;
+    x: 0px;
+    Rectangle {
+        x: root.indentation;
+        width: max(0px, parent.width - root.indentation);
+        height: parent.height;
+        background: root.block.kind == MarkdownBlockKind.table-header ? AssistantTheme.surface : transparent;
+        border-width: 1px;
+        border-color: AssistantTheme.border;
+        row := HorizontalLayout {
+            x: 8px; y: 8px;
+            width: max(0px, parent.width - 16px);
+            spacing: 12px;
+            for cell in root.block.cells: StyledText {
+                min-width: 0px;
+                preferred-width: 0px;
+                horizontal-stretch: 1;
+                text: cell.text;
+                default-color: AssistantTheme.text;
+                link-color: AssistantTheme.text;
+                default-font-family: "Inter";
+                default-font-size: 14px * AssistantTheme.text-scale;
+                horizontal-alignment: cell.alignment == MarkdownAlignment.center ? center : cell.alignment == MarkdownAlignment.right ? right : left;
+                link-clicked(link) => { root.link-activated(link); }
+            }
+        }
+    }
+}
+
+export component AssistantMarkdown inherits Rectangle {
+    in property <[MarkdownBlock]> blocks;
+    in property <bool> can-copy-code: false;
+    callback link-activated(string);
+    callback copy-code(string);
+    callback copy-code-block(string, string);
+    height: content.preferred-height;
+    preferred-height: content.preferred-height;
+    content := VerticalLayout {
+        spacing: 0px;
+        for block[index] in root.blocks: Rectangle {
+            height: item.preferred-height;
+            preferred-height: item.preferred-height;
+            if block.quote-depth > 0: Rectangle {
+                x: min(max(block.depth, 0), 8) * 16px + min(max(block.quote-depth, 0), 8) * 12px - 12px;
+                y: item.padding-top;
+                width: 2px;
+                height: max(0px, parent.height - self.y);
+                background: AssistantTheme.border;
+            }
+            item := VerticalLayout {
+                padding-top: index == 0 || ((block.kind == MarkdownBlockKind.table-row || block.kind == MarkdownBlockKind.table-header) && (root.blocks[index - 1].kind == MarkdownBlockKind.table-row || root.blocks[index - 1].kind == MarkdownBlockKind.table-header)) ? 0px : 12px;
+                if block.kind == MarkdownBlockKind.paragraph || block.kind == MarkdownBlockKind.heading: MarkdownTextBlock {
+                    block: block;
+                    link-activated(link) => { root.link-activated(link); }
+                }
+                if block.kind == MarkdownBlockKind.code: MarkdownCodeBlock {
+                    block: block;
+                    can-copy-code: root.can-copy-code;
+                    copy-code(code) => { root.copy-code(code); }
+                    copy-code-block(token, code) => { root.copy-code-block(token, code); }
+                }
+                if block.kind == MarkdownBlockKind.rule: Rectangle {
+                    height: 1px;
+                    Rectangle {
+                        x: min(max(block.depth, 0), 8) * 16px + min(max(block.quote-depth, 0), 8) * 12px;
+                        width: max(0px, parent.width - self.x);
+                        height: 1px;
+                        background: AssistantTheme.border;
+                    }
+                }
+                if block.kind == MarkdownBlockKind.table-header || block.kind == MarkdownBlockKind.table-row: MarkdownTableRow {
+                    block: block;
+                    link-activated(link) => { root.link-activated(link); }
+                }
+            }
+        }
+    }
+}

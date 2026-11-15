@@ -1,0 +1,40 @@
+[package]
+name = "ai-ui-example-thread"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version = "1.92"
+publish = false
+description = "assistant-ui's default thread in Rust and Slint: a demo model, or any AI SDK endpoint."
+
+[features]
+# Resources as files for the GPU renderers, instead of embedded for software.
+gpu-window = []
+
+[dependencies]
+ai-ui-core = { path = "../../crates/ai-ui-core" }
+ai-ui-state = { path = "../../crates/ai-ui-state" }
+ai-ui-data-stream = { path = "../../crates/ai-ui-data-stream" }
+ai-ui-http = { path = "../../crates/ai-ui-http" }
+ai-ui-markdown-slint = { path = "../../crates/ai-ui-markdown-slint" }
+ai-ui-clipboard = { path = "../../crates/ai-ui-clipboard" }
+futures-core = { version = "0.3.34", default-features = false, features = ["std"] }
+png = "0.18"
+serde_json = "1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+slint = { version = "=1.18.1", default-features = false, features = ["std", "backend-winit", "renderer-femtovg-wgpu", "unstable-wgpu-30", "renderer-software", "compat-1-18"] }
+
+# The browser build (docs/WEB.md): winit on a canvas, drawn with femtovg on WebGL.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+slint = { version = "=1.18.1", default-features = false, features = ["std", "backend-winit", "renderer-femtovg", "renderer-software", "compat-1-18"] }
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "0.4"
+web-time = "1"
+ai-ui-markdown = { path = "../../crates/ai-ui-markdown" }
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["Window", "Location", "Response", "Performance", "Event", "EventTarget", "console"] }
+
+[build-dependencies]
+ai-ui-slint = { path = "../../crates/ai-ui-slint" }
+slint-build = "=1.18.1"

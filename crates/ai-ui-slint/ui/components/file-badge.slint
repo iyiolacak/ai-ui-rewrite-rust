@@ -1,0 +1,18 @@
+import { AssistantTheme } from "../theme.slint";
+
+// A shared file glyph tile for compact attachment and source presentations.
+// It carries no file state or action; the surrounding component owns both.
+export component AssistantFileBadge inherits Rectangle {
+    width: 32px;
+    height: 32px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    border-radius: 8px;
+    background: AssistantTheme.background;
+    Image {
+        width: 16px;
+        height: 16px;
+        source: @image-url("../assets/file-text.svg");
+        colorize: AssistantTheme.muted;
+    }
+}

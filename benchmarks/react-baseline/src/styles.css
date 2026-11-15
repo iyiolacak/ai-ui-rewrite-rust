@@ -1,0 +1,19 @@
+/* Plain CSS close to upstream's default thread (44rem column, dark theme). */
+:root { color-scheme: dark; font-family: system-ui, sans-serif; }
+html, body, #root { margin: 0; height: 100%; background: #09090b; color: #fafafa; }
+.thread { height: 100%; display: flex; flex-direction: column; }
+.viewport { flex: 1; overflow-y: auto; }
+.column { max-width: 44rem; margin: 0 auto; padding: 16px 16px 0; display: flex; flex-direction: column; min-height: 100%; box-sizing: border-box; }
+.user { display: flex; flex-direction: column; align-items: flex-end; padding: 8px 0; }
+.bubble { background: #27272a; border-radius: 16px; padding: 8px 16px; max-width: 80%; white-space: pre-wrap; }
+.assistant { padding: 8px 0 16px; line-height: 1.6; }
+.assistant .content { padding: 0 8px; }
+.aui-md pre { background: #18181b; padding: 12px; border-radius: 8px; overflow-x: auto; }
+.aui-md table { border-collapse: collapse; }
+.aui-md th, .aui-md td { border: 1px solid #3f3f46; padding: 4px 12px; }
+.reasoning summary { color: #a1a1aa; cursor: pointer; }
+.footer, .actions, .branch { display: flex; gap: 4px; font-size: 13px; color: #a1a1aa; }
+.actions button, .branch button { background: none; border: 0; color: inherit; cursor: pointer; }
+.composer-footer { position: sticky; bottom: 0; margin-top: auto; background: #09090b; padding-bottom: 16px; }
+.composer { display: flex; gap: 8px; border: 1px solid #3f3f46; border-radius: 16px; padding: 8px; }
+.composer textarea { flex: 1; background: none; border: 0; color: inherit; resize: none; font: inherit; }

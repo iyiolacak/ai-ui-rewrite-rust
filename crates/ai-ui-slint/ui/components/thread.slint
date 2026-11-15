@@ -1,0 +1,253 @@
+import { ListView } from "std-widgets.slint";
+import { ApprovalRequest, ApprovalChoice, ToolCopyTarget, ChatRow, MessageFeedback } from "../models.slint";
+import { AssistantMessage } from "message.slint";
+import { AssistantIconButton } from "icon-button.slint";
+import { AssistantScrollbar } from "scrollbar.slint";
+import { AssistantTheme } from "../theme.slint";
+import { AssistantDraftAttachment } from "attachment-chip.slint";
+import { AssistantHostEditorState } from "editor-host-state.slint";
+import { AssistantEditorEdit, AssistantEditorClipboard } from "editor-surface.slint";
+
+export component AssistantThread inherits Rectangle {
+    in property <[ChatRow]> messages;
+    // Host changes this when the selected conversation changes, even if the
+    // model is emptied and refilled before Slint next lays out the component.
+    in property <int> conversation-revision;
+    callback toggle-part(string, string);
+    callback page-requested(int, string, string, string, int, int);
+    callback resolve-approval(ApprovalRequest, ApprovalChoice);
+    in property <bool> busy;
+    callback switch-branch(string, bool);
+    callback regenerate(string);
+    in property <string> edit-token;
+    in property <string> edit-branch-token;
+    in-out property <string> edit-draft;
+    in property <bool> edit-attachments-enabled: false;
+    in property <bool> can-add-edit-attachment: false;
+    in property <bool> can-retry-edit-attachment: false;
+    in property <bool> can-copy-edit-draft: false;
+    in property <bool> edit-attachments-ready: true;
+    in property <[AssistantDraftAttachment]> edit-attachments;
+    in property <bool> host-edit-enabled: false;
+    in property <AssistantHostEditorState> host-edit-state;
+    callback host-edit-operation(string, AssistantEditorEdit, string, bool) -> bool;
+    callback host-edit-place-caret(string, float, float);
+    callback host-edit-begin-selection(string, float, float, bool) -> bool;
+    callback host-edit-move-selection(string, float, float);
+    callback host-edit-end-selection(string, float, float);
+    callback host-edit-cancel-selection(string);
+    callback host-edit-scroll(string, float) -> bool;
+    callback host-edit-clipboard(string, AssistantEditorClipboard) -> bool;
+    callback host-edit-save(string);
+    callback host-edit-focus-changed(string, bool);
+    callback host-edit-geometry-changed(string, float, float);
+    callback host-edit-position-changed(string, float, float);
+    callback begin-edit(string);
+    callback save-edit(string, string);
+    callback cancel-edit(string);
+    callback remove-edit-attachment(string, string);
+    callback add-edit-attachment(string);
+    callback retry-edit-attachment(string, string);
+    // The host resolves this fresh edit-session identity to its current draft.
+    callback copy-edit-draft(string);
+    in property <bool> can-copy-code: false;
+    in property <bool> can-copy-tool: false;
+    callback copy-tool-requested(int, string, string, string, ToolCopyTarget);
+    in property <bool> can-open-source: false;
+    // Revision, message ID, branch token and part ID are opaque host scope.
+    callback source-requested(int, string, string, string);
+    in property <bool> can-copy-message: false;
+    callback copy-message(string);
+    callback link-activated(string);
+    callback copy-code(string);
+    callback copy-code-block(string, string, string, string);
+    callback submit-feedback(string, MessageFeedback);
+    // Only user scrolling changes this flag; programmatic layout changes do not.
+    out property <bool> following: true;
+    // The scroll-to-bottom button was activated; the host moves focus to the composer.
+    callback scroll-to-bottom-clicked();
+    // A wheel scroll is animated by Slint after its scrolled callback fires.
+    // Keep observing the moving offset until that gesture has settled.
+    // Public so the landing can tell a gesture (wheel, keys, scrollbar drag) from a
+    // thread switch or a new turn.
+    out property <bool> user-scrolling: false;
+    private property <length> last-content-y: 0px;
+    out property <length> content-y: list.content-y;
+    out property <length> content-height: list.content-height;
+    out property <length> visible-height: list.visible-height;
+    // The landing's scroll counter: which message sits at the top edge of the
+    // viewport. The list only keeps the rows it needs, so the rows that test
+    // this are the visible ones; the check stays cheap however long the thread is.
+    in property <bool> track-visible-index: false;
+    out property <int> first-visible: 0;
+    public function scroll-to-bottom() {
+        scroll-settle.running = false;
+        root.user-scrolling = false;
+        root.following = true;
+        list.content-y = min(0px, list.visible-height - list.content-height);
+        root.last-content-y = list.content-y;
+    }
+    changed conversation-revision => { root.scroll-to-bottom(); root.first-visible = 0; }
+    // The host asks for a position by incrementing a counter (works from inside a conditional element).
+    // Top: show the first message and stop following; the next user scroll or send decides again.
+    in property <int> scroll-top-request: 0;
+    in property <int> scroll-bottom-request: 0;
+    // Landing scrub mode: the page asks for a fractional position (0=top, 1=bottom).
+    // When `scroll-fraction >= 0` it drives content-y directly and counts as
+    // user scrolling for the page's counter; a user gesture sets it back to -1.
+    in-out property <float> scroll-fraction: -1.0;
+    public function scroll-to-top() {
+        scroll-settle.running = false;
+        root.user-scrolling = false;
+        root.following = false;
+        list.content-y = 0px;
+        root.last-content-y = 0px;
+    }
+    changed scroll-top-request => { root.scroll-to-top(); }
+    changed scroll-bottom-request => { root.scroll-to-bottom(); }
+    changed scroll-fraction => {
+        if (root.scroll-fraction >= 0.0) {
+            scroll-settle.running = false;
+            root.user-scrolling = true;
+            root.following = root.scroll-fraction >= 1.0;
+            list.content-y = 0px - root.scroll-fraction * max(0px, list.content-height - list.visible-height);
+            root.last-content-y = list.content-y;
+        }
+    }
+    function user-scrolled() {
+        root.user-scrolling = true;
+        root.following = false;
+        root.scroll-fraction = -1.0; // a real gesture hands the thread back to the pointer
+        scroll-settle.running = false;
+        scroll-settle.running = true;
+    }
+    scroll-settle := Timer {
+        // Wheel and touch gestures can keep moving after their input event.
+        // Reset this while the offset changes so inertia can finish first.
+        interval: 250ms;
+        running: false;
+        triggered => {
+            self.running = false;
+            root.user-scrolling = false;
+            root.following = list.content-y <= min(0px, list.visible-height - list.content-height) + 8px;
+            if root.following { root.scroll-to-bottom(); }
+        }
+    }
+    list := ListView {
+        width: parent.width;
+        height: parent.height;
+        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+        vertical-scrollbar-policy: ScrollBarPolicy.always-off;
+        scrolled => { root.user-scrolled(); }
+        changed content-y => {
+            if root.user-scrolling {
+                if self.content-y > root.last-content-y {
+                    // Moving away from the end is intent to inspect history,
+                    // even while the offset is still within the tolerance.
+                    root.following = false;
+                } else if self.content-y < root.last-content-y {
+                    root.following = self.content-y <= min(0px, self.visible-height - self.content-height) + 8px;
+                }
+                scroll-settle.running = false;
+                scroll-settle.running = true;
+            }
+            root.last-content-y = self.content-y;
+        }
+        changed content-height => {
+            if root.following || self.content-height <= self.visible-height { root.scroll-to-bottom(); }
+        }
+        changed visible-height => {
+            if root.following || self.content-height <= self.visible-height { root.scroll-to-bottom(); }
+        }
+        for message[index] in root.messages: AssistantMessage {
+            // Viewport top in content coordinates is -content-y (0 at the top,
+            // negative as the list scrolls). Exactly one row contains it. Outside
+            // tracking the binding is false and short-circuits, and the native
+            // app pays nothing for the landing's counter.
+            private property <bool> at-viewport-top: root.track-visible-index
+                && self.y <= (0px - list.content-y) && (0px - list.content-y) < self.y + self.height;
+            // `y` moves on every scroll (the rows are laid out in viewport coordinates),
+            // so this reports the current top row even when it is the same one as before.
+            init => { if (self.at-viewport-top) { root.first-visible = index; } }
+            changed y => { if (self.at-viewport-top) { root.first-visible = index; } }
+            changed height => { if (self.at-viewport-top) { root.first-visible = index; } }
+            changed at-viewport-top => { if (self.at-viewport-top) { root.first-visible = index; } }
+            width: list.width;
+            message: message;
+            last: index == root.messages.length - 1;
+            conversation-revision: root.conversation-revision;
+            toggle-part(message-id, part-id) => { root.toggle-part(message-id, part-id); }
+            page-requested(revision, message-id, part-id, token, page-number, delta) => { root.page-requested(revision, message-id, part-id, token, page-number, delta); }
+            resolve-approval(request, choice) => { root.resolve-approval(request, choice); }
+            busy: root.busy;
+            switch-branch(token, next) => { root.switch-branch(token, next); }
+            regenerate(token) => { root.regenerate(token); }
+            edit-token: root.edit-token;
+            edit-branch-token: root.edit-branch-token;
+            edit-draft <=> root.edit-draft;
+            edit-attachments-enabled: root.edit-attachments-enabled;
+            can-add-edit-attachment: root.can-add-edit-attachment;
+            can-retry-edit-attachment: root.can-retry-edit-attachment;
+            can-copy-edit-draft: root.can-copy-edit-draft;
+            edit-attachments-ready: root.edit-attachments-ready;
+            edit-attachments: root.edit-attachments;
+            host-edit-enabled: root.host-edit-enabled;
+            host-edit-state: root.host-edit-state;
+            host-edit-operation(scope, operation, text, extend) => { return root.host-edit-operation(scope, operation, text, extend); }
+            host-edit-place-caret(scope, x, y) => { root.host-edit-place-caret(scope, x, y); }
+            host-edit-begin-selection(scope, x, y, extend) => { return root.host-edit-begin-selection(scope, x, y, extend); }
+            host-edit-move-selection(scope, x, y) => { root.host-edit-move-selection(scope, x, y); }
+            host-edit-end-selection(scope, x, y) => { root.host-edit-end-selection(scope, x, y); }
+            host-edit-cancel-selection(scope) => { root.host-edit-cancel-selection(scope); }
+            host-edit-scroll(scope, delta) => { return root.host-edit-scroll(scope, delta); }
+            host-edit-clipboard(scope, kind) => { return root.host-edit-clipboard(scope, kind); }
+            host-edit-save(scope) => { root.host-edit-save(scope); }
+            host-edit-focus-changed(scope, focused) => { root.host-edit-focus-changed(scope, focused); }
+            host-edit-geometry-changed(scope, width, height) => { root.host-edit-geometry-changed(scope, width, height); }
+            host-edit-position-changed(scope, x, y) => { root.host-edit-position-changed(scope, x, y); }
+            begin-edit(token) => { root.begin-edit(token); }
+            save-edit(token, text) => { root.save-edit(token, text); }
+            cancel-edit(token) => { root.cancel-edit(token); }
+            remove-edit-attachment(token, id) => { root.remove-edit-attachment(token, id); }
+            add-edit-attachment(token) => { root.add-edit-attachment(token); }
+            retry-edit-attachment(token, id) => { root.retry-edit-attachment(token, id); }
+            copy-edit-draft(token) => { root.copy-edit-draft(token); }
+            can-copy-code: root.can-copy-code;
+            can-copy-tool: root.can-copy-tool;
+            copy-tool-requested(revision, message, branch, part, target) => { root.copy-tool-requested(revision, message, branch, part, target); }
+            can-open-source: root.can-open-source;
+            source-requested(revision, message-id, branch-token, part-id) => { root.source-requested(revision, message-id, branch-token, part-id); }
+            can-copy-message: root.can-copy-message;
+            copy-message(token) => { root.copy-message(token); }
+            link-activated(link) => { root.link-activated(link); }
+            copy-code(code) => { root.copy-code(code); }
+            copy-code-block(branch, part-id, token, code) => { root.copy-code-block(branch, part-id, token, code); }
+            submit-feedback(token, choice) => { root.submit-feedback(token, choice); }
+        }
+    }
+    AssistantScrollbar {
+        x: parent.width - self.width;
+        height: parent.height;
+        content-height: list.content-height;
+        visible-height: list.visible-height;
+        content-y <=> list.content-y;
+        reveal: root.user-scrolling;
+        scrolled => { root.user-scrolled(); }
+    }
+    if !root.following: Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height - 40px;
+        width: 36px; height: 36px;
+        border-radius: 18px;
+        background: AssistantTheme.background;
+        border-width: 1px;
+        border-color: AssistantTheme.border;
+        AssistantIconButton {
+            x: 2px; y: 2px;
+            label: "Scroll to bottom";
+            tooltip: "Scroll to bottom";
+            icon: @image-url("../assets/arrow-down.svg");
+            activated => { root.scroll-to-bottom(); root.scroll-to-bottom-clicked(); }
+        }
+    }
+}

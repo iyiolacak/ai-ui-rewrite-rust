@@ -1,0 +1,207 @@
+import { AssistantTheme } from "../theme.slint";
+
+// One choice in the settings popover: a label and a check when selected. The
+// cursor row (keyboard position) shows the same ring the other menus use.
+component SettingsOption inherits Rectangle {
+    in property <string> label;
+    in property <bool> selected;
+    in property <bool> cursor;
+    callback activated();
+    height: 28px;
+    border-radius: 6px;
+    border-width: root.cursor ? 1px : 0px;
+    border-color: AssistantTheme.focus-border;
+    background: area.has-hover || root.cursor ? AssistantTheme.surface : transparent;
+    accessible-role: radio-button;
+    accessible-label: root.label;
+    accessible-checked: root.selected;
+    Text {
+        x: 10px;
+        width: max(0px, parent.width - 36px);
+        text: root.label;
+        color: AssistantTheme.text;
+        font-family: "Inter";
+        font-size: 14px;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    if root.selected: Image {
+        x: parent.width - 24px; y: (parent.height - 14px) / 2;
+        width: 14px; height: 14px;
+        source: @image-url("../assets/check.svg");
+        colorize: AssistantTheme.text;
+    }
+    area := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.activated(); }
+    }
+}
+
+component SettingsHeading inherits Rectangle {
+    in property <string> text;
+    height: 24px;
+    Text {
+        x: 10px;
+        width: max(0px, parent.width - 20px);
+        text: root.text;
+        color: AssistantTheme.muted;
+        font-family: "Inter";
+        font-size: 12px;
+        font-weight: 500;
+        vertical-alignment: center;
+    }
+}
+
+// A "Settings" row for a sidebar footer that opens a popover with text size,
+// reading width and theme. Controlled: the host owns the values and applies
+// them; this component reports the index the user chose. Up/Down move the
+// cursor, Enter or Space chooses, Escape closes and returns focus to the row.
+export component AssistantSettingsMenu inherits Rectangle {
+    // Indices into the lists below. A host value that lies between two steps
+    // (a command-line scale, say) passes the nearest one.
+    in property <int> text-size: 1;
+    in property <int> reading-width: 1;
+    in property <int> theme: 2;
+    // Tallest the popover may be; longer content scrolls (a short window).
+    in property <length> max-popup-height: 1000px;
+    callback text-size-selected(int);
+    callback reading-width-selected(int);
+    callback theme-selected(int);
+
+    private property <int> cursor: 0;
+    private property <length> scroll-y: 0px;
+    private property <bool> popup-focused;
+    private property <bool> trigger-ring;
+    // Text size 0-3, reading width 4-8, theme 9-11.
+    private property <int> option-count: 12;
+    private property <length> content-height: 3 * 24px + 12 * 28px + 12px;
+    private property <length> popup-height: min(root.content-height, max(120px, root.max-popup-height));
+    // Top of an option row inside the scrolled content.
+    pure function row-top(index: int) -> length {
+        return (index < 4 ? 30px : index < 9 ? 54px : 78px) + 28px * index;
+    }
+    function reveal(index: int) {
+        let top = root.row-top(index);
+        if top < -root.scroll-y { root.scroll-y = -top; }
+        else if top + 28px > -root.scroll-y + root.popup-height { root.scroll-y = -(top + 28px - root.popup-height); }
+    }
+    out property <bool> has-focus: trigger-focus.has-focus || root.popup-focused;
+    out property <bool> is-open: popup.is-open;
+
+    height: 32px;
+    border-radius: 6px;
+    border-width: root.trigger-ring ? 1px : 0px;
+    border-color: AssistantTheme.focus-border;
+    background: (trigger-area.has-hover || popup.is-open) ? AssistantTheme.surface : transparent;
+    accessible-role: button;
+    accessible-label: "Settings";
+    accessible-action-default => { root.open-menu(); }
+    forward-focus: trigger-focus;
+
+    public function open-menu() {
+        root.cursor = root.text-size;
+        root.scroll-y = 0px;
+        popup.show();
+    }
+    function choose(index: int) {
+        if index < 4 { root.text-size-selected(index); }
+        else if index < 9 { root.reading-width-selected(index - 4); }
+        else { root.theme-selected(index - 9); }
+    }
+    function close-menu() {
+        popup.close();
+        trigger-focus.focus();
+    }
+
+    Image {
+        x: 8px; y: (parent.height - 16px) / 2;
+        width: 16px; height: 16px;
+        source: @image-url("../assets/settings.svg");
+        colorize: AssistantTheme.text;
+    }
+    Text {
+        x: 32px;
+        width: max(0px, parent.width - 40px);
+        text: "Settings";
+        color: AssistantTheme.text;
+        font-family: "Inter";
+        font-size: 14px;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    trigger-focus := FocusScope {
+        focus-gained(reason) => { root.trigger-ring = reason != FocusReason.pointer-click; }
+        focus-lost => { root.trigger-ring = false; }
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space || event.text == Key.DownArrow || event.text == Key.UpArrow {
+                root.open-menu();
+                return accept;
+            }
+            return reject;
+        }
+        trigger-area := TouchArea {
+            mouse-cursor: pointer;
+            clicked => { trigger-focus.focus(); root.trigger-ring = false; root.open-menu(); }
+        }
+    }
+    // Opens upward: the row sits at the bottom of the sidebar.
+    popup := PopupWindow {
+        x: 0px;
+        y: -self.height - 4px;
+        width: max(root.width, 208px);
+        height: root.popup-height;
+        close-policy: close-on-click-outside;
+        forward-focus: popup-focus;
+        popup-focus := FocusScope {
+            changed has-focus => { root.popup-focused = self.has-focus; }
+            key-pressed(event) => {
+                if event.text == Key.DownArrow { root.cursor = min(root.cursor + 1, root.option-count - 1); root.reveal(root.cursor); return accept; }
+                if event.text == Key.UpArrow { root.cursor = max(root.cursor - 1, 0); root.reveal(root.cursor); return accept; }
+                if event.text == Key.Home { root.cursor = 0; root.reveal(0); return accept; }
+                if event.text == Key.End { root.cursor = root.option-count - 1; root.reveal(root.cursor); return accept; }
+                if event.text == Key.Return || event.text == Key.Space { root.choose(root.cursor); return accept; }
+                if event.text == Key.Escape { root.close-menu(); return accept; }
+                return reject;
+            }
+            Rectangle {
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: AssistantTheme.border;
+                background: AssistantTheme.composer;
+                Flickable {
+                  content-y <=> root.scroll-y;
+                  content-width: self.width;
+                  content-height: root.content-height;
+                  VerticalLayout {
+                    y: 0px;
+                    width: parent.width;
+                    height: root.content-height;
+                    padding: 6px;
+                    spacing: 0px;
+                    SettingsHeading { text: "Text size"; }
+                    for label[i] in ["Small", "Default", "Large", "Extra large"]: SettingsOption {
+                        label: label;
+                        selected: root.text-size == i;
+                        cursor: root.popup-focused && root.cursor == i;
+                        activated => { root.cursor = i; root.choose(i); }
+                    }
+                    SettingsHeading { text: "Reading width"; }
+                    for label[i] in ["Compact", "Default", "Wide", "Extra wide", "Full"]: SettingsOption {
+                        label: label;
+                        selected: root.reading-width == i;
+                        cursor: root.popup-focused && root.cursor == 4 + i;
+                        activated => { root.cursor = 4 + i; root.choose(4 + i); }
+                    }
+                    SettingsHeading { text: "Theme"; }
+                    for label[i] in ["System", "Light", "Dark"]: SettingsOption {
+                        label: label;
+                        selected: root.theme == i;
+                        cursor: root.popup-focused && root.cursor == 9 + i;
+                        activated => { root.cursor = 9 + i; root.choose(9 + i); }
+                    }
+                  }
+                }
+            }
+        }
+    }
+}

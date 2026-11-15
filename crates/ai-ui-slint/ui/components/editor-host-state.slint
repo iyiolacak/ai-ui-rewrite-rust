@@ -1,0 +1,24 @@
+// Host-owned presentation for one active editor. Scope is the edit-session
+// token; a frame must match both that scope and the current state token. Size
+// fields are Slint logical lengths. The host converts from physical pixels,
+// invalidates on activation/geometry/theme changes, and owns all draft data.
+export struct AssistantHostEditorState {
+    scope: string,
+    state-token: string,
+    frame-scope: string,
+    frame-token: string,
+    frame: image,
+    frame-width: length,
+    frame-height: length,
+    preferred-height: length,
+    empty: bool,
+    pointer-selection-enabled: bool,
+    allow-pending-selection: bool,
+    can-submit: bool,
+    // Empty, or the current scope while the host requests focus. Clear it on
+    // the matching focus acknowledgement to avoid replay after row recycling.
+    focus-request: string,
+    // Set to the current scope after binding callbacks to request initial
+    // geometry. Clear it after receiving the matching notification.
+    geometry-request: string,
+}

@@ -1,0 +1,62 @@
+import { AssistantButton, AssistantButtonVariant, AssistantButtonSize } from "button.slint";
+import { AssistantTheme } from "../theme.slint";
+
+// The host owns the request, capabilities, in-flight state and result. This
+// component only presents those values and emits a user's chosen action.
+export component AssistantApproval inherits Rectangle {
+    in property <string> prompt;
+    in property <string> error;
+    in property <bool> pending: false;
+    in property <bool> can-approve: false;
+    in property <bool> can-deny: false;
+    in property <string> approve-label: "Approve";
+    in property <string> deny-label: "Deny";
+    in property <string> pending-label: "Submitting response…";
+    callback approve();
+    callback deny();
+
+    height: content.preferred-height;
+    content := VerticalLayout {
+        spacing: 8px;
+        if root.prompt != "": Text {
+            text: root.prompt;
+            color: AssistantTheme.text;
+            font-family: "Inter";
+            font-size: 14px * AssistantTheme.text-scale;
+            wrap: word-wrap;
+        }
+        if root.can-approve || root.can-deny: FlexboxLayout {
+            spacing: 8px;
+            flex-wrap: wrap;
+            if root.can-approve: AssistantButton {
+                label: root.approve-label;
+                guard-repeat: true;
+                size: AssistantButtonSize.small;
+                enabled: !root.pending;
+                activated => { if !root.pending { root.approve(); } }
+            }
+            if root.can-deny: AssistantButton {
+                label: root.deny-label;
+                guard-repeat: true;
+                size: AssistantButtonSize.small;
+                variant: AssistantButtonVariant.outline;
+                enabled: !root.pending;
+                activated => { if !root.pending { root.deny(); } }
+            }
+        }
+        if root.pending: Text {
+            text: root.pending-label;
+            color: AssistantTheme.muted;
+            font-family: "Inter";
+            font-size: 12px * AssistantTheme.text-scale;
+            wrap: word-wrap;
+        }
+        if root.error != "": Text {
+            text: root.error;
+            color: AssistantTheme.error;
+            font-family: "Inter";
+            font-size: 12px * AssistantTheme.text-scale;
+            wrap: word-wrap;
+        }
+    }
+}

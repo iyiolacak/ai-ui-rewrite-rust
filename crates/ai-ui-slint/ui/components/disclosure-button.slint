@@ -1,0 +1,78 @@
+import { AssistantTheme } from "../theme.slint";
+
+// Controlled disclosure trigger. The host owns and updates `expanded`.
+export component AssistantDisclosureButton inherits Rectangle {
+    in property <string> label;
+    in property <image> icon;
+    in property <bool> expanded: false;
+    in property <bool> enabled: true;
+    callback activated();
+    // A focus ring only for keyboard focus, as in the buttons.
+    out property <bool> focus-visible: false;
+    private property <bool> key-down;
+    height: 28px * AssistantTheme.hit-scale;
+    border-radius: 4px;
+    border-width: root.focus-visible ? 1px : 0px;
+    border-color: AssistantTheme.focus-border;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-expanded: root.expanded;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if root.enabled { root.activated(); } }
+    forward-focus: focus;
+    focus := FocusScope {
+        enabled: root.enabled;
+        changed has-focus => { if !self.has-focus { root.key-down = false; } }
+        focus-gained(reason) => { root.focus-visible = reason != FocusReason.pointer-click; }
+        focus-lost => { root.focus-visible = false; }
+        key-pressed(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                if root.enabled && !root.key-down { root.key-down = true; root.activated(); }
+                return accept;
+            }
+            return reject;
+        }
+        key-released(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                root.key-down = false;
+                return accept;
+            }
+            return reject;
+        }
+    }
+    Image {
+        x: 0px; y: (parent.height - self.height) / 2; width: 16px * AssistantTheme.text-scale; height: self.width;
+        source: root.icon;
+        colorize: root.enabled ? AssistantTheme.muted : AssistantTheme.disabled;
+    }
+    Text {
+        x: 24px * AssistantTheme.text-scale; width: max(0px, parent.width - 48px * AssistantTheme.text-scale);
+        vertical-alignment: center;
+        text: root.label;
+        color: root.enabled ? (area.has-hover ? AssistantTheme.text : AssistantTheme.muted) : AssistantTheme.disabled;
+        font-family: "Inter";
+        font-size: 14px * AssistantTheme.text-scale;
+        font-weight: 400;
+        line-height-factor: 1;
+        overflow: elide;
+    }
+    Image {
+        x: max(0px, min(parent.width - self.width, label-width.preferred-width + 32px * AssistantTheme.text-scale)); y: (parent.height - self.height) / 2;
+        width: 16px * AssistantTheme.text-scale; height: self.width;
+        source: root.expanded ? @image-url("../assets/chevron-down.svg") : @image-url("../assets/chevron-right.svg");
+        colorize: root.enabled ? AssistantTheme.muted : AssistantTheme.disabled;
+    }
+    label-width := Text {
+        visible: false;
+        text: root.label;
+        font-family: "Inter";
+        font-size: 14px * AssistantTheme.text-scale;
+        font-weight: 400;
+        line-height-factor: 1;
+    }
+    area := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { focus.focus(); root.focus-visible = false; root.activated(); }
+    }
+}

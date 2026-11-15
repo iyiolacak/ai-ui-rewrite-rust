@@ -1,0 +1,29 @@
+import "../ui/assets/Inter-Regular.ttf";
+import "../ui/assets/Inter-Medium.ttf";
+import { AssistantComposer, AssistantTheme } from "../ui/lib.slint";
+
+// Static visual fixture: no file picker, upload, or transport.
+export component AttachmentComposerExample inherits Window {
+    preferred-width: 720px;
+    preferred-height: 440px;
+    min-width: 280px;
+    background: AssistantTheme.background;
+    VerticalLayout {
+        padding: 24px;
+        spacing: 16px;
+        Text { text: "Attachments"; color: AssistantTheme.text; font-family: "Inter"; font-size: 24px; }
+        AssistantComposer {
+            can-attach: true;
+            attachments-ready: false;
+            draft: "A draft with attachments";
+            attachments: [
+                { id: "a", name: "reference.txt", detail: "Local fixture reference", state: ready, progress: 1, removable: true },
+                { id: "b", name: "composition.png", detail: "Uploading", state: uploading, progress: 0.6, removable: true },
+                { id: "c", name: "type-notes.txt", detail: "Upload failed", state: failed, progress: 0, removable: true },
+                { id: "d", name: "long-reference-name.txt", detail: "Local fixture reference", state: ready, progress: 1, removable: true },
+                { id: "e", name: "another.txt", detail: "Local fixture reference", state: ready, progress: 1, removable: true },
+            ];
+        }
+        Rectangle { vertical-stretch: 1; }
+    }
+}

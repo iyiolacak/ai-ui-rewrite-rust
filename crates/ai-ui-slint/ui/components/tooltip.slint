@@ -1,0 +1,24 @@
+import { AssistantTheme } from "../theme.slint";
+
+// Presentation-only content for Slint's input-transparent Tooltip element.
+// Its parent controls when and where the system displays it.
+export component AssistantTooltipContent inherits Rectangle {
+    in property <string> label;
+
+    preferred-width: min(240px, text.preferred-width + 24px);
+    preferred-height: text.preferred-height + 12px;
+    width: self.preferred-width;
+    height: self.preferred-height;
+    border-radius: 6px;
+    background: AssistantTheme.text;
+
+    text := Text {
+        x: 12px; y: 6px;
+        width: max(0px, parent.width - 24px);
+        text: root.label;
+        color: AssistantTheme.background;
+        font-family: "Inter";
+        font-size: 12px;
+        wrap: word-wrap;
+    }
+}

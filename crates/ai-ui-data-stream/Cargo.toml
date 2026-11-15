@@ -1,0 +1,20 @@
+[package]
+name = "ai-ui-data-stream"
+version = "0.1.0"
+keywords.workspace = true
+categories.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Rust port of @assistant-ui/react-data-stream: a ChatModelAdapter for AI SDK backends (data stream and UI message stream protocols)."
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+ai-ui-core = { path = "../ai-ui-core", version = "0.1.0" }
+ai-ui-stream = { path = "../ai-ui-stream", version = "0.1.0" }
+futures-core = { version = "0.3.34", default-features = false, features = ["std"] }
+serde_json = "1"
+
+[dev-dependencies]
+futures-executor = { version = "0.3.34", default-features = false, features = ["std"] }

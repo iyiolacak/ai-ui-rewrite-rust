@@ -1,0 +1,265 @@
+{
+ "schema": 1,
+ "method": {
+  "summary": "Median of 3 interleaved Rust/React pairs on one shared, busy machine (load 10-21). Ratios matter, absolute numbers do not.",
+  "workload": "Same history, same streamed demo reply (reasoning, then the answer, one word every 18 ms), same 60 s window. Upstream is the published @assistant-ui/react 0.15.33 and @assistant-ui/react-markdown 0.14.25 in headless Chromium.",
+  "cpu": "Whole process tree, every thread and process.",
+  "memory": "Resident memory. React: every Chromium process (RSS; PSS is lower, see each row).",
+  "date": "2026-11-10",
+  "source": "docs/STATUS.md, section Performance, Against upstream (React); harness in benchmarks/react-baseline"
+ },
+ "limits": [
+  "Compared with upstream assistant-ui only. Nothing here says anything about ChatGPT or any other product.",
+  "The Rust figures include software rasterisation on the CPU (--bench-render). Chromium's figures include its own raster and compositor work.",
+  "The React thread follows upstream's default structure with plain CSS instead of Tailwind and Radix, so it does somewhat less work than upstream's default.",
+  "Rust draws at most 60 frames a second, like a display. The shared machine adds noise to every absolute number.",
+  "Ratios are rounded down to one decimal, never up. Where the source gives a range, the ratio uses the range end that is less favourable to Rust."
+ ],
+ "comparisons": [
+  {
+   "id": "open-1000",
+   "title": "Open a 1000-message thread",
+   "unit": "s",
+   "better": "lower",
+   "workload": "1000 messages, 9 KB prompt",
+   "rust": 0.12,
+   "react": 2.9,
+   "rustNote": "Markdown formatted by 0.53 s",
+   "reactNote": "navigation until all messages are in the DOM, plus two frames",
+   "source": "docs/STATUS.md, Against upstream (React)"
+  },
+  {
+   "id": "memory-1000",
+   "title": "Memory with 1000 messages",
+   "unit": "MiB",
+   "better": "lower",
+   "workload": "1000 messages, 9 KB prompt, at the end of the 60 s window",
+   "rust": 28,
+   "react": 950,
+   "rustNote": "one process",
+   "reactNote": "RSS summed over 6 Chromium processes; 702 MiB PSS, JS heap 376 MiB",
+   "source": "docs/STATUS.md, Against upstream (React); benchmarks/react-baseline/README.md"
+  },
+  {
+   "id": "memory-200",
+   "title": "Memory with 200 messages and a 40 KB prompt",
+   "unit": "MiB",
+   "better": "lower",
+   "workload": "200 messages, 40 KB prompt, at the end of the 60 s window",
+   "rust": 23,
+   "react": 663,
+   "rustNote": "one process",
+   "reactNote": "RSS summed over Chromium processes; 418 MiB PSS",
+   "source": "docs/STATUS.md, Against upstream (React)"
+  },
+  {
+   "id": "cpu-1000",
+   "title": "CPU over 60 s of streaming, 1000 messages",
+   "unit": "s",
+   "better": "lower",
+   "workload": "1000 messages, 9 KB prompt, 60 s window",
+   "rust": 18.8,
+   "react": 68.1,
+   "rustNote": "app work, layout and software paint",
+   "reactNote": "main thread alone 59.8 s, saturated",
+   "source": "docs/STATUS.md, Against upstream (React)"
+  },
+  {
+   "id": "cpu-200",
+   "title": "CPU over 60 s of streaming, 200 messages, 40 KB prompt",
+   "unit": "s",
+   "better": "lower",
+   "workload": "200 messages, 40 KB prompt, 60 s window",
+   "rust": 16.9,
+   "rustRange": [
+    16.6,
+    16.9
+   ],
+   "react": 38.1,
+   "rustNote": "measured 16.6 to 16.9 s; the bar and the ratio use 16.9 s",
+   "reactNote": "",
+   "source": "docs/STATUS.md, Against upstream (React)"
+  },
+  {
+   "id": "stall-1000",
+   "title": "Longest stall while streaming, 1000 messages",
+   "unit": "ms",
+   "better": "lower",
+   "workload": "1000 messages, 9 KB prompt, 60 s window",
+   "rust": 52,
+   "react": 867,
+   "rustNote": "longest iteration",
+   "reactNote": "longest frame; 208 frames over 33 ms",
+   "source": "docs/STATUS.md, Against upstream (React)"
+  },
+  {
+   "id": "stall-200",
+   "title": "Longest stall while streaming, 200 messages, 40 KB prompt",
+   "unit": "ms",
+   "better": "lower",
+   "workload": "200 messages, 40 KB prompt, 60 s window",
+   "rust": 100,
+   "rustRange": [
+    78,
+    100
+   ],
+   "react": 5000,
+   "rustNote": "measured 78 to 100 ms; the bar and the ratio use 100 ms",
+   "reactNote": "5.0 s",
+   "source": "docs/STATUS.md, Against upstream (React)"
+  }
+ ],
+ "scale": {
+  "title": "At 10,000 messages",
+  "source": "docs/STATUS.md, Scale (2026-11-10)",
+  "react": "The page did not survive in headless Chromium: the browser closed mid-run, and on a second attempt at launch. The harness also could not type a 512 KB prompt into its composer within 30 s.",
+  "rust": [
+   {
+    "id": "scale-open",
+    "label": "Open the thread",
+    "value": 75,
+    "unit": "ms"
+   },
+   {
+    "id": "scale-md",
+    "label": "Markdown formatted by",
+    "value": 0.11,
+    "unit": "s"
+   },
+   {
+    "id": "scale-cpu",
+    "label": "CPU per 60 s of streaming",
+    "value": 14.9,
+    "unit": "s"
+   },
+   {
+    "id": "scale-p95",
+    "label": "p95 per frame",
+    "value": 2.5,
+    "unit": "ms"
+   },
+   {
+    "id": "scale-mem",
+    "label": "Memory",
+    "value": 63,
+    "unit": "MiB"
+   }
+  ]
+ },
+ "gpu": {
+  "title": "Real GPU window, Rust only",
+  "conditions": "FemtoVG-WGPU, Intel UHD, Wayland. 30 s streaming a ~9 KB reply into a 1000-message thread. Process CPU and peak RSS from /usr/bin/time, interleaved runs. Before and after carrying femtovg fix #366 as a patch.",
+  "source": "docs/STATUS.md, Real window (2026-11-10)",
+  "rows": [
+   {
+    "id": "gpu-cpu",
+    "label": "Process CPU over 30 s",
+    "unit": "s",
+    "before": [
+     23.1,
+     25.5
+    ],
+    "after": [
+     11.8,
+     14.1
+    ]
+   },
+   {
+    "id": "gpu-fps",
+    "label": "Median frames per second",
+    "unit": "fps",
+    "before": [
+     105,
+     108
+    ],
+    "after": [
+     141,
+     142
+    ],
+    "note": "141-142 is the display's limit"
+   },
+   {
+    "id": "gpu-rss",
+    "label": "Peak resident memory",
+    "unit": "MiB",
+    "before": [
+     92,
+     92
+    ],
+    "after": [
+     95,
+     96
+    ]
+   }
+  ]
+ },
+ "web": {
+  "conditions": "Headless Chromium 1248 (Playwright 1.64.1), software WebGL (SwiftShader, no GPU), viewport 1000x700, one shared 12-core Linux machine under load; median of 3 fresh runs per row; values rounded to the shown precision. The GPU is emulated on a busy CPU, so frame rates are a floor, not what a real browser GPU gives. The demo model replies one word every 18 ms.",
+  "source": "site/scripts/measure-web.mjs, 2026-11-10",
+  "rows": [
+   {
+    "id": "wasm-raw",
+    "label": "WebAssembly file, raw",
+    "value": 9.12,
+    "unit": "MiB",
+    "note": "9565895 bytes, release build (lto, opt-level 3), measured 2026-11-13"
+   },
+   {
+    "id": "wasm-gzip",
+    "label": "WebAssembly file, gzip -9",
+    "value": 2.83,
+    "unit": "MiB",
+    "note": "2966189 bytes, gzip -9, measured 2026-11-13"
+   },
+   {
+    "id": "wasm-br",
+    "label": "WebAssembly file, brotli",
+    "value": 1.92,
+    "unit": "MiB",
+    "note": "2014503 bytes, brotli q11, measured 2026-11-13"
+   },
+   {
+    "id": "empty-paint",
+    "label": "First paint, empty thread",
+    "value": 200,
+    "unit": "ms",
+    "note": "from starting the module load to the first frame drawn (the history is built before it) [measured on the 2026-11-10 build; re-measure before publishing]"
+   },
+   {
+    "id": "empty-mem",
+    "label": "WebAssembly memory, empty thread",
+    "value": 3.9,
+    "unit": "MiB",
+    "note": "linear memory size (it only grows), after 3 s and 10 s of streaming [measured on the 2026-11-10 build; re-measure before publishing]"
+   },
+   {
+    "id": "empty-fps",
+    "label": "Frames per second while streaming, empty thread",
+    "value": 19.4,
+    "unit": "fps",
+    "note": "frames drawn during 10 s of a streamed reply (18 ms per word) [measured on the 2026-11-10 build; re-measure before publishing]"
+   },
+   {
+    "id": "history-paint",
+    "label": "First paint, 10000-message history",
+    "value": 344,
+    "unit": "ms",
+    "note": "from starting the module load to the first frame drawn (the history is built before it)"
+   },
+   {
+    "id": "history-mem",
+    "label": "WebAssembly memory, 10000-message history",
+    "value": 29.2,
+    "unit": "MiB",
+    "note": "linear memory size (it only grows), after 3 s and 10 s of streaming"
+   },
+   {
+    "id": "history-fps",
+    "label": "Frames per second while streaming, 10000-message history",
+    "value": 19.1,
+    "unit": "fps",
+    "note": "frames drawn during 10 s of a streamed reply (18 ms per word)"
+   }
+  ]
+ }
+}

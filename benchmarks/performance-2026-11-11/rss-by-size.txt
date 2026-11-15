@@ -1,0 +1,20 @@
+# --bench N --bench-reply-kb 0; a = base 173765d, b = candidate 437fd45; binaries copied together
+ 23:36:56 up  3:53,  2 users,  load average: 7.52, 5.95, 4.09
+n=200   a run 1  rss 17.3 MiB, peak 17.3 MiB after opening the thread; rss 17.7 MiB, peak 17.7 MiB at the end
+n=200   b run 1  rss 17.2 MiB, peak 17.2 MiB after opening the thread; rss 17.7 MiB, peak 17.7 MiB at the end
+n=200   a run 2  rss 17.4 MiB, peak 17.4 MiB after opening the thread; rss 17.9 MiB, peak 17.9 MiB at the end
+n=200   b run 2  rss 17.7 MiB, peak 17.7 MiB after opening the thread; rss 18.0 MiB, peak 18.0 MiB at the end
+n=200   a run 3  rss 17.4 MiB, peak 17.4 MiB after opening the thread; rss 17.8 MiB, peak 17.8 MiB at the end
+n=200   b run 3  rss 17.6 MiB, peak 17.6 MiB after opening the thread; rss 18.0 MiB, peak 18.0 MiB at the end
+n=1000  a run 1  rss 22.8 MiB, peak 22.8 MiB after opening the thread; rss 23.2 MiB, peak 23.2 MiB at the end
+n=1000  b run 1  rss 23.1 MiB, peak 23.1 MiB after opening the thread; rss 23.6 MiB, peak 23.6 MiB at the end
+n=1000  a run 2  rss 22.8 MiB, peak 22.8 MiB after opening the thread; rss 23.2 MiB, peak 23.2 MiB at the end
+n=1000  b run 2  rss 22.9 MiB, peak 22.9 MiB after opening the thread; rss 23.5 MiB, peak 23.5 MiB at the end
+n=1000  a run 3  rss 22.7 MiB, peak 22.7 MiB after opening the thread; rss 23.2 MiB, peak 23.2 MiB at the end
+n=1000  b run 3  rss 23.1 MiB, peak 23.1 MiB after opening the thread; rss 23.6 MiB, peak 23.6 MiB at the end
+n=4000  a run 1  rss 34.6 MiB, peak 34.6 MiB after opening the thread; rss 35.4 MiB, peak 35.4 MiB at the end
+n=4000  b run 1  rss 34.9 MiB, peak 34.9 MiB after opening the thread; rss 36.2 MiB, peak 36.2 MiB at the end
+n=4000  a run 2  rss 34.7 MiB, peak 34.7 MiB after opening the thread; rss 35.3 MiB, peak 35.3 MiB at the end
+n=4000  b run 2  rss 35.0 MiB, peak 35.0 MiB after opening the thread; rss 36.2 MiB, peak 36.2 MiB at the end
+n=4000  a run 3  rss 34.6 MiB, peak 34.6 MiB after opening the thread; rss 35.3 MiB, peak 35.3 MiB at the end
+n=4000  b run 3  rss 35.1 MiB, peak 35.1 MiB after opening the thread; rss 36.3 MiB, peak 36.3 MiB at the end

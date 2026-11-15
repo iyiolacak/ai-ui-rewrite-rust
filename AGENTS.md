@@ -5,11 +5,6 @@ runtime or rendering behavior. This repository is a Rust port of assistant-ui;
 protocol and lifecycle parity are part of correctness. The upstream reference
 and license attribution are recorded in `NOTICE`.
 
-Before changing streaming text reveal, motion, or renderer-side GPU effects,
-read `docs/STREAMING_MOTION.md`. It records verified shader mathematics and
-an unimplemented proposal, with constraints on Unicode, accessibility,
-cancellation, and frame-time measurement.
-
 ## Architecture and ownership
 
 - `ai-ui-core`: message types, branching repository, executor-agnostic local and

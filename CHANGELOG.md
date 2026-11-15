@@ -3,7 +3,9 @@
 All notable changes are listed here. The project follows [Semantic Versioning](https://semver.org/);
 before 1.0, minor versions may break the API.
 
-## Unreleased (0.1.0)
+## 0.1.0 (2026-11-15)
+
+First crates.io release of the eight runtime crates.
 
 Naming: the repository is `ai-ui-rewrite-rust` and the crates use the `ai-ui-` prefix (they were `assistant-ui-*` while the
 project was a working copy inside another repository). The AI SDK stream crate is `ai-ui-sdk-stream`. Environment

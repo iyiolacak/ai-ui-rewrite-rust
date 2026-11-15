@@ -9,4 +9,4 @@ let results = ai_ui_stream::run_stream_from_sse(bytes, MessageAccumulator::defau
 
 Slices that are already available are folded into one result, so a burst costs one update, not one per slice.
 
-Part of [assistant-ui for Rust](../../README.md), a port of [assistant-ui](https://github.com/assistant-ui/assistant-ui) (MIT). Not affiliated with the assistant-ui project. Status and gaps: [docs/STATUS.md](../../docs/STATUS.md).
+Part of [assistant-ui for Rust](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md), a port of [assistant-ui](https://github.com/assistant-ui/assistant-ui) (MIT). Not affiliated with the assistant-ui project. Status and gaps: [docs/STATUS.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md).

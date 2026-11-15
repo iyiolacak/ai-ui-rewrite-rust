@@ -44,9 +44,9 @@ import { AssistantThread, AssistantComposer } from "@assistant/lib.slint";
 
 `ui_dir()` is for the build script only; do not keep the source path in a
 runtime configuration. The package includes component sources, fonts, icons and
-their attribution files. Consumers choose the backend and renderer. A minimal
-[standalone consumer](../../apps/assistant-consumer-example/) compiles those
-imports and binds a synthetic text-only core conversation; it explicitly rejects
+their attribution files. Consumers choose the backend and renderer. The
+[thread example](https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/examples/thread) compiles those
+imports and binds them to a runtime; it explicitly rejects
 other content and is not a full projection or a production integration. The
 host must publish scoped state and handle every required action and effect.
 
@@ -185,8 +185,7 @@ case-insensitive linear search. Space activates the pending selection, and
 shortcut modifiers do not enter the query. It is a compact fixture selector,
 not a port of Radix Select or assistant-ui's full thread-list primitive:
 groups, automatic popup motion and per-option disabled states are not provided.
-Its `chevron-up.svg` is from the pinned Lucide revision recorded in the
-fidelity ledger (SHA-256 `d09f13fcbef3c493ead7e4663b5ee91804fec38d5edb5e7cc3acfbd547641cf4`).
+Its `chevron-up.svg` is from the pinned Lucide revision (ISC, `ui/assets/Lucide-LICENSE.txt`; SHA-256 `d09f13fcbef3c493ead7e4663b5ee91804fec38d5edb5e7cc3acfbd547641cf4`).
 
 `AssistantEditorSurface` is an experimental presentation/input boundary for a
 host-rendered editor frame. Its edit and clipboard callbacks use typed operation
@@ -300,10 +299,8 @@ and `56b6c59c3662efe31bde46b3fc186aaf252fc9f705287a3af81eaada660b5e74`.
 `AssistantTheme` exposes dark and
 light token variants, with dark selected by default. `theme.slint` registers
 the bundled fonts (Inter regular, medium and semibold; IBM Plex Mono), so the
-consuming root needs no font imports; see the fixture and the
-[fidelity ledger](../../docs/assistant-port/FIDELITY.md) for provenance and
-what was checked. The production application's current import boundary needs an
-explicit integration decision before adopting these sources.
+consuming root needs no font imports; provenance and licences of the bundled assets are in
+[THIRD_PARTY.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/THIRD_PARTY.md).
 
 `AssistantScrollbar` is a controlled vertical scrollbar. Its host supplies the
 content height, visible height and offset, owns clamping the offset when the

@@ -41,5 +41,5 @@ Legacy data-stream, assistant-transport, request bodies, Markdown and Slint chat
 components remain follow-up work. Defaults impose explicit configurable event,
 run-byte and part limits. The `v1` response header is not an SDK-major selector.
 
-[Architecture, compatibility policy and tests](../../docs/AI-SDK-STREAM.md)
+[Architecture, compatibility policy and tests](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/AI-SDK-STREAM.md)
 describe the pinned source behavior, lazy preview contract and remaining scope.

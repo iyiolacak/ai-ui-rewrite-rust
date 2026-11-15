@@ -19,4 +19,4 @@ but requires the full projection path. To track which rows a consumer shows,
 hold `Weak<MessageState>` rather than row `Arc`s: strong references keep the old
 rows alive while the view rebuilds them on a full reconciliation.
 
-Part of [assistant-ui for Rust](../../README.md), a port of [assistant-ui](https://github.com/assistant-ui/assistant-ui) (MIT). Not affiliated with the assistant-ui project. Status and gaps: [docs/STATUS.md](../../docs/STATUS.md).
+Part of [assistant-ui for Rust](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md), a port of [assistant-ui](https://github.com/assistant-ui/assistant-ui) (MIT). Not affiliated with the assistant-ui project. Status and gaps: [docs/STATUS.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md).

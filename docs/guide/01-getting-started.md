@@ -16,7 +16,8 @@ protocols, and a Slint thread UI. It follows upstream's architecture module for 
 serves assistant-ui clients keeps working. The pinned upstream commit and the list of what is and is not ported are in
 [STATUS](../STATUS.md).
 
-It is early and not on crates.io yet. It is a port, not a product of the assistant-ui or Vercel AI SDK projects.
+It is early: the eight runtime crates are on crates.io as 0.1 (`cargo add ai-ui-core`), the Slint crates are used from the
+repository. It is a port, not a product of the assistant-ui or Vercel AI SDK projects.
 
 The point of the port is cost. On the same workload, a Rust thread uses much less CPU and memory than upstream's React
 thread. One example, with its conditions: opening a 1000-message thread (9 KB prompt) until every message's Markdown is

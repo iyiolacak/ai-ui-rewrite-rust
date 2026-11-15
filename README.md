@@ -27,7 +27,8 @@ Each cell gives the range of the four run medians; the ratio's first number is t
 Rust was ahead in every pair of every run. Absolute numbers depend on CPU speed and load: React's open time is the
 more sensitive, so the open ratio is smallest on the fastest runs. Ratios are rounded down.
 
-> Status: early and unpublished (nothing is on crates.io; the Slint crates wait for femtovg 0.28). Not yet ported:
+> Status: early. The eight runtime crates are on [crates.io](https://crates.io/crates/ai-ui-core) as 0.1; the Slint crates
+> wait for femtovg 0.28. Not yet ported:
 > assistant-transport as a runtime, attachments, speech, custom per-tool components ([STATUS](docs/STATUS.md)). A port,
 > not affiliated with the assistant-ui or Vercel AI SDK projects.
 
@@ -37,11 +38,8 @@ number is in [RESULTS](docs/RESULTS.md); the browser build is described in [WEB]
 
 ## Quickstart
 
-Not on crates.io yet, so depend on the repository:
-
-```toml
-[dependencies]
-ai-ui-core = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```sh
+cargo add ai-ui-core
 ```
 
 ```rust
@@ -74,8 +72,8 @@ For a full app, run the Slint example: `cargo run -p ai-ui-example-thread` (add 
 | `ai-ui-slint` | `@assistant-ui/react` UI | Slint thread, messages, composer and actions | via the example |
 | `examples/thread` | assistant-ui default thread | Demo app: built-in streaming model or any AI SDK endpoint; native and browser | demo build |
 
-The first eight have no UI dependency and are the crates intended for release; the two Slint crates and the example
-are `publish = false` for now. Portions are ported from assistant-ui (MIT, (c) AgentbaseAI Inc.); see [NOTICE](NOTICE).
+The first eight have no UI dependency and are published on crates.io; the two Slint crates (until Slint ships femtovg
+0.28) and the example are `publish = false`, so use them from the repository. Portions are ported from assistant-ui (MIT, (c) AgentbaseAI Inc.); see [NOTICE](NOTICE).
 
 ## Performance
 

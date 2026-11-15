@@ -16,4 +16,4 @@ let run = runtime.append(AppendMessage::user_text(None, "Hi"))?;
 
 No I/O, UI, clock or randomness dependencies; builds for `wasm32-unknown-unknown`. Runtimes are `Rc`-based (single-threaded, like a UI thread).
 
-Part of [assistant-ui for Rust](../../README.md), a port of [assistant-ui](https://github.com/assistant-ui/assistant-ui) (MIT). Not affiliated with the assistant-ui project. Status and gaps: [docs/STATUS.md](../../docs/STATUS.md).
+Part of [assistant-ui for Rust](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md), a port of [assistant-ui](https://github.com/assistant-ui/assistant-ui) (MIT). Not affiliated with the assistant-ui project. Status and gaps: [docs/STATUS.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md).

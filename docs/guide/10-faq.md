@@ -11,7 +11,7 @@ section: Reference
 
 ## Is it production ready?
 
-No. The repository describes itself as early and unpublished. The runtime, the wire-protocol decoders and the Slint
+No. The repository describes itself as early (0.1). The runtime, the wire-protocol decoders and the Slint
 thread are tested, and the gate (formatting, Clippy, documentation, tests, wasm builds, AI SDK interop) passes
 locally. But it is a young port with listed gaps (see "What is not supported yet"), Markdown styling in a real GPU
 window is marked unverified in [STATUS](../STATUS.md), and nothing is released. Evaluate it against your own needs
@@ -58,8 +58,9 @@ numbers had to be corrected. Read "How to read these numbers" in [Performance](0
 
 ## Is it on crates.io?
 
-No. Depend on the repository with a `git` dependency. The eight toolkit-independent crates are intended for release;
-the two Slint crates and the example are `publish = false` for now.
+The eight toolkit-independent crates are: `ai-ui-core`, `ai-ui-stream`, `ai-ui-data-stream`, `ai-ui-sdk-stream`, `ai-ui-http`, `ai-ui-state`, `ai-ui-markdown` and `ai-ui-clipboard`, version 0.1.
+The two Slint crates and the example are `publish = false` until Slint ships femtovg 0.28; depend on them with a `git`
+dependency on the repository.
 
 ## Which licence?
 

@@ -3,7 +3,8 @@
 // 1. Dock the demo; the intro must end at the very bottom (firstVisible >= messages - 15).
 // 2. Wheel up over the canvas: the position must change and then hold (no pull-back).
 // 3. Wheel down hard: the end is reached again.
-// 3b. The counter (#demo-ordinal) shows on a wheel and during a scrollbar drag; it stays hidden only during the intro.
+// 3b. The counter (#demo-ordinal) shows on a wheel and during a scrollbar drag; it also runs live during the intro fly.
+// 1b. During the intro fly the counter is visible and its value increases across samples.
 // 4. Fresh page: a wheel during the intro stops it and the position holds.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright [CHROME=...] node scripts/demo-scroll.mjs [url] [shot-dir]
 import { createRequire } from 'node:module';
@@ -29,8 +30,21 @@ async function open() {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
   page.on('console', (m) => { if (m.type() === 'error') fail(`console: ${m.text()}`); });
   page.on('pageerror', (e) => fail(`pageerror: ${e.message}`));
+  page.on('response', (r) => { if (r.status() >= 400) console.log('http', r.status(), r.url()); });
   await page.goto(url, { waitUntil: 'load' });
+  await page.locator('#demo').scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForFunction(() => window.__aui && window.__aui.firstFrame && window.__aui.messages > 100, null, { timeout: 120000 });
+  // Record the counter on every index event (see run 1).
+  await page.evaluate(() => {
+    window.__flySamples = [];
+    const el = document.getElementById('demo-ordinal');
+    const val = document.getElementById('demo-ordinal-value');
+    window.addEventListener('aui:index', () => window.__flySamples.push({
+      visible: el.classList.contains('is-visible'),
+      value: Number(val.textContent.replace(/,/g, '')),
+    }));
+  });
   return page;
 }
 const aui = (page) => page.evaluate(() => ({ ...window.__aui }));
@@ -59,7 +73,24 @@ async function dock(page) {
   const page = await open();
   check(await dock(page), 'demo docked');
   const intro = Date.now();
-  await page.waitForFunction(() => window.__aui.settled === 1, null, { timeout: 60000 }).catch(() => {});
+  // The fly lasts about a second and a Playwright round trip is slow under software GL, so
+  // record in the page: every `aui:index` event notes the numeral and whether it is shown.
+  let shotMid = false;
+  while (Date.now() - intro < 60000 && (await aui(page)).settled !== 1) {
+    if (!shotMid && (await counter(page)).value > 3000) { shotMid = true; await page.screenshot({ path: join(shots, 'scroll-0-fly-counter.png') }); }
+    await sleep(40);
+  }
+  const samples = await page.evaluate(() => window.__flySamples);
+  const live = samples.filter((k) => k.visible);
+  const vals = live.map((k) => k.value);
+  const distinct = [...new Set(vals)];
+  console.log('fly samples', samples.length, 'visible', live.length, 'values', distinct.slice(0, 12).join(','), '...', vals.at(-1));
+  check(live.length >= 3, `counter visible during the intro fly (${live.length} of ${samples.length} samples)`);
+  check(distinct.length >= 3, `counter value changes during the fly (${distinct.length} distinct values)`);
+  // Row heights are estimates until laid out, so the numeral may step back by a little; it must run up overall.
+  const ups = vals.filter((v, i) => i > 0 && v >= vals[i - 1]).length;
+  check(vals.length > 1 && ups >= 0.8 * (vals.length - 1), `counter mostly rises during the fly (${ups} of ${vals.length - 1} steps up)`);
+  check(vals.length > 0 && vals.at(-1) > vals[0] + 100, `counter ran up (${vals[0]} -> ${vals.at(-1)})`);
   console.log('settled after', Date.now() - intro, 'ms');
   await sleep(1500);
   let a = await aui(page);
@@ -104,7 +135,21 @@ async function dock(page) {
 
   // Scrollbar drag: press on the track at the right edge of the canvas, drag up in steps.
   await sleep(2500);
-  const r = await page.evaluate(() => { const b = document.getElementById('canvas').getBoundingClientRect(); return { x: b.right - 7, top: b.top, h: b.height }; });
+  // The scrollbar sits at the right edge of the thread's reading column, not the canvas.
+  // Find it by pressing on the track at several x positions: a hit jumps the thread.
+  const r = await page.evaluate(() => { const b = document.getElementById('canvas').getBoundingClientRect(); return { cx: b.left + b.width / 2, top: b.top, h: b.height }; });
+  let barX = null;
+  for (let x = r.cx + 300; x < r.cx + 620 && barX === null; x += 4) {
+    const f0 = await first(page);
+    await page.mouse.move(x, r.top + r.h * 0.6);
+    await page.mouse.down();
+    await page.mouse.up();
+    await sleep(150);
+    if (Math.abs((await first(page)) - f0) > 100) barX = x;
+  }
+  check(barX !== null, `found the scrollbar (x=${barX})`);
+  r.x = barX ?? r.cx + 378;
+  await sleep(2500);
   const startIdx = await first(page);
   await page.mouse.move(r.x, r.top + r.h * 0.6);
   await page.mouse.down();

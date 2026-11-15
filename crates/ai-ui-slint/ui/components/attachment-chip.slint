@@ -58,7 +58,7 @@ export component AssistantAttachmentChip inherits Rectangle {
                 text: root.name;
                 color: AssistantTheme.text;
                 font-family: "Inter";
-                font-size: 12px * AssistantTheme.text-scale;
+                font-size: 12px * AssistantTheme.effective-text-scale;
                 font-weight: 500;
                 overflow: elide;
             }
@@ -66,7 +66,7 @@ export component AssistantAttachmentChip inherits Rectangle {
                 text: root.displayed-detail;
                 color: root.state == AssistantAttachmentState.failed ? AssistantTheme.error : AssistantTheme.muted;
                 font-family: "Inter";
-                font-size: 11px * AssistantTheme.text-scale;
+                font-size: 11px * AssistantTheme.effective-text-scale;
                 overflow: elide;
             }
         }

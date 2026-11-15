@@ -1,0 +1,26 @@
+// A sidebar collapse/expand toggle. Hosts place it in a layout (the main pane's header) and
+// own whether the sidebar is shown; this reports clicks and mirrors the state
+// through the pressed style so the toggle reads as on or off.
+import { AssistantTheme } from "../theme.slint";
+export component AssistantSidebarToggle inherits Rectangle {
+    in property <bool> sidebar-open: true;
+    callback sidebar-toggle();
+    width: AssistantTheme.touch-target;
+    height: AssistantTheme.touch-target;
+    border-radius: 8px;
+    background: touch.has-hover || root.sidebar-open ? AssistantTheme.surface : transparent;
+    accessible-role: button;
+    accessible-label: root.sidebar-open ? "Hide sidebar" : "Show sidebar";
+    accessible-checked: root.sidebar-open;
+    Image {
+        x: (parent.width - 16px) / 2;
+        y: (parent.height - 16px) / 2;
+        width: 16px; height: 16px;
+        source: @image-url("../assets/panel-left.svg");
+        colorize: AssistantTheme.text;
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.sidebar-toggle(); }
+    }
+}

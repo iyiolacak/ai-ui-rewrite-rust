@@ -587,18 +587,6 @@ impl ThreadRuntime for LocalThreadRuntime {
                 .message_changes_since(version),
         )
     }
-    fn message_at(&self, index: usize) -> Option<Arc<ThreadMessage>> {
-        self.shared.state.borrow().repository.message_at(index)
-    }
-    fn len_selected(&self) -> usize {
-        self.shared.state.borrow().repository.len_selected()
-    }
-    fn begin_overlay(&self) {
-        self.shared.state.borrow().repository.begin_overlay()
-    }
-    fn end_overlay(&self) {
-        self.shared.state.borrow().repository.end_overlay()
-    }
     fn switch_to_branch(&self, id: &MessageId) -> Result<(), RuntimeError> {
         Self::switch_to_branch(self, id)
     }

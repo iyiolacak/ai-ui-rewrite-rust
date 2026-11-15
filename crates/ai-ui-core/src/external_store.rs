@@ -271,18 +271,6 @@ impl ThreadRuntime for ExternalStoreRuntime {
     fn branch_position(&self, id: &MessageId) -> Result<(usize, usize), RuntimeError> {
         Ok(self.inner.state.borrow().repository.branch_position(id)?)
     }
-    fn message_at(&self, index: usize) -> Option<Arc<ThreadMessage>> {
-        self.inner.state.borrow().repository.message_at(index)
-    }
-    fn len_selected(&self) -> usize {
-        self.inner.state.borrow().repository.len_selected()
-    }
-    fn begin_overlay(&self) {
-        self.inner.state.borrow().repository.begin_overlay()
-    }
-    fn end_overlay(&self) {
-        self.inner.state.borrow().repository.end_overlay()
-    }
     fn switch_to_branch(&self, id: &MessageId) -> Result<(), RuntimeError> {
         let head = {
             let mut state = self.inner.state.borrow_mut();

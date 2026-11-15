@@ -6,7 +6,7 @@ import { AssistantTheme } from "../theme.slint";
 export component AssistantChunkedText inherits VerticalLayout {
     in property <[string]> chunks;
     in property <color> color: AssistantTheme.text;
-    in property <length> font-size: 16px * AssistantTheme.text-scale;
+    in property <length> font-size: 16px * AssistantTheme.effective-text-scale;
     in property <float> line-height-factor: 1.25;
     for chunk in root.chunks: Rectangle {
         height: measured;

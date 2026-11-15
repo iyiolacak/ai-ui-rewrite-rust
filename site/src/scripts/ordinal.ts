@@ -5,9 +5,10 @@
 // The numeral is an ordinal, not an animation of the scroll offset, so it changes in the same
 // turn as the scroll, not a frame later.
 //
-// It is intentionally hidden while the intro flies. The intro ends when WASM sets `__aui.settled`
-// (it landed at the bottom) or the page sets `__aui.introDone` (also on cancel by a gesture), and only then does the overlay fade in — so it reads as part
-// of the demo thread, not as a landing-page chrome badge.
+// It is shown live during the intro fly too (docked, intro not yet over): the app reports every
+// first-visible change, programmatic moves included, so the number runs up while the thread
+// flies. The intro ends when WASM sets `__aui.settled` (it landed at the bottom) or the page sets
+// `__aui.introDone` (also on cancel by a gesture); the counter then fades ~1.5 s later.
 const overlay = document.getElementById('demo-ordinal');
 const valueEl = document.getElementById('demo-ordinal-value');
 const totalEl = document.getElementById('demo-ordinal-total');
@@ -20,9 +21,14 @@ let gesturedAt = -Infinity;
 // A held pointer on the demo (the scrollbar thumb, a touch, a drag) keeps the counter up
 // until it is released, however slowly the list is being moved.
 let holding = false;
-let settledOnce = false; // the intro has landed; the ordinal is now allowed to show
+let settledOnce = false; // the intro has ended; the landing fade timer has been started
 
-const docked = () => document.body.classList.contains('demo-docked');
+// On wide screens stage.ts flies the demo into place (`demo-travels`) and the counter waits
+// until it has docked. Small screens and reduced motion keep the demo in the page without
+// that flight, and there it is always in place: the counter must not wait for a dock that
+// never comes, or scrolling 10,000 messages would look like a slow scroll through twenty.
+const docked = () =>
+  !document.body.classList.contains('demo-travels') || document.body.classList.contains('demo-docked');
 
 type Metrics = { firstVisible?: number; messages?: number; userScrolling?: number; settled?: number; introDone?: number };
 
@@ -41,7 +47,7 @@ function introOver(): boolean {
 }
 
 function wake(): void {
-  if (!overlay || !docked() || !(settledOnce || introOver())) return;
+  if (!overlay || !docked()) return;
   overlay.classList.add('is-visible');
   window.clearTimeout(hideTimer);
   // While the pointer is down, the gesture is not over: no hide timer at all.
@@ -67,8 +73,8 @@ function read(): void {
   const aui = metrics();
   if (introOver() && !settledOnce) {
     settledOnce = true;
-    // Now that the thread has stopped, the counter is part of the demo.
-    if (overlay && docked()) overlay.classList.add('is-visible');
+    // The fly has landed (or a gesture took over): keep the numeral up a moment, then fade.
+    wake();
   }
   if (typeof aui?.firstVisible !== 'number') return;
   if (typeof aui.messages === 'number' && totalEl) {
@@ -81,7 +87,9 @@ function read(): void {
     // Every way of moving the thread counts: wheel, keys, a touch flick and dragging the
     // scrollbar inside the canvas. The app marks those as user scrolling; a thread switch
     // or a new turn is not one, and should not summon the counter.
-    if (aui.userScrolling === 1 || performance.now() - gesturedAt < 2200) wake();
+    // The intro fly is programmatic, so it counts too while it runs.
+    const flying = !introOver() && document.body.classList.contains('demo-docked');
+    if (flying || aui.userScrolling === 1 || performance.now() - gesturedAt < 2200) wake();
   }
   if (!docked()) overlay?.classList.remove('is-visible');
 }

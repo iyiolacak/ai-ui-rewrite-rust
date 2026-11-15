@@ -14,7 +14,7 @@ export component AssistantFeedback inherits HorizontalLayout {
         icon: @image-url("../assets/thumbs-up.svg");
         label: "Good response";
         tooltip: "Good response";
-        control-size: 24px * AssistantTheme.hit-scale; icon-size: 14px * AssistantTheme.text-scale; bordered: false;
+        control-size: 24px * AssistantTheme.hit-scale; icon-size: 14px * AssistantTheme.effective-text-scale; bordered: false;
         hit-height: 32px * AssistantTheme.hit-scale;
         // A 28 px pitch keeps the 4 px gap between 24 px visuals.
         hit-width: 28px * AssistantTheme.hit-scale;
@@ -27,7 +27,7 @@ export component AssistantFeedback inherits HorizontalLayout {
         icon: @image-url("../assets/thumbs-down.svg");
         label: "Bad response";
         tooltip: "Bad response";
-        control-size: 24px * AssistantTheme.hit-scale; icon-size: 14px * AssistantTheme.text-scale; bordered: false;
+        control-size: 24px * AssistantTheme.hit-scale; icon-size: 14px * AssistantTheme.effective-text-scale; bordered: false;
         hit-height: 32px * AssistantTheme.hit-scale;
         hit-width: 28px * AssistantTheme.hit-scale;
         guard-repeat: true;

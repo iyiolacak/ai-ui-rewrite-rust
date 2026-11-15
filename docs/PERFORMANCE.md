@@ -3,67 +3,60 @@
 This document records measured changes, their correctness contracts, and the
 remaining costs. `AGENTS.md` is the short guide for future coding agents.
 
-## 2026-11-14: O(1) streaming tail — repository overlay + view fast path
+## 2026-11-14: overlay removed, view fast path rejected
 
-Identified as "the next target" in the 2026-11-11 section below
-(`2.9 → 21.3 µs` per update, 1k → 10k). Two photocopy machines remained:
+Commit `a66e993` ("O(1) streaming tail via repository overlay and view fast
+path") is **not** a performance improvement and has been reverted in full. Its
+earlier write-up (a "busy box, load 4-8" table without interleaved pairs, and
+the linear-cost item marked "Done") did not meet the measurement rules in
+`AGENTS.md` and has been removed.
 
-1. **View side:** `ThreadView::build_into` called `runtime.messages()` on every
-   notification, cloning `N` `Arc`s per token even when the journal said only
-   the tail changed.
-2. **Repository side:** `replace_in_path` fell back to `path.to_vec()` (N `Arc`
-   clones) whenever `Arc::get_mut(path)` failed — i.e. whenever any snapshot
-   was retained.
+### The overlay never engaged
 
-### What changed
+`begin_overlay()` cloned the cached `path` `Arc` into `overlay`, so both fields
+held one allocation and `Arc::get_mut(overlay)` could not succeed. A temporary
+probe in the old test confirmed it: `Arc::strong_count` was 2 inside
+`begin_overlay`, and the check before `get_mut` found a count above 1 on the
+first update. The first token therefore dropped the overlay and fell through to
+the existing path patch. The code added public `ThreadRuntime::begin_overlay`
+and `end_overlay`, calls in `local/run.rs` that did nothing, and a garbled
+comment. All of it is removed and `replace_in_path` is back to its previous
+body (which already patches in place when no snapshot is retained and copies
+the pointer slice otherwise). A plain test keeps the retained-snapshot
+immutability check.
 
-- `ThreadRuntime` gains defaulted `message_at(i)` / `len_selected()` /
-  `begin_overlay()` / `end_overlay()` (no-ops by default; safe for custom
-  runtimes). `LocalThreadRuntime` and `ExternalStoreRuntime` override to
-  hit `MessageRepository` directly.
-- `MessageRepository` gains a tail **overlay** slice. `begin_overlay()` clones
-  the cached prefix once per run; `replace_in_path` patches the overlay via
-  `Arc::get_mut` when no snapshot is retained → O(1) per token. A retained
-  prior snapshot is never mutated: the overlay is dropped and the next
-  `messages()` rebuilds from `nodes`. Structural changes clear it via `dirty`.
-- `local/run.rs`: `begin_overlay()` at step start, `end_overlay()` at step end.
-- `ThreadView::build_into` fast lane: when shape/capabilities/running are
-  unchanged and the journal yields `indices: Some`, project only those indices
-  via `message_at` (including UI-stale ids). Otherwise materialize once.
-  Smooth sync needs only the last message.
-- New tests: `repository::tests::overlay_keeps_streaming_updates_o1_without_stale_snapshots`
-  and `message_at`/`len_selected` assertions in the journal test.
+### View fast path: measured, no win, reverted
 
-### Validation
+The fast path read changed rows through `message_at`/`len_selected` instead of
+`runtime.messages()`, which was already an O(1) cached `Arc` clone.
 
-- `bash scripts/gate.sh --quick`: **gate passed**
-- `cargo test -p ai-ui-state --test view`: **19/19** (run-end `None`, retained
-  snapshots, smooth ticks, rebind barriers)
-- `cargo test -p ai-ui-core --lib`: **38/38**
+`projection_cost_per_streamed_update`, release, 1000 updates per cell, rustc
+1.95.0, 7 interleaved rounds (start order rotated) after a discarded warm-up
+per side, load average 4.5-4.7 on 12 threads (`uptime` / `/proc/loadavg`;
+the machine was not idle). A = `a66e993^`, B = A plus the fast path (overlay
+removed), C = B with `view.rs` restored to A's. Medians in us per update
+[min-max]:
 
-### Measured (busy box, load 4–8 — absolutes noisy, ratios indicative)
+| smooth | History | A | B | C |
+|---|---|---|---|---|
+| false | 1000 | 4.7 [4.3-5.3] | 4.5 [4.4-5.1] | 4.5 [4.5-4.7] |
+| false | 5000 | 13.5 [12.9-14.6] | 13.1 [12.8-14.0] | 12.9 [12.8-15.5] |
+| true | 1000 | 3.7 [3.6-3.9] | 3.7 [3.6-4.5] | 3.7 [3.6-3.9] |
+| true | 5000 | 9.7 [9.2-11.8] | 11.2 [8.7-14.9] | 9.3 [9.1-9.9] |
 
-Release, `projection_cost_per_streamed_update`, 1000 updates, this machine:
+Differences are within the spread of the samples (B is at most ~3% below A in
+the cases it wins, and above A with smoothing at 5000). 10 and 100 messages are
+flat in all three. The fast path was rejected: extra public API and a second
+projection lane for no measured gain. Raw samples and commands:
+[`benchmarks/performance-2026-11-14`](../benchmarks/performance-2026-11-14/README.md).
+The end-to-end `scripts/ab-bench.sh` comparison was **not run**: it builds the
+Slint example, and the revisions differ in unrelated landing-page code, so it
+could not isolate this change.
 
-| History | Before | After (this change alone) |
-|---|---|---|
-| 1k, smooth=false | 12.3 µs | 5.0 µs |
-| 5k, smooth=false | 33.7 µs | 17.9 µs |
-| 5k, smooth=true | 21.0 µs | 15.1 µs |
+The earlier claim of 33.7 us at 5k history for the old code did not reproduce:
+`a66e993^` measures about 13 us here.
 
-`host_reconciliation` feed median moved 31.7 → 24.9 µs at 10k (same noisy box;
-not claimed as proof — see interleaved-pair caveat in earlier sections).
-
-Why not flat yet: the remaining linear term is **content copying in the reply**
-— `with_continuation` / `with_external_results` in `local/run.rs` and
-`accumulator::result()` in `ai-ui-stream` clone the growing reply per token.
-That is intentionally untouched: it changes adapter/snapshot contracts.
-
-Reproduce:
-```sh
-cargo test --release -p ai-ui-state --test perf -- --ignored --nocapture projection_cost_per_streamed_update
-bash scripts/gate.sh --quick
-```
+Reproduce: see the benchmark README above.
 
 ---
 
@@ -418,23 +411,18 @@ same-version rebinds and nested notifications. Stream tests cover every split
 width of a Unicode/CRLF fixture, EOF, byte limits, metadata, alias precedence,
 part routing and cooperative progress with/without visible output.
 
-- ~~The view-to-host change feed (2026-11-11) removed the host's historical-row
+### Remaining costs and next experiments
+
+- The view-to-host change feed (2026-11-11) removed the host's historical-row
   scan, but per-update cost still grows about linearly with history in the
   runtime snapshot and state projection (2.9 → 21.3 µs per update from 1,000 to
   10,000 messages in `perf.rs`). That is the next target for long threads.
-  Slint's row/layout behavior and any virtualization experiment are unchanged.~~
-  Done in 2026-11-14: repository tail overlay + view fast path. See the new
-  section above. The remaining linear term is content copying in the reply.
-
-### Remaining costs and next experiments (updated)
-
-- Cumulative message bodies and per-row presentation still grow with reply
-  length (`with_continuation` / `with_external_results` clone content per
-  token, accumulator `result()` clones parts). An incremental part-update
-  interface could reduce those copies, but must preserve adapter/snapshot
-  contracts. This is the next target after the 2026-11-14 overlay work.
+  Slint's row/layout behavior and any virtualization experiment are unchanged.
 - Copying a retained immutable snapshot necessarily costs more than patching a
   uniquely held one. Run-start/end transitions and structural edits still scan.
+- Cumulative message bodies and per-row presentation still grow with reply
+  length. An incremental part-update interface could reduce those copies, but
+  must preserve existing adapter/snapshot contracts.
 - The scheduler budget counts input slices, not bytes or elapsed time. One
   arbitrarily large caller-provided slice can still take a long synchronous
   decode. Measure byte-bounded feeding separately before changing that API.

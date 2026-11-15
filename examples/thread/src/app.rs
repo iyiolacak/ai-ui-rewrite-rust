@@ -1334,7 +1334,10 @@ mod tests {
         key("-".into());
         assert_eq!(theme.get_text_scale(), 1.0);
         key("0".into());
-        assert_eq!(theme.get_text_scale(), crate::settings::SCALES[crate::settings::DEFAULT_STEP]);
+        assert_eq!(
+            theme.get_text_scale(),
+            crate::settings::SCALES[crate::settings::DEFAULT_STEP]
+        );
         ui.window().dispatch_event(WindowEvent::KeyReleased {
             text: Key::Control.into(),
         });

@@ -163,7 +163,7 @@ export component AssistantEditComposer inherits Rectangle {
         text: root.can-remove-attachments ? "Attachments" : "Attachments retained";
         color: AssistantTheme.muted;
         font-family: "Inter";
-        font-size: 12px * AssistantTheme.text-scale;
+        font-size: 12px * AssistantTheme.effective-text-scale;
     }
     retained-list := AssistantAttachmentList {
         x: 16px; y: 30px;
@@ -203,7 +203,7 @@ export component AssistantEditComposer inherits Rectangle {
             single-line: false;
             wrap: word-wrap;
             font-family: "Inter";
-            font-size: 16px * AssistantTheme.text-scale;
+            font-size: 16px * AssistantTheme.effective-text-scale;
             color: AssistantTheme.text;
             accessible-label: "Edit message";
             init => {

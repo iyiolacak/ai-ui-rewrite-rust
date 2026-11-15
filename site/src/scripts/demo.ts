@@ -15,6 +15,35 @@ function hasWebGL(): boolean {
   }
 }
 
+// winit sizes the canvas from ResizeObserver's devicePixelContentBoxSize but takes its scale factor
+// from devicePixelRatio. Under emulated device metrics (DevTools device mode, Playwright's
+// deviceScaleFactor) the first stays at CSS pixels while the second is e.g. 2.6, so Slint computes a
+// logical window 2.6x too small and draws everything 2.6x too large, with compact mode wrongly
+// reading a 145 px window. Real displays report both consistently and are left alone: only a
+// size that disagrees with contentBox * devicePixelRatio by over 15% is replaced by that product.
+function reconcileDevicePixelSize(): void {
+  try {
+    const proto = ResizeObserverEntry.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, 'devicePixelContentBoxSize');
+    if (!desc?.get) return;
+    const getter = desc.get;
+    Object.defineProperty(proto, 'devicePixelContentBoxSize', {
+      configurable: true,
+      enumerable: desc.enumerable,
+      get(this: ResizeObserverEntry) {
+        const real = getter.call(this) as ReadonlyArray<ResizeObserverSize>;
+        const css = this.contentBoxSize?.[0];
+        const dpr = window.devicePixelRatio || 1;
+        if (this.target.id !== 'canvas' || !css || !real?.[0] || css.inlineSize < 1) return real;
+        if (Math.abs(real[0].inlineSize / (css.inlineSize * dpr) - 1) <= 0.15) return real;
+        return [{ inlineSize: Math.round(css.inlineSize * dpr), blockSize: Math.round(css.blockSize * dpr) }];
+      },
+    });
+  } catch {
+    /* browsers without devicePixelContentBoxSize (Safari) take winit's CSS-pixel fallback, which is consistent */
+  }
+}
+
 function fail(message: string): void {
   started = false;
   if (statusEl) statusEl.textContent = message;
@@ -36,6 +65,7 @@ async function load(): Promise<void> {
     if (s > 0 && subEl) subEl.textContent = `Still loading… ${s}s — the demo is worth the wait`;
   }, 500);
   (window as unknown as { __AUI_ARGS: string }).__AUI_ARGS = 'history=10000&threads=40';
+  reconcileDevicePixelSize();
   try {
     // Whole-device-pixel canvas layout: keeps text sharp in Firefox. Optional, so a missing file is not fatal.
     try {

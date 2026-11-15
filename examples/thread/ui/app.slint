@@ -3,8 +3,68 @@
 // are centred; otherwise messages scroll above a composer footer.
 import "@assistant/assets/Inter-Regular.ttf";
 import "@assistant/assets/Inter-Medium.ttf";
-import { AssistantTheme, AssistantColorScheme, AssistantThread, AssistantComposer, AssistantSuggestions, AssistantSuggestion, ApprovalChoice, ApprovalRequest, ChatRow, MessageFeedback, AssistantThreadList, AssistantThreadListItem, AssistantSettingsMenu } from "@assistant/lib.slint";
+import { AssistantTheme, AssistantColorScheme, AssistantThread, AssistantComposer, AssistantSuggestions, AssistantSuggestion, ApprovalChoice, ApprovalRequest, ChatRow, MessageFeedback, AssistantThreadList, AssistantThreadListItem, AssistantSettingsMenu, AssistantSidebarToggle } from "@assistant/lib.slint";
 export { ApprovalChoice, ApprovalRequest, ApprovalState, ChatRow, ChatPart, ChatPartKind, PartIcon, MessageRole, MessageStatusTone, MessageFeedback, MarkdownBlock, MarkdownBlockKind, MarkdownCell, MarkdownAlignment, AssistantSuggestion, AssistantColorScheme, AssistantTheme, AssistantThreadListItem } from "@assistant/lib.slint";
+
+// The thread list with the settings row under a hairline, and a hairline on
+// its trailing edge. Used as the wide column and as the compact overlay.
+component ThreadSidebar inherits Rectangle {
+    in property <[AssistantThreadListItem]> items;
+    in property <int> selected-index: -1;
+    in property <bool> enabled: true;
+    in-out property <string> search;
+    in property <int> text-size: 2;
+    in property <int> reading-width: 1;
+    in property <int> theme: 2;
+    in property <length> popup-height: 600px;
+    out property <bool> has-focus: list.has-focus;
+    callback new-thread();
+    callback select(int);
+    callback rename(int, string);
+    callback archive(int);
+    callback delete(int);
+    callback search-changed(string);
+    callback text-size-selected(int);
+    callback reading-width-selected(int);
+    callback theme-selected(int);
+    public function open-settings() { settings.open-menu(); }
+    background: AssistantTheme.composer;
+    clip: true;
+    HorizontalLayout {
+        spacing: 0px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 0px;
+            list := AssistantThreadList {
+                vertical-stretch: 1;
+                items: root.items;
+                selected-index: root.selected-index;
+                enabled: root.enabled;
+                search <=> root.search;
+                new-thread => { root.new-thread(); }
+                select(index) => { root.select(index); }
+                rename(index, text) => { root.rename(index, text); }
+                archive(index) => { root.archive(index); }
+                delete(index) => { root.delete(index); }
+                search-changed(text) => { root.search-changed(text); }
+            }
+            Rectangle { height: 1px; background: AssistantTheme.border; }
+            VerticalLayout {
+                padding: 8px;
+                settings := AssistantSettingsMenu {
+                    text-size: root.text-size;
+                    max-popup-height: root.popup-height;
+                    reading-width: root.reading-width;
+                    theme: root.theme;
+                    text-size-selected(index) => { root.text-size-selected(index); }
+                    reading-width-selected(index) => { root.reading-width-selected(index); }
+                    theme-selected(index) => { root.theme-selected(index); }
+                }
+            }
+        }
+        Rectangle { width: 1px; background: AssistantTheme.border; }
+    }
+}
 
 export component AppWindow inherits Window {
     title: "assistant-ui";
@@ -46,6 +106,11 @@ export component AppWindow inherits Window {
     in property <int> text-size-index: 2;
     in property <int> reading-width-index: 1;
     in property <int> theme-index: 2;
+    // Sidebar visibility. The host owns the value; on a narrow window the
+    // sidebar starts closed and this toggle (or selecting a thread) opens it
+    // as an overlay.
+    in-out property <bool> sidebar-open: !AssistantTheme.compact;
+    callback sidebar-toggled(bool);
     in property <length> column-width: 704px;
     // Side padding of the column; wider for the full-width setting.
     in property <length> column-padding: 16px;
@@ -54,7 +119,9 @@ export component AppWindow inherits Window {
     callback theme-selected(int);
     // Ctrl+= / Ctrl+- step the text size (+1 / -1), Ctrl+0 resets it (0).
     callback adjust-text-size(int);
-    public function open-settings() { settings.open-menu(); }
+    public function open-settings() {
+        if root.compact { sidebar-overlay.open-settings(); } else { sidebar-panel.open-settings(); }
+    }
 
     callback send(string) -> bool;
     callback stop();
@@ -85,17 +152,26 @@ export component AppWindow inherits Window {
     callback toast-dismiss();
 
     private property <bool> empty: root.messages.length == 0;
+    // Below 640 px the sidebar leaves the flow and hangs over the column.
+    out property <bool> compact: AssistantTheme.compact;
+    // The window width drives the theme's compact breakpoint. The sidebar's
+    // default follows it: open in a wide window, closed in a compact one. It is
+    // re-applied only when the width crosses the breakpoint (the sidebar then
+    // changes from a column to an overlay or back); within one side of it the
+    // user's own toggle is never overridden by a resize.
+    changed width => { AssistantTheme.viewport-width = root.width; }
+    changed compact => { root.sidebar-open = !root.compact; }
+    private property <length> header-height: AssistantTheme.touch-target + 16px;
 
     // Focus belongs to the composer after a thread switch, an edit, or a
     // scroll to the newest message. Clicking a suggestion or sending moves it too.
     public function focus-composer() { composer.focus-editor(); }
     // A run starts without taking focus from the thread sidebar.
     public function focus-composer-for-run() {
-        if !thread-list.has-focus { composer.focus-editor(); }
+        if !sidebar-panel.has-focus && !sidebar-overlay.has-focus { composer.focus-editor(); }
     }
     out property <bool> composer-focused: composer.has-focus;
 
-    // Absolute geometry, not a layout: the sidebar width depends on the window width.
     // The scope only observes keys on their way to the focused item.
     FocusScope {
         width: parent.width;
@@ -111,144 +187,170 @@ export component AppWindow inherits Window {
     Rectangle {
         width: parent.width;
         height: parent.height;
-        // The thread list from the library, at the left edge. Hidden when narrow.
-        sidebar := Rectangle {
-            x: 0px;
-            y: 0px;
-            height: parent.height;
-            width: root.width >= 640px ? 256px : 0px;
-            visible: root.width >= 640px;
-            background: AssistantTheme.composer;
-            clip: true;
-            thread-list := AssistantThreadList {
-                x: 0px;
-                y: 0px;
-                width: max(0px, parent.width - 1px);
-                height: max(0px, parent.height - 49px);
+        // Wide: [sidebar | main pane] side by side. The main pane is a header
+        // row (sidebar toggle, thread summary) above the thread column, as in
+        // assistant-ui's sidebar example, so the toggle has one fixed slot.
+        HorizontalLayout {
+            spacing: 0px;
+            sidebar-panel := ThreadSidebar {
+                width: root.sidebar-open && !root.compact ? 256px : 0px;
+                visible: root.sidebar-open && !root.compact;
                 items: root.thread-items;
                 selected-index: root.selected-thread;
                 enabled: !root.running && root.edit-token == "";
                 search <=> root.thread-search;
+                text-size: root.text-size-index;
+                reading-width: root.reading-width-index;
+                theme: root.theme-index;
+                popup-height: root.height - 64px;
                 new-thread => { root.new-thread(); }
                 select(index) => { root.select-thread(index); }
                 rename(index, text) => { root.rename-thread(index, text); }
                 archive(index) => { root.archive-thread(index); }
                 delete(index) => { root.delete-thread(index); }
                 search-changed(text) => { root.search-threads(text); }
-            }
-            // Footer: the settings row under a hairline.
-            Rectangle {
-                x: 0px;
-                y: parent.height - 49px;
-                width: max(0px, parent.width - 1px);
-                height: 1px;
-                background: AssistantTheme.border;
-            }
-            settings := AssistantSettingsMenu {
-                x: 8px;
-                y: parent.height - 41px;
-                width: max(0px, parent.width - 17px);
-                text-size: root.text-size-index;
-                max-popup-height: root.height - 64px;
-                reading-width: root.reading-width-index;
-                theme: root.theme-index;
                 text-size-selected(index) => { root.text-size-selected(index); }
                 reading-width-selected(index) => { root.reading-width-selected(index); }
                 theme-selected(index) => { root.theme-selected(index); }
             }
-            Rectangle {
-                x: parent.width - 1px;
-                y: 0px;
-                width: 1px;
-                height: parent.height;
-                background: AssistantTheme.border;
+            VerticalLayout {
+                spacing: 0px;
+                horizontal-stretch: 1;
+                header := HorizontalLayout {
+                    height: root.header-height;
+                    padding: 8px;
+                    spacing: 8px;
+                    AssistantSidebarToggle {
+                        sidebar-open: root.sidebar-open;
+                        sidebar-toggle => {
+                            root.sidebar-open = !root.sidebar-open;
+                            root.sidebar-toggled(root.sidebar-open);
+                        }
+                    }
+                    Text {
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                        text: root.empty ? "" : root.thread-stats;
+                        color: AssistantTheme.muted;
+                        font-size: 12px;
+                        overflow: elide;
+                    }
+                }
+                // The reading column is centred in the space left under the header.
+                Rectangle {
+                    vertical-stretch: 1;
+                    column := VerticalLayout {
+                        x: max(0px, (parent.width - root.column-width) / 2);
+                        width: min(parent.width, root.column-width);
+                        height: parent.height;
+                        padding-left: root.column-padding;
+                        padding-right: root.column-padding;
+                        padding-bottom: 24px;
+                        spacing: 0px;
+                        if root.empty: Rectangle { vertical-stretch: 1; }
+                        if root.empty: Rectangle {
+                            height: 32px + 24px;
+                            Text {
+                                x: 8px; y: 0px;
+                                text: "How can I help you today?";
+                                color: AssistantTheme.text;
+                                font-size: 24px * AssistantTheme.effective-text-scale;
+                                font-weight: 500;
+                                letter-spacing: -0.6px;
+                            }
+                        }
+                        if !root.empty: thread := AssistantThread {
+                            vertical-stretch: 1;
+                            track-visible-index: root.track-visible-index;
+                            changed first-visible => {
+                                root.first-visible = thread.first-visible;
+                                root.visible-index-changed(thread.first-visible, thread.user-scrolling);
+                            }
+                            messages: root.messages;
+                            busy: root.running || root.edit-token != "";
+                            conversation-revision: root.thread-revision;
+                            scroll-top-request: root.scroll-top-request;
+                            scroll-bottom-request: root.scroll-bottom-request;
+                            scroll-fraction <=> root.scroll-fraction;
+                            can-copy-message: root.can-copy;
+                            can-copy-code: root.can-copy;
+                            toggle-part(message, part) => { root.toggle-part(message, part); }
+                            page-requested(revision, message, part, token, page, delta) => { root.page-requested(revision, message, part, token, page, delta); }
+                            resolve-approval(request, choice) => { root.resolve-approval(request, choice); }
+                            switch-branch(token, next) => { root.switch-branch(token, next); }
+                            regenerate(token) => { root.regenerate(token); }
+                            edit-token: root.edit-token;
+                            edit-branch-token: root.edit-token;
+                            edit-draft <=> root.edit-draft;
+                            begin-edit(token) => { root.begin-edit(token); }
+                            save-edit(token, text) => { root.save-edit(token, text); }
+                            cancel-edit(token) => { root.cancel-edit(token); }
+                            copy-message(token) => { root.copy-message(token); }
+                            copy-code(code) => { root.copy-code(code); }
+                            submit-feedback(token, choice) => { root.submit-feedback(token, choice); }
+                            link-activated(link) => { root.link-activated(link); }
+                            scroll-to-bottom-clicked => { root.focus-composer(); }
+                        }
+                        if !root.empty: Rectangle { height: 16px; }
+                        composer := AssistantComposer {
+                            draft <=> root.draft;
+                            enabled: root.edit-token == "";
+                            busy: root.running;
+                            submit(text) => { root.scroll-bottom-request += 1; return root.send(text); }
+                            cancel(_) => { root.stop(); }
+                        }
+                        if root.empty && root.draft == "": Rectangle { height: 16px; }
+                        if root.empty && root.draft == "": AssistantSuggestions {
+                            suggestions: root.suggestions;
+                            scope: "welcome";
+                            selected(_, id) => { root.suggestion-selected(id); }
+                        }
+                        if root.empty: Rectangle { vertical-stretch: 1; }
+                    }
+                }
             }
         }
-        main := Rectangle {
-            x: sidebar.width;
-            y: 0px;
-            width: parent.width - sidebar.width;
-            height: parent.height;
-        column := VerticalLayout {
-            x: max(0px, (parent.width - root.column-width) / 2);
-            width: min(parent.width, root.column-width);
-            height: parent.height;
-            padding-left: root.column-padding;
-            padding-right: root.column-padding;
-            padding-top: 16px;
-            padding-bottom: 24px;
-            spacing: 0px;
-            if root.empty: Rectangle { vertical-stretch: 1; }
-            if root.empty: Rectangle {
-                height: 32px + 24px;
-                Text {
-                    x: 8px; y: 0px;
-                    text: "How can I help you today?";
-                    color: AssistantTheme.text;
-                    font-size: 24px;
-                    font-weight: 500;
-                    letter-spacing: -0.6px;
-                }
+        // Compact: the sidebar is an overlay below the header, so the header
+        // (and its toggle) stays where it is. A scrim behind the overlay
+        // dismisses it with a tap; picking a thread closes it.
+        scrim := Rectangle {
+            x: 0px;
+            y: root.header-height;
+            width: parent.width;
+            height: parent.height - root.header-height;
+            visible: root.compact && root.sidebar-open;
+            background: #00000099;
+            TouchArea {
+                clicked => { root.sidebar-open = false; root.sidebar-toggled(false); }
             }
-            if !root.empty && root.thread-stats != "": Rectangle {
-                height: 22px;
-                Text {
-                    x: 8px; y: 3px;
-                    width: parent.width - 16px;
-                    text: root.thread-stats;
-                    color: AssistantTheme.muted;
-                    font-size: 12px;
-                    overflow: elide;
-                }
-            }
-            if !root.empty: thread := AssistantThread {
-                vertical-stretch: 1;
-                track-visible-index: root.track-visible-index;
-                changed first-visible => {
-                    root.first-visible = thread.first-visible;
-                    root.visible-index-changed(thread.first-visible, thread.user-scrolling);
-                }
-                messages: root.messages;
-                busy: root.running || root.edit-token != "";
-                conversation-revision: root.thread-revision;
-                scroll-top-request: root.scroll-top-request;
-                scroll-bottom-request: root.scroll-bottom-request;
-                scroll-fraction <=> root.scroll-fraction;
-                can-copy-message: root.can-copy;
-                can-copy-code: root.can-copy;
-                toggle-part(message, part) => { root.toggle-part(message, part); }
-                page-requested(revision, message, part, token, page, delta) => { root.page-requested(revision, message, part, token, page, delta); }
-                resolve-approval(request, choice) => { root.resolve-approval(request, choice); }
-                switch-branch(token, next) => { root.switch-branch(token, next); }
-                regenerate(token) => { root.regenerate(token); }
-                edit-token: root.edit-token;
-                edit-branch-token: root.edit-token;
-                edit-draft <=> root.edit-draft;
-                begin-edit(token) => { root.begin-edit(token); }
-                save-edit(token, text) => { root.save-edit(token, text); }
-                cancel-edit(token) => { root.cancel-edit(token); }
-                copy-message(token) => { root.copy-message(token); }
-                copy-code(code) => { root.copy-code(code); }
-                submit-feedback(token, choice) => { root.submit-feedback(token, choice); }
-                link-activated(link) => { root.link-activated(link); }
-                scroll-to-bottom-clicked => { root.focus-composer(); }
-            }
-            if !root.empty: Rectangle { height: 16px; }
-            composer := AssistantComposer {
-                draft <=> root.draft;
-                enabled: root.edit-token == "";
-                busy: root.running;
-                submit(text) => { root.scroll-bottom-request += 1; return root.send(text); }
-                cancel(_) => { root.stop(); }
-            }
-            if root.empty && root.draft == "": Rectangle { height: 16px; }
-            if root.empty && root.draft == "": AssistantSuggestions {
-                suggestions: root.suggestions;
-                scope: "welcome";
-                selected(_, id) => { root.suggestion-selected(id); }
-            }
-            if root.empty: Rectangle { vertical-stretch: 1; }
         }
+        sidebar-overlay := ThreadSidebar {
+            x: 0px;
+            y: root.header-height;
+            width: min(256px, parent.width * 0.8);
+            height: parent.height - root.header-height;
+            visible: root.compact && root.sidebar-open;
+            items: root.thread-items;
+            selected-index: root.selected-thread;
+            enabled: !root.running && root.edit-token == "";
+            search <=> root.thread-search;
+            text-size: root.text-size-index;
+            reading-width: root.reading-width-index;
+            theme: root.theme-index;
+            popup-height: root.height - root.header-height - 64px;
+            new-thread => { root.new-thread(); }
+            select(index) => {
+                root.select-thread(index);
+                root.sidebar-open = false;
+                root.sidebar-toggled(false);
+            }
+            rename(index, text) => { root.rename-thread(index, text); }
+            archive(index) => { root.archive-thread(index); }
+            delete(index) => { root.delete-thread(index); }
+            search-changed(text) => { root.search-threads(text); }
+            text-size-selected(index) => { root.text-size-selected(index); }
+            reading-width-selected(index) => { root.reading-width-selected(index); }
+            theme-selected(index) => { root.theme-selected(index); }
         }
     }
     }

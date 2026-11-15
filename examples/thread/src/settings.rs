@@ -228,6 +228,13 @@ pub fn apply(ui: &AppWindow, settings: &Settings) {
     } else {
         AssistantColorScheme::Dark
     });
+    // The window's logical width drives the compact breakpoint. The offscreen
+    // renderer reports it as the physical size divided by its 2x scale factor,
+    // so write it here as well as from `changed width` in the markup (which
+    // handles resizes after `show`, and settings changes re-apply it too).
+    let physical = ui.window().size();
+    let scale = ui.window().scale_factor();
+    theme.set_viewport_width(physical.width as f32 / scale);
     ui.set_text_size_index(settings.text_step() as i32);
     ui.set_reading_width_index(settings.width as i32);
     ui.set_theme_index(settings.theme.index());

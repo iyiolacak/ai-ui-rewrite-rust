@@ -92,9 +92,10 @@ export component AssistantThread inherits Rectangle {
     // Top: show the first message and stop following; the next user scroll or send decides again.
     in property <int> scroll-top-request: 0;
     in property <int> scroll-bottom-request: 0;
-    // Landing scrub mode: the page asks for a fractional position (0=top, 1=bottom).
-    // When `scroll-fraction >= 0` it drives content-y directly and counts as
-    // user scrolling for the page's counter; a user gesture sets it back to -1.
+    // Landing: the page's last *request* for a position (0=top, 1=bottom, -1=none).
+    // Each change is applied once and never re-applied, so a later user gesture
+    // always wins. 1 means scroll-to-bottom() (follow), which converges even
+    // while the virtualized row heights are still estimates.
     in-out property <float> scroll-fraction: -1.0;
     public function scroll-to-top() {
         scroll-settle.running = false;
@@ -106,10 +107,12 @@ export component AssistantThread inherits Rectangle {
     changed scroll-top-request => { root.scroll-to-top(); }
     changed scroll-bottom-request => { root.scroll-to-bottom(); }
     changed scroll-fraction => {
-        if (root.scroll-fraction >= 0.0) {
+        if (root.scroll-fraction >= 1.0) {
+            root.scroll-to-bottom();
+        } else if (root.scroll-fraction >= 0.0) {
             scroll-settle.running = false;
-            root.user-scrolling = true;
-            root.following = root.scroll-fraction >= 1.0;
+            root.user-scrolling = false;
+            root.following = false;
             list.content-y = 0px - root.scroll-fraction * max(0px, list.content-height - list.visible-height);
             root.last-content-y = list.content-y;
         }
@@ -117,7 +120,6 @@ export component AssistantThread inherits Rectangle {
     function user-scrolled() {
         root.user-scrolling = true;
         root.following = false;
-        root.scroll-fraction = -1.0; // a real gesture hands the thread back to the pointer
         scroll-settle.running = false;
         scroll-settle.running = true;
     }

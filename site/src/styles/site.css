@@ -241,3 +241,14 @@ body { overflow-x: clip; }
   .speed-cell .chart .strong { font-size: 44px; }
   .speed-cell .chart .bar-label, .speed-cell .chart .bar-value { font-size: 15px; }
 }
+
+/* Phones: the sticky header is opaque, so hero text scrolling under it does not read as an
+   overlap, and anchored sections stop below it. The scroll counter gets a shorter scrim and a
+   smaller numeral so it stays in the top of a ~650 px frame and never reaches the composer. */
+@media (max-width: 639px) {
+  .topbar { background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  [id] { scroll-margin-top: 72px; }
+  .demo-ordinal { height: 112px; padding-top: 18px; gap: .45rem; }
+  .demo-ordinal-value { font-size: 2.75rem; }
+  .demo-ordinal-total { font-size: .8125rem; }
+}

@@ -135,13 +135,6 @@ pub struct MessageRepository {
     root: Children,
     head: Option<MessageId>,
     path: RefCell<Option<Arc<[Arc<ThreadMessage>]>>>,
-    /// Incremental overlay for the streaming tail. When `Some`, `messages()`
-    /// returns this slice. It is built once per run by cloning the (cached)
-    /// prefix `Arc`s — callers must not retain a prior prefix `Arc` across a
-    /// token, or the next `replace_in_path` pays a fresh prefix clone (still
-    /// O(N), but only on retained snapshots, never in steady state where the
-    /// view reads via `message_at`). Structural changes clear it via `dirty`.
-    overlay: RefCell<Option<Arc<[Arc<ThreadMessage>]>>>,
     /// Bumped whenever the tree's shape or the selected path changes.
     shape_version: u64,
     change_version: u64,
@@ -186,68 +179,12 @@ impl MessageRepository {
 
     /// The selected path from the root to the head.
     pub fn messages(&self) -> Arc<[Arc<ThreadMessage>]> {
-        if let Some(overlay) = &*self.overlay.borrow() {
-            return overlay.clone();
-        }
         if let Some(path) = &*self.path.borrow() {
             return path.clone();
         }
         let path: Arc<[Arc<ThreadMessage>]> = self.path_to(self.head.as_ref()).into();
         *self.path.borrow_mut() = Some(path.clone());
         path
-    }
-
-    /// Start (or continue) an incremental overlay for in-place updates.
-    /// Clones the cached prefix once; subsequent tail updates use `Arc::get_mut`
-    /// on the overlay when no snapshot is retained, making each token O(1).
-    /// No-op when an overlay already exists or no path is materialized.
-    pub fn begin_overlay(&self) {
-        if self.overlay.borrow().is_some() {
-            return;
-        }
-        if let Some(path) = self.path.borrow().clone() {
-            *self.overlay.borrow_mut() = Some(path);
-        }
-    }
-
-    /// Drop the overlay; the next `messages()` rebuilds from `nodes`.
-    pub fn end_overlay(&self) {
-        *self.overlay.borrow_mut() = None;
-    }
-
-    /// Number of messages on the selected path without materializing it.
-    pub fn len_selected(&self) -> usize {
-        if let Some(overlay) = &*self.overlay.borrow() {
-            return overlay.len();
-        }
-        if let Some(path) = &*self.path.borrow() {
-            return path.len();
-        }
-        self.head
-            .as_ref()
-            .and_then(|id| self.nodes.get(id))
-            .map_or(0, |n| n.level + 1)
-    }
-
-    /// Single-message read: overlay first, then cached path (O(1)), else a
-    /// single parent walk from the head (O(depth) but no full clone).
-    /// All three return the same `Arc` identity for the same logical message.
-    pub fn message_at(&self, index: usize) -> Option<Arc<ThreadMessage>> {
-        if let Some(overlay) = &*self.overlay.borrow() {
-            return overlay.get(index).cloned();
-        }
-        if let Some(path) = &*self.path.borrow() {
-            return path.get(index).cloned();
-        }
-        let len = self.len_selected();
-        if index >= len {
-            return None;
-        }
-        let mut current = self.head.as_ref()?;
-        for _ in index..len - 1 {
-            current = self.nodes.get(current)?.parent.as_ref()?;
-        }
-        Some(self.nodes.get(current)?.message.clone())
     }
 
     /// The path from the root to `head_id`.
@@ -326,7 +263,6 @@ impl MessageRepository {
     }
     fn dirty(&mut self) {
         *self.path.get_mut() = None;
-        *self.overlay.get_mut() = None;
         self.shape_version = self.shape_version.wrapping_add(1);
         self.reset_changes();
     }
@@ -380,37 +316,14 @@ impl MessageRepository {
         self.shape_version
     }
 
-    /// A message changed in place: patch the overlay tail in O(1) when no
-    /// snapshot is retained; otherwise the retained snapshot stays immutable
-    /// and the next read materializes (correctness over speed).
+    /// A message changed in place: patch the cached path (copying pointers)
+    /// instead of rebuilding it with a lookup per ancestor. Streaming replaces
+    /// the head message on every update, so this keeps an update cheap on a
+    /// long thread.
     fn replace_in_path(&mut self, level: usize, id: &MessageId, message: Arc<ThreadMessage>) {
-        if let Some(overlay) = self.overlay.get_mut().as_mut() {
-            if overlay.get(level).map(|m| m.id()) == Some(id) {
-                if Arc::ptr_eq(&overlay[level], &message) {
-                    return;
-                }
-                if let Some(slots) = Arc::get_mut(overlay) {
-                    slots[level] = message;
-                    self.record_change(level);
-                    return;
-                }
-                // Retained snapshot: do not mutate it. Keep overlay as-is and
-                // let the next `messages()` return the stale snapshot is wrong
-                // — instead fall through to invalidate overlay and rebuild.
-                // Conservative: drop overlay so `messages()` rebuilds from nodes.
-                *self.overlay.get_mut() = None;
-                // Fall through to path logic below (path still holds prefix).
-            } else {
-                return;
-            }
-        }
-        if self.overlay.get_mut().is_some() {
-            return;
-        }
         let Some(path) = self.path.get_mut().as_mut() else {
-            // No materialized path: we cannot prove membership cheaply
-            // without walking parents (O(n)), so keep the journal
-            // conservative. `messages()` will do a full read.
+            // No materialized path to establish membership against. A full
+            // read remains necessary, even for a cursor acquired beforehand.
             self.reset_changes();
             return;
         };
@@ -878,11 +791,6 @@ mod tests {
         repo.add_or_update(Some(&id("b")), msg("c")).unwrap();
         let fast = repo.message_changes_since(Some(first.version));
         assert_eq!(fast.indices, Some(vec![2]));
-        // Single-message reads must match the full path.
-        assert_eq!(repo.message_at(2).unwrap().id(), &id("c"));
-        assert_eq!(repo.message_at(0).unwrap().id(), &id("a"));
-        assert_eq!(repo.len_selected(), 3);
-        assert!(repo.message_at(3).is_none());
         repo.add_or_update(None, msg("a")).unwrap();
         repo.add_or_update(Some(&id("b")), msg("c")).unwrap();
         assert_eq!(
@@ -898,30 +806,22 @@ mod tests {
     }
 
     #[test]
-    fn overlay_keeps_streaming_updates_o1_without_stale_snapshots() {
+    fn streaming_updates_keep_retained_snapshots_immutable() {
         let mut repo = MessageRepository::new();
         chain(
             &mut repo,
             &[("a", None), ("b", Some("a")), ("c", Some("b"))],
         );
         let _ = repo.messages();
-        repo.begin_overlay();
-        // Repeated tail updates must hit the overlay lane and not grow `path`.
         for _ in 0..5 {
             repo.add_or_update(Some(&id("b")), msg("c")).unwrap();
         }
-        assert_eq!(repo.messages()[2].id(), &id("c"));
-        assert_eq!(repo.message_at(2).unwrap().id(), &id("c"));
-        assert_eq!(repo.len_selected(), 3);
-        // Retained prefix snapshot must not be mutated by later updates.
-        repo.end_overlay();
+        // A retained snapshot must not be mutated by later updates.
         let snap = repo.messages();
+        let before = snap[2].clone();
         repo.add_or_update(Some(&id("b")), msg("c")).unwrap();
-        assert_eq!(snap[2].id(), &id("c"));
-        // Structural change clears overlay.
-        repo.begin_overlay();
-        repo.switch_to_branch(&id("c")).unwrap();
-        assert_eq!(repo.len_selected(), 3);
+        assert!(Arc::ptr_eq(&snap[2], &before));
+        assert!(!Arc::ptr_eq(&snap[2], &repo.messages()[2]));
     }
 
     #[test]

@@ -392,12 +392,17 @@ impl ThreadView {
 
     fn build_into(&self, state: &mut ThreadState) {
         let runtime = self.inner.runtime();
+        let messages = runtime.messages();
         let running = runtime.is_running();
         let capabilities = runtime.capabilities();
-        let len = runtime.len_selected();
-        let last = len.saturating_sub(1);
+        let last = messages.len().saturating_sub(1);
         let presenters = self.inner.presenters.borrow();
         let mut ui = self.inner.ui.borrow_mut();
+        if self.inner.options.smooth.is_some() {
+            self.sync_smooth(&mut ui, &messages, running);
+        }
+        let mut rows = self.inner.rows.borrow_mut();
+        rows.truncate(messages.len());
         let version = runtime.structure_version();
         let same_shape = version.is_some() && version == self.inner.rows_version.get();
         self.inner.rows_version.set(version);
@@ -405,74 +410,8 @@ impl ThreadView {
         self.inner
             .messages_version
             .set(changes.as_ref().map(|changes| changes.version));
-        let indices_opt = changes.and_then(|c| c.indices);
-        // Decide whether we can stay incremental without `messages()`.
-        // Conditions exactly mirror the original `changed` gate, plus we
-        // must be able to read the changed tail via `message_at`. If not,
-        // materialize once (full path) — correctness over speed.
-        let mut rows = self.inner.rows.borrow_mut();
-        rows.truncate(len);
         let out = &mut state.messages;
-        out.truncate(len);
-        let can_fast = same_shape
-            && rows.len() == len
-            && out.len() == len
-            && state.is_running == running
-            && state.capabilities == capabilities
-            && indices_opt.is_some();
-        if can_fast {
-            // Defer full `messages()`; project changed indices via message_at.
-            let mut indices = indices_opt.unwrap();
-            for id in &ui.stale {
-                if let Ok(entry) = runtime.message(id) {
-                    if runtime
-                        .message_at(entry.index)
-                        .is_some_and(|m| m.id() == id)
-                    {
-                        indices.push(entry.index);
-                    }
-                }
-            }
-            indices.sort_unstable();
-            indices.dedup();
-            // Smooth sync needs only the last message.
-            if self.inner.options.smooth.is_some() {
-                if let Some(last_msg) = runtime.message_at(last) {
-                    let slice = [last_msg];
-                    self.sync_smooth(&mut ui, &slice, running);
-                }
-            }
-            for &index in &indices {
-                let Some(message) = runtime.message_at(index) else {
-                    continue;
-                };
-                self.project_row(
-                    &runtime,
-                    &mut ui,
-                    &presenters,
-                    &mut rows,
-                    out,
-                    &message,
-                    index,
-                    last,
-                    running,
-                    capabilities,
-                    same_shape,
-                );
-            }
-            ui.stale.clear();
-            state.is_empty = state.messages.is_empty();
-            state.is_running = running;
-            state.capabilities = capabilities;
-            self.inner.view_changes.borrow_mut().record(Some(indices));
-            return;
-        }
-        // Slow/full path: materialize once.
-        let messages = runtime.messages();
-        debug_assert_eq!(messages.len(), len);
-        if self.inner.options.smooth.is_some() {
-            self.sync_smooth(&mut ui, &messages, running);
-        }
+        out.truncate(messages.len());
         // A uniquely held ThreadState can patch only affected rows. Retained
         // snapshots, structure/global changes, and runtimes without a complete
         // journal keep the full-scan path. Never infer a delta from just the
@@ -483,7 +422,7 @@ impl ThreadView {
             && state.is_running == running
             && state.capabilities == capabilities
         {
-            indices_opt
+            changes.and_then(|changes| changes.indices)
         } else {
             None
         };
@@ -502,98 +441,69 @@ impl ThreadView {
             indices.dedup();
             indices
         });
-        for index in match &changed {
-            Some(indices) => indices.clone(),
-            None => (0..messages.len()).collect(),
-        } {
+        let mut project = |index: usize| {
             let message = &messages[index];
-            self.project_row(
-                &runtime,
-                &mut ui,
-                &presenters,
-                &mut rows,
-                out,
-                message,
-                index,
-                last,
+            // A streamed update replaces a message in place, which cannot move
+            // any branch; looking positions up for every message made each
+            // update cost a hash lookup per message of the thread.
+            let branch = match rows.get(index) {
+                Some((key, row))
+                    if same_shape
+                        && (key.message == Arc::as_ptr(message) as usize
+                            || row.id == *message.id()) =>
+                {
+                    key.branch
+                }
+                _ => runtime.branch_position(message.id()).unwrap_or((1, 1)),
+            };
+            let key = RowKey {
+                message: Arc::as_ptr(message) as usize,
+                branch,
+                is_last: index == last,
                 running,
                 capabilities,
-                same_shape,
-            );
+            };
+            let stale = !ui.stale.is_empty() && ui.stale.contains(message.id());
+            let row = match rows.get(index) {
+                Some((existing, row)) if *existing == key && !stale => {
+                    if out.get(index).is_some_and(|shown| Arc::ptr_eq(shown, row)) {
+                        return;
+                    }
+                    row.clone()
+                }
+                _ => {
+                    let row = Arc::new(self.message_state(
+                        &ui,
+                        &presenters,
+                        message,
+                        index,
+                        branch,
+                        &key,
+                        capabilities,
+                    ));
+                    if index < rows.len() {
+                        rows[index] = (key, row.clone());
+                    } else {
+                        rows.push((key, row.clone()));
+                    }
+                    row
+                }
+            };
+            if index < out.len() {
+                out[index] = row;
+            } else {
+                out.push(row);
+            }
+        };
+        match &changed {
+            Some(indices) => indices.iter().copied().for_each(&mut project),
+            None => (0..messages.len()).for_each(&mut project),
         }
         ui.stale.clear();
         state.is_empty = state.messages.is_empty();
         state.is_running = running;
         state.capabilities = capabilities;
         self.inner.view_changes.borrow_mut().record(changed);
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn project_row(
-        &self,
-        runtime: &Rc<dyn ThreadRuntime>,
-        ui: &mut Ui,
-        presenters: &HashMap<String, Presenter>,
-        rows: &mut Vec<(RowKey, Arc<MessageState>)>,
-        out: &mut Vec<Arc<MessageState>>,
-        message: &Arc<ThreadMessage>,
-        index: usize,
-        last: usize,
-        running: bool,
-        capabilities: RuntimeCapabilities,
-        same_shape: bool,
-    ) {
-        // A streamed update replaces a message in place, which cannot move
-        // any branch; looking positions up for every message made each
-        // update cost a hash lookup per message of the thread.
-        let branch = match rows.get(index) {
-            Some((key, row))
-                if same_shape
-                    && (key.message == Arc::as_ptr(message) as usize
-                        || row.id == *message.id()) =>
-            {
-                key.branch
-            }
-            _ => runtime.branch_position(message.id()).unwrap_or((1, 1)),
-        };
-        let key = RowKey {
-            message: Arc::as_ptr(message) as usize,
-            branch,
-            is_last: index == last,
-            running,
-            capabilities,
-        };
-        let stale = !ui.stale.is_empty() && ui.stale.contains(message.id());
-        let row = match rows.get(index) {
-            Some((existing, row)) if *existing == key && !stale => {
-                if out.get(index).is_some_and(|shown| Arc::ptr_eq(shown, row)) {
-                    return;
-                }
-                row.clone()
-            }
-            _ => {
-                let row = Arc::new(self.message_state(
-                    ui,
-                    presenters,
-                    message,
-                    index,
-                    branch,
-                    &key,
-                    capabilities,
-                ));
-                if index < rows.len() {
-                    rows[index] = (key, row.clone());
-                } else {
-                    rows.push((key, row.clone()));
-                }
-                row
-            }
-        };
-        if index < out.len() {
-            out[index] = row;
-        } else {
-            out.push(row);
-        }
     }
 
     /// Point each streaming part's animator at its latest text. Only the last

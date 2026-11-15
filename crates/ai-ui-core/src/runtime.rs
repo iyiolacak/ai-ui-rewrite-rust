@@ -174,22 +174,6 @@ pub trait ThreadRuntime {
     fn message_changes_since(&self, _version: Option<u64>) -> Option<MessageChanges> {
         None
     }
-    /// One message on the selected path without cloning the whole path.
-    /// Default falls back to `messages()[index]`; runtimes that can answer
-    /// without materializing override this to keep streamed updates O(1) in
-    /// history length. Returns `None` when out of range or unsupported.
-    fn message_at(&self, index: usize) -> Option<Arc<ThreadMessage>> {
-        self.messages().get(index).cloned()
-    }
-    /// Number of messages on the selected path, without materializing it.
-    fn len_selected(&self) -> usize {
-        self.messages().len()
-    }
-    /// Keep in-place updates O(1) by letting the repository maintain an
-    /// overlay slice. Default is a no-op; overriding runtimes implement it.
-    fn begin_overlay(&self) {}
-    /// Drop the overlay. Default is a no-op.
-    fn end_overlay(&self) {}
     /// Select the branch containing `id`.
     fn switch_to_branch(&self, id: &MessageId) -> Result<(), RuntimeError>;
     /// Add a message; a user message answers it (see [`AppendMessage`]).

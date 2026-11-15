@@ -168,12 +168,6 @@ async fn roundtrip(
         return Ok(());
     };
     *steps_started += 1;
-    // Enable the O(1) tail overlay for the streaming loop. Must be called
-    // before the first `apply` so `replace_in_path` hits the overlay lane.
-    {
-        let state = shared.state.borrow();
-        state.repository.begin_overlay();
-    }
     let signal = controller.signal();
     let mut stream = shared.adapter.run(options);
 
@@ -202,11 +196,6 @@ async fn roundtrip(
         }
     };
     drop(stream);
-    // Drop the overlay — the next `messages()` rebuilds from `nodes`.
-    {
-        let state = shared.state.borrow();
-        state.repository.end_overlay();
-    }
 
     if outcome.is_ok() {
         let status = current(shared, message_id).map(|m| m.status);

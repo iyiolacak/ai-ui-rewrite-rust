@@ -7,7 +7,7 @@
 //! cargo run -p ai-ui-example-thread -- --light           # light theme (or --theme system|light|dark)
 //! Settings (gear row in the sidebar; Ctrl+= / Ctrl+- / Ctrl+0 for text size) are saved in
 //! $XDG_CONFIG_HOME/ai-ui-example-thread/settings.json; `--text-scale F` and `--reading-width compact|default|wide|xwide|full` override a run.
-//! cargo run -p ai-ui-example-thread -- --screenshot out.png [--conversation] [--expand-all] [--ask TEXT]... [--decide allow|deny] [--new-thread] [--mid-stream MS] [--size 900x760]
+//! cargo run -p ai-ui-example-thread -- --screenshot out.png [--conversation] [--expand-all] [--ask TEXT]... [--decide allow|deny] [--new-thread] [--mid-stream MS] [--size 900x760] [--sidebar open|closed]
 //! Demo scenario in a window: `--history 1000 --threads 40 --long-reply-kb 9 --token-delay-ms 4`
 //! GPU window: SLINT_BACKEND=winit-femtovg cargo run -p ai-ui-example-thread --features gpu-window -- [--ask TEXT] [--window-snapshot PATH [--snapshot-delay-ms MS]]
 //! ```
@@ -60,6 +60,8 @@ struct Args {
     theme: Option<settings::Theme>,
     /// Open the settings popover (for `--screenshot`).
     open_settings: bool,
+    /// Force the sidebar open or closed for a `--screenshot` (default: by window width).
+    sidebar: Option<bool>,
     screenshot: Option<String>,
     window_snapshot: Option<String>,
     snapshot_delay: Duration,
@@ -141,6 +143,7 @@ fn args() -> Result<Args, String> {
         reading_width: None,
         theme: None,
         open_settings: false,
+        sidebar: None,
         screenshot: None,
         window_snapshot: None,
         snapshot_delay: Duration::from_secs(6),
@@ -196,6 +199,13 @@ fn args() -> Result<Args, String> {
                 )
             }
             "--open-settings" => args.open_settings = true,
+            "--sidebar" => {
+                args.sidebar = Some(match value()?.as_str() {
+                    "open" => true,
+                    "closed" => false,
+                    _ => return Err("--sidebar expects open or closed".into()),
+                });
+            }
             "--screenshot" => args.screenshot = Some(value()?),
             "--window-snapshot" => args.window_snapshot = Some(value()?),
             "--snapshot-delay-ms" => {
@@ -510,6 +520,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 drop(run);
                 return Ok(());
             }
+        }
+        if let Some(open) = args.sidebar {
+            ui.set_sidebar_open(open);
         }
         if args.open_settings {
             ui.invoke_open_settings();

@@ -23,7 +23,7 @@ component ToolTextPanel inherits Rectangle {
             text: root.value;
             color: AssistantTheme.text.transparentize(0.1);
             font-family: AssistantTheme.mono-family;
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             line-height-factor: 1.3;
             horizontal-stretch: 1;
             min-width: 0px;
@@ -86,7 +86,7 @@ export component AssistantToolFallback inherits Rectangle {
             text: root.legacy-body;
             color: AssistantTheme.muted;
             font-family: "Inter";
-            font-size: 14px * AssistantTheme.text-scale;
+            font-size: 14px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
         // The host capability can also represent a complete empty input.
@@ -104,7 +104,7 @@ export component AssistantToolFallback inherits Rectangle {
             text: root.detail;
             color: AssistantTheme.muted;
             font-family: "Inter";
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
         if root.structured && root.has-result: VerticalLayout {
@@ -113,7 +113,7 @@ export component AssistantToolFallback inherits Rectangle {
                 text: (root.result-label == "" ? "Result" : root.result-label) + ":";
                 color: AssistantTheme.muted;
                 font-family: "Inter";
-                font-size: 12px * AssistantTheme.text-scale;
+                font-size: 12px * AssistantTheme.effective-text-scale;
                 font-weight: 500;
             }
             ToolTextPanel {

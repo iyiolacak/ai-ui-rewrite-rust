@@ -39,7 +39,7 @@ component MarkdownTextBlock inherits Rectangle {
         default-font-family: "Inter";
         default-font-size: (root.block.kind == MarkdownBlockKind.heading
             ? (root.block.heading-level <= 1 ? 24px : root.block.heading-level == 2 ? 20px : 18px)
-            : 16px) * AssistantTheme.text-scale;
+            : 16px) * AssistantTheme.effective-text-scale;
         link-clicked(link) => { root.link-activated(link); }
     }
 }
@@ -72,7 +72,7 @@ component MarkdownCodeBlock inherits Rectangle {
             height: 24px;
             text: root.block.language;
             font-family: "Inter";
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             font-weight: 500;
             color: AssistantTheme.muted;
             overflow: elide;
@@ -100,7 +100,7 @@ component MarkdownCodeBlock inherits Rectangle {
                 width: max(code-view.width, self.preferred-width);
                 text: root.block.code;
                 font-family: AssistantTheme.mono-family;
-                font-size: 13px * AssistantTheme.text-scale;
+                font-size: 13px * AssistantTheme.effective-text-scale;
                 color: AssistantTheme.text;
                 wrap: no-wrap;
             }
@@ -141,7 +141,7 @@ component MarkdownTableRow inherits Rectangle {
                 default-color: AssistantTheme.text;
                 link-color: AssistantTheme.text;
                 default-font-family: "Inter";
-                default-font-size: 14px * AssistantTheme.text-scale;
+                default-font-size: 14px * AssistantTheme.effective-text-scale;
                 horizontal-alignment: cell.alignment == MarkdownAlignment.center ? center : cell.alignment == MarkdownAlignment.right ? right : left;
                 link-clicked(link) => { root.link-activated(link); }
             }

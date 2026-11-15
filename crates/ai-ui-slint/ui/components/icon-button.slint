@@ -19,7 +19,9 @@ export component AssistantIconButton inherits Rectangle {
     in property <bool> selected: false;
     in property <length> control-size: 28px;
     // Minimum pointer target. Desktop guidance is 32 px; 44 px is for touch.
-    in property <length> hit-size: 32px;
+    // A caller that pins this value is respected on every form factor; the
+    // default grows with the compact touch target when AssistantTheme is compact.
+    in property <length> hit-size: AssistantTheme.touch-target;
     // Per-axis pointer target; default to the square hit size. A tight row can
     // use a narrower pitch (for example 28 px) with 32 px height.
     in property <length> hit-width: root.hit-size;

@@ -132,14 +132,14 @@ export component AssistantReasoningPreview inherits Rectangle {
                 text: root.text;
                 color: AssistantTheme.muted;
                 font-family: "Inter";
-                font-size: 14px * AssistantTheme.text-scale;
+                font-size: 14px * AssistantTheme.effective-text-scale;
                 line-height-factor: 1.625;
                 wrap: word-wrap;
             }
             if root.chunks.length > 0: AssistantChunkedText {
                 chunks: root.chunks;
                 color: AssistantTheme.muted;
-                font-size: 14px * AssistantTheme.text-scale;
+                font-size: 14px * AssistantTheme.effective-text-scale;
                 line-height-factor: 1.625;
             }
         }

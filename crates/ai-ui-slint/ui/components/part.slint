@@ -39,7 +39,7 @@ export component AssistantPart inherits Rectangle {
             text: root.part.body;
             color: AssistantTheme.text;
             font-family: "Inter";
-            font-size: 16px * AssistantTheme.text-scale;
+            font-size: 16px * AssistantTheme.effective-text-scale;
             font-weight: 400;
             line-height-factor: 1.25;
             wrap: word-wrap;
@@ -67,7 +67,7 @@ export component AssistantPart inherits Rectangle {
             text: root.part.text-page-error;
             color: AssistantTheme.muted;
             font-family: "Inter";
-            font-size: 14px * AssistantTheme.text-scale;
+            font-size: 14px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
         if root.part.kind == ChatPartKind.text && !root.part.text-paged && root.part.markdown-enabled: AssistantMarkdown {
@@ -80,7 +80,7 @@ export component AssistantPart inherits Rectangle {
         if !root.part.text-paged && root.part.markdown-warning != "": Text {
             text: root.part.markdown-warning;
             color: AssistantTheme.muted;
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
         if root.part.kind == ChatPartKind.attachment: AssistantAttachmentChip {
@@ -153,7 +153,7 @@ export component AssistantPart inherits Rectangle {
                 : root.part.approval-state == ApprovalState.denied ? "Approval recorded: denied · " + root.part.approval-prompt
                 : "Approval unavailable while the run is not active.";
             color: AssistantTheme.muted;
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
     }

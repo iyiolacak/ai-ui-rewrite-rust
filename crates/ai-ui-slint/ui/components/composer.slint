@@ -148,7 +148,7 @@ export component AssistantComposer inherits Rectangle {
             text: "Send a message...";
             color: AssistantTheme.muted.with-alpha(0.6);
             font-family: "Inter";
-            font-size: 16px * AssistantTheme.text-scale;
+            font-size: 16px * AssistantTheme.effective-text-scale;
         }
         host-input := AssistantEditorSurface {
             width: parent.width; height: parent.height;
@@ -217,7 +217,7 @@ export component AssistantComposer inherits Rectangle {
         single-line: false;
         wrap: word-wrap;
         font-family: "Inter";
-        font-size: 16px * AssistantTheme.text-scale;
+        font-size: 16px * AssistantTheme.effective-text-scale;
         font-weight: 400;
         color: AssistantTheme.text;
         // Editable while a run is in progress: only sending is blocked.

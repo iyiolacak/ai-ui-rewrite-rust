@@ -22,7 +22,7 @@ export component AssistantApproval inherits Rectangle {
             text: root.prompt;
             color: AssistantTheme.text;
             font-family: "Inter";
-            font-size: 14px * AssistantTheme.text-scale;
+            font-size: 14px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
         if root.can-approve || root.can-deny: FlexboxLayout {
@@ -48,14 +48,14 @@ export component AssistantApproval inherits Rectangle {
             text: root.pending-label;
             color: AssistantTheme.muted;
             font-family: "Inter";
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
         if root.error != "": Text {
             text: root.error;
             color: AssistantTheme.error;
             font-family: "Inter";
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             wrap: word-wrap;
         }
     }

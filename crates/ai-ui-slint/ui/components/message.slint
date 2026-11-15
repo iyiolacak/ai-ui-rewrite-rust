@@ -92,7 +92,7 @@ export component AssistantMessage inherits Rectangle {
         // multi-line responses before the visible Markdown is rendered.
         text: root.user ? root.message.width-hint : "";
         font-family: "Inter";
-        font-size: 16px * AssistantTheme.text-scale;
+        font-size: 16px * AssistantTheme.effective-text-scale;
     }
     if root.editing: editor := AssistantEditComposer {
         x: 8px; y: 0px;
@@ -176,14 +176,14 @@ export component AssistantMessage inherits Rectangle {
             if root.working: Text {
                 text: "●";
                 color: AssistantTheme.text;
-                font-size: 14px * AssistantTheme.text-scale;
+                font-size: 14px * AssistantTheme.effective-text-scale;
                 opacity: 0.75 + 0.25 * cos(animation-tick() / 2s * 360deg);
                 accessible-label: "Assistant is working";
             }
             if root.message.status != "": Text {
                 text: root.message.status;
                 color: root.message.status-tone == MessageStatusTone.error ? AssistantTheme.error : AssistantTheme.muted;
-                font-size: 14px * AssistantTheme.text-scale;
+                font-size: 14px * AssistantTheme.effective-text-scale;
                 wrap: word-wrap;
             }
         }
@@ -214,7 +214,7 @@ export component AssistantMessage inherits Rectangle {
             label: root.message.copied ? "Message copied" : "Copy message";
             tooltip: root.message.copied ? "Copied" : "Copy message";
             control-size: 24px * AssistantTheme.hit-scale;
-            icon-size: 14px * AssistantTheme.text-scale;
+            icon-size: 14px * AssistantTheme.effective-text-scale;
             hit-width: 28px * AssistantTheme.hit-scale;
             hit-height: 32px * AssistantTheme.hit-scale;
             bordered: false;
@@ -236,7 +236,7 @@ export component AssistantMessage inherits Rectangle {
             label: "Edit message";
             tooltip: "Edit message";
             control-size: 24px * AssistantTheme.hit-scale;
-            icon-size: 14px * AssistantTheme.text-scale;
+            icon-size: 14px * AssistantTheme.effective-text-scale;
             hit-width: 28px * AssistantTheme.hit-scale;
             hit-height: 32px * AssistantTheme.hit-scale;
             bordered: false;
@@ -250,7 +250,7 @@ export component AssistantMessage inherits Rectangle {
             label: "Regenerate response";
             tooltip: "Regenerate";
             control-size: 24px * AssistantTheme.hit-scale;
-            icon-size: 14px * AssistantTheme.text-scale;
+            icon-size: 14px * AssistantTheme.effective-text-scale;
             hit-width: 28px * AssistantTheme.hit-scale;
             hit-height: 32px * AssistantTheme.hit-scale;
             bordered: false;

@@ -86,8 +86,12 @@ pub fn start(
         let handler = Closure::<dyn FnMut()>::new(move || {
             let Some(ui) = weak.upgrade() else { return };
             let Some(object) = metrics() else { return };
-            let Ok(value) = js_sys::Reflect::get(&object, &"scrollTo".into()) else { return };
-            let Some(f) = value.as_f64().filter(|f| f.is_finite() && *f >= 0.0) else { return };
+            let Ok(value) = js_sys::Reflect::get(&object, &"scrollTo".into()) else {
+                return;
+            };
+            let Some(f) = value.as_f64().filter(|f| f.is_finite() && *f >= 0.0) else {
+                return;
+            };
             let f = f.min(1.0);
             if f >= 1.0 {
                 // The same value does not refire `changed`; nudge so a repeated 1 re-pins.
@@ -98,7 +102,8 @@ pub fn start(
             }
             ui.set_scroll_fraction(f as f32);
         });
-        let _ = window.add_event_listener_with_callback("aui:scroll", handler.as_ref().unchecked_ref());
+        let _ =
+            window.add_event_listener_with_callback("aui:scroll", handler.as_ref().unchecked_ref());
         handler.forget();
     }
     ui.window()

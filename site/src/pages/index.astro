@@ -113,7 +113,7 @@ const guides = [
                 <div class="demo-cover" id="demo-cover">
                   <div class="demo-spinner" aria-hidden="true"></div>
                   <p class="demo-status" id="demo-status" role="status" aria-live="polite">Loading the demo…</p>
-                  <p class="demo-status-sub" id="demo-status-sub">Downloading 9.2 MiB of WebAssembly — the thread, history and spinner keep the page alive while it loads</p>
+                  <p class="demo-status-sub" id="demo-status-sub">Downloading {web['wasm-raw'] ? (<><span data-bench="web.wasm-raw">{web['wasm-raw'].value}</span> MiB of </>) : ''}WebAssembly — the thread, history and spinner keep the page alive while it loads</p>
                 </div>
                 <div class="demo-ordinal" id="demo-ordinal" aria-hidden="true">
                   <span class="demo-ordinal-value" id="demo-ordinal-value">1</span>

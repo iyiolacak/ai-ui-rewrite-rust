@@ -144,7 +144,11 @@ fn styled_sentence(rng: &mut Rng, out: &mut String) {
             out.push(' ');
         }
         if i == span_at {
-            out.push_str(match kind { 0 => "**", 1 => "_", _ => "`" });
+            out.push_str(match kind {
+                0 => "**",
+                1 => "_",
+                _ => "`",
+            });
         }
         let word = rng.word();
         if i == 0 {
@@ -195,7 +199,9 @@ fn heading(rng: &mut Rng) -> String {
     let n = rng.range(1, 3);
     let mut out = String::new();
     for i in 0..n {
-        if i > 0 { out.push(' '); }
+        if i > 0 {
+            out.push(' ');
+        }
         let word = rng.word();
         if i == 0 {
             let mut chars = word.chars();
@@ -295,10 +301,14 @@ fn assistant_text(rng: &mut Rng) -> String {
         out.push_str("\n\n");
         let n = rng.range(5, 9);
         for p in 0..n {
-            if p > 0 { out.push_str("\n\n"); }
+            if p > 0 {
+                out.push_str("\n\n");
+            }
             let sentences = rng.range(3, 6);
             for s in 0..sentences {
-                if s > 0 { out.push(' '); }
+                if s > 0 {
+                    out.push(' ');
+                }
                 styled_sentence(rng, &mut out);
             }
         }
@@ -315,7 +325,7 @@ fn assistant_text(rng: &mut Rng) -> String {
         }
     }
     if rng.chance(4) {
-        out.push_str("\n");
+        out.push('\n');
         let items = rng.range(3, 5);
         for _ in 0..items {
             out.push_str("- ");
@@ -333,13 +343,13 @@ fn assistant_text(rng: &mut Rng) -> String {
 
     // A fenced code block (generated, never a fixed snippet).
     if rng.chance(4) {
-        out.push_str("\n");
+        out.push('\n');
         out.push_str(&code_block(rng));
     }
 
     // A table of the thread's stats.
     if rng.chance(4) {
-        out.push_str("\n");
+        out.push('\n');
         out.push_str(&table(rng));
     }
 

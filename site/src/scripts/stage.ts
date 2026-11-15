@@ -9,8 +9,8 @@
 //
 // Once docked, the demo autoplays once — from the top to the very bottom —
 // then hands the thread to the pointer for good. The accent ring is the only
-// takeover cue while it flies; the ordinal appears only after the thread
-// settles, so it reads as part of the demo, not the landing.
+// takeover cue while it flies; the ordinal counts up live during the fly
+// and fades about 1.5 s after the thread lands.
 //
 // The fly is a one-time intro. Each position is an EVENT, not a sticky value: the page writes
 // `__aui.scrollTo` and dispatches `aui:scroll`, and the demo applies it once. The last step is an exact 1,
@@ -32,6 +32,13 @@ const sticky = document.querySelector<HTMLElement>('.demo-sticky');
 const slot = document.querySelector<HTMLElement>('.demo-slot');
 const frame = document.querySelector<HTMLElement>('.demo-frame');
 const hint = document.querySelector<HTMLElement>('.stage-hint');
+// The hint shows only while the docked demo is actually on screen: docking stays on for the rest of the page,
+// and a fixed pill at the bottom would otherwise sit over the footer.
+let frameOnScreen = false;
+let hintDismissed = false;
+function updateHint(): void {
+  hint?.classList.toggle('is-on', docked && frameOnScreen && !hintDismissed);
+}
 
 const wide = matchMedia('(min-width: 900px) and (min-height: 560px)');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -92,7 +99,7 @@ function readSettled(): boolean {
 function setDocked(on: boolean): void {
   if (on === docked) return;
   docked = on;
-  hint?.classList.toggle('is-on', on);
+  updateHint();
   document.body.classList.toggle('demo-docked', on);
   frame?.classList.toggle('is-docked', on);
   if (on) {
@@ -118,7 +125,7 @@ function stopAutoplay(): void {
   autoplayFramesAtBottom = 0;
 }
 
-// The counter overlay (ordinal.ts) waits for this: it stays hidden only while the intro auto-flies.
+// The counter overlay (ordinal.ts) waits for this: it shows live during the fly and starts its fade timer when this is set.
 function markIntroOver(): void {
   const w = aui();
   if (w) w.introDone = 1;
@@ -230,6 +237,10 @@ function enable(): void {
   // The live demo takes this screen's place: keep the box (it is the link target and the strip's rhythm), drop the picture.
   strip.style.background = 'transparent';
   document.body.classList.add('demo-travels');
+  new IntersectionObserver(([entry]) => {
+    frameOnScreen = entry.isIntersecting;
+    updateHint();
+  }, { threshold: 0.5 }).observe(frame!);
   measureGeom();
 
   // 0 when the strip's top is 85% down the viewport, 1 when the demo's pin starts (the frame is then centred).
@@ -292,7 +303,8 @@ function enable(): void {
     if (now - lastWheel > 150) owner = docked && frame!.contains(e.target as Node) ? 'demo' : 'page';
     lastWheel = now;
     if (owner === 'demo') {
-      hint?.classList.remove('is-on');
+      hintDismissed = true;
+      updateHint();
       if (autoPlaying) {
         cancelIntro = true;
         markIntroOver();
@@ -301,7 +313,8 @@ function enable(): void {
   }, { passive: true, capture: true });
   // A scrollbar drag, touch or click on the frame, or a scroll key, also means "I'm driving".
   const cancelOnInput = () => {
-    hint?.classList.remove('is-on');
+    hintDismissed = true;
+    updateHint();
     if (autoPlaying) {
       cancelIntro = true;
       markIntroOver();

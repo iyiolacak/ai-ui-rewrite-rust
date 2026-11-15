@@ -83,14 +83,14 @@ export component AssistantButton inherits Rectangle {
             text: root.leading-label;
             color: area.has-hover ? AssistantTheme.text : AssistantTheme.muted.transparentize(0.4);
             font-family: AssistantTheme.mono-family;
-            font-size: 12px * AssistantTheme.text-scale;
+            font-size: 12px * AssistantTheme.effective-text-scale;
             vertical-alignment: center;
         }
         Text {
             text: root.label;
             color: root.variant == AssistantButtonVariant.primary ? AssistantTheme.primary-text : AssistantTheme.text;
             font-family: "Inter";
-            font-size: 14px * AssistantTheme.text-scale;
+            font-size: 14px * AssistantTheme.effective-text-scale;
             font-weight: root.label-weight;
             vertical-alignment: center;
             horizontal-alignment: root.start-aligned ? left : center;

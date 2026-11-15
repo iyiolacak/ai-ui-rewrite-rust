@@ -27,7 +27,7 @@ export component AssistantBranchPicker inherits Rectangle {
         visible: false;
         text: root.count-label;
         font-family: "Inter";
-        font-size: 12px * AssistantTheme.text-scale;
+        font-size: 12px * AssistantTheme.effective-text-scale;
     }
 
     // Not an `if`: the buttons stay addressable for the row focus state.
@@ -38,7 +38,7 @@ export component AssistantBranchPicker inherits Rectangle {
         spacing: 0px;
         previous_button := AssistantIconButton {
             control-size: 24px * AssistantTheme.hit-scale;
-            icon-size: 14px * AssistantTheme.text-scale;
+            icon-size: 14px * AssistantTheme.effective-text-scale;
             hit-width: 28px * AssistantTheme.hit-scale;
             hit-height: 32px * AssistantTheme.hit-scale;
             bordered: false;
@@ -54,7 +54,7 @@ export component AssistantBranchPicker inherits Rectangle {
             Text {
                 text: root.count-label;
                 font-family: "Inter";
-                font-size: 12px * AssistantTheme.text-scale;
+                font-size: 12px * AssistantTheme.effective-text-scale;
                 color: AssistantTheme.muted;
                 vertical-alignment: center;
                 horizontal-alignment: center;
@@ -62,7 +62,7 @@ export component AssistantBranchPicker inherits Rectangle {
         }
         next_button := AssistantIconButton {
             control-size: 24px * AssistantTheme.hit-scale;
-            icon-size: 14px * AssistantTheme.text-scale;
+            icon-size: 14px * AssistantTheme.effective-text-scale;
             hit-width: 28px * AssistantTheme.hit-scale;
             hit-height: 32px * AssistantTheme.hit-scale;
             bordered: false;

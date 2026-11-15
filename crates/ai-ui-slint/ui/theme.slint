@@ -15,12 +15,26 @@ export global AssistantTheme {
     in property <AssistantColorScheme> scheme: AssistantColorScheme.dark;
     // Follow the operating system's scheme instead of `scheme`.
     in property <bool> follow-system: false;
+    // Width of the window this theme is rendered in, in logical pixels. A host
+    // writes it (for example from a `changed width` handler) and every
+    // component reads it, so layouts designed at one width can adapt at
+    // another without each host threading the width through. The 0 default
+    // keeps embedded components on their desktop measurements.
+    in property <length> viewport-width: 0px;
+    // True below the compact breakpoint (0 disables this, see `compact`).
+    out property <bool> compact: root.viewport-width > 0px && root.viewport-width < 640px;
     // Multiplies the font size of message text, Markdown, code, reasoning, tool
     // calls, approvals, sources, the action row and the composer.
     // One global, so a change re-evaluates only the rows that are instantiated.
     in property <float> text-scale: 1.0;
-    // Size of icon buttons and hit targets: grows with the text, never below 1.
-    out property <float> hit-scale: max(1.0, text-scale);
+    // Text scale actually applied: 10% smaller when compact so body text,
+    // headings, code and composer text shrink together, without removing the
+    // user's own setting. A host that never sets `viewport-width` pays nothing.
+    out property <float> effective-text-scale: compact ? text-scale * 0.9 : text-scale;
+    // Size of icon buttons and hit targets: grows with the text, never below
+    // 1, and never below the 44 px touch target when compact.
+    out property <float> hit-scale: max(1.0, effective-text-scale);
+    out property <length> touch-target: compact ? 44px : 32px;
     out property <string> mono-family: "IBM Plex Mono";
     out property <bool> dark: follow-system ? Palette.color-scheme == ColorScheme.dark : scheme == AssistantColorScheme.dark;
     out property <color> background: dark ? #0f0f0e : #fcfcfb;

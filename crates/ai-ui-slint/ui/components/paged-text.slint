@@ -25,7 +25,7 @@ export component AssistantPagedText inherits Rectangle {
             text: root.page-text;
             color: AssistantTheme.text;
             font-family: "Inter";
-            font-size: 16px * AssistantTheme.text-scale;
+            font-size: 16px * AssistantTheme.effective-text-scale;
             font-weight: 400;
             line-height-factor: 1.25;
             wrap: word-wrap;
@@ -50,7 +50,7 @@ export component AssistantPagedText inherits Rectangle {
             Text {
                 text: root.valid-page ? "Page \{root.page-number} of \{root.page-count}" : "Page unavailable";
                 font-family: "Inter";
-                font-size: 12px * AssistantTheme.text-scale;
+                font-size: 12px * AssistantTheme.effective-text-scale;
                 color: AssistantTheme.muted;
                 vertical-alignment: center;
             }

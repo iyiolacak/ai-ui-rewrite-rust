@@ -41,24 +41,24 @@ export component AssistantDisclosureButton inherits Rectangle {
         }
     }
     Image {
-        x: 0px; y: (parent.height - self.height) / 2; width: 16px * AssistantTheme.text-scale; height: self.width;
+        x: 0px; y: (parent.height - self.height) / 2; width: 16px * AssistantTheme.effective-text-scale; height: self.width;
         source: root.icon;
         colorize: root.enabled ? AssistantTheme.muted : AssistantTheme.disabled;
     }
     Text {
-        x: 24px * AssistantTheme.text-scale; width: max(0px, parent.width - 48px * AssistantTheme.text-scale);
+        x: 24px * AssistantTheme.effective-text-scale; width: max(0px, parent.width - 48px * AssistantTheme.effective-text-scale);
         vertical-alignment: center;
         text: root.label;
         color: root.enabled ? (area.has-hover ? AssistantTheme.text : AssistantTheme.muted) : AssistantTheme.disabled;
         font-family: "Inter";
-        font-size: 14px * AssistantTheme.text-scale;
+        font-size: 14px * AssistantTheme.effective-text-scale;
         font-weight: 400;
         line-height-factor: 1;
         overflow: elide;
     }
     Image {
-        x: max(0px, min(parent.width - self.width, label-width.preferred-width + 32px * AssistantTheme.text-scale)); y: (parent.height - self.height) / 2;
-        width: 16px * AssistantTheme.text-scale; height: self.width;
+        x: max(0px, min(parent.width - self.width, label-width.preferred-width + 32px * AssistantTheme.effective-text-scale)); y: (parent.height - self.height) / 2;
+        width: 16px * AssistantTheme.effective-text-scale; height: self.width;
         source: root.expanded ? @image-url("../assets/chevron-down.svg") : @image-url("../assets/chevron-right.svg");
         colorize: root.enabled ? AssistantTheme.muted : AssistantTheme.disabled;
     }
@@ -66,7 +66,7 @@ export component AssistantDisclosureButton inherits Rectangle {
         visible: false;
         text: root.label;
         font-family: "Inter";
-        font-size: 14px * AssistantTheme.text-scale;
+        font-size: 14px * AssistantTheme.effective-text-scale;
         font-weight: 400;
         line-height-factor: 1;
     }

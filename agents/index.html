@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><link rel="preload" href="/ai-ui-rewrite-rust/fonts/WorkSans-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="icon" href="/ai-ui-rewrite-rust/logo.svg" type="image/svg+xml"><title>Use ai-ui with your coding agent</title><meta name="description" content="Paste one prompt into Claude Code or any coding agent and it adds ai-ui to your Rust project, or discusses the design with you first."><link rel="stylesheet" href="/ai-ui-rewrite-rust/_astro/fonts.N0zReqnN.css"><style>.ag{max-width:56rem;margin:0 auto;padding:3.5rem 0 4rem}.ag h1{letter-spacing:-.03em;margin:0 0 1rem;font-size:clamp(2rem,6vw,3.25rem);font-weight:600;line-height:1.08}.ag h2{letter-spacing:-.02em;margin:3rem 0 .5rem;font-size:1.5rem;font-weight:600}.ag p,.ag li{color:var(--muted);font-size:1.0625rem;line-height:1.55}.ag .lead{color:var(--ink);max-width:40rem;font-size:1.25rem}.ag a{color:var(--ink);text-underline-offset:3px}.ag code{overflow-wrap:anywhere;font-size:.92em}.ag-block{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin:1rem 0;position:relative}.ag-block pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;color:var(--ink);margin:0;padding:1.1rem 1.25rem;font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-x:auto}.ag-block.nowrap pre{white-space:pre;overflow-wrap:normal}.ag-bar{border-bottom:1px solid var(--line);color:var(--muted);justify-content:space-between;align-items:center;gap:.75rem;padding:.5rem .75rem .5rem 1.25rem;font-size:.875rem;display:flex}.ag-copy{border:1px solid color-mix(in srgb, var(--ink) 24%, transparent);min-height:36px;color:var(--ink);font:inherit;cursor:pointer;background:0 0;border-radius:999px;flex:none;padding:0 1rem;font-size:.9375rem;font-weight:500}.ag-copy:hover{background:var(--surface-2)}.ag-copy:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.ag-copy[data-done]{background:var(--ink);color:var(--paper)}.ag-list{padding-left:1.25rem}.ag-list li{overflow-wrap:anywhere;margin:.35rem 0}.ag-url{flex-wrap:wrap;align-items:center;gap:.75rem;margin:.5rem 0;display:flex}.ag-url a{overflow-wrap:anywhere;min-width:0}.ag details{margin:1rem 0}.ag summary{cursor:pointer;color:var(--ink);padding:.5rem 0;font-weight:500}.ag-note{font-size:.9375rem}
+</style></head><body class="antialiased"><header class="topbar"><div class="mx-auto flex w-full max-w-6xl items-center gap-6 px-4 sm:px-6 h-16"><a class="brand" href="/ai-ui-rewrite-rust/" aria-label="AI UI in Rust, home"><img src="/ai-ui-rewrite-rust/logo.svg" width="30" height="30" alt=""><span>AI UI in Rust</span></a><div class="ml-auto flex items-center gap-5"><nav class="hidden md:flex items-center gap-7" aria-label="Main"><a href="/ai-ui-rewrite-rust/">Home</a><a href="/ai-ui-rewrite-rust/agents/" aria-current="page">Agents</a></nav><a class="btn btn-ghost" href="https://github.com/iyiolacak/ai-ui-rewrite-rust" rel="noopener">GitHub</a></div></div></header><main class="mx-auto w-full max-w-6xl px-4 sm:px-6"><div class="ag"><h1>Use ai-ui with your coding agent</h1><p class="lead">Nobody wires this up by hand any more. Paste one prompt into Claude Code, or any coding agent, and it does the work, or talks it through with you first.</p><h2 id="do-it">Do it for me</h2><p>The agent fetches the skill, inspects your project, tells you the plan, then adds the crates and verifies a streamed message.</p><div class="ag-block"><div class="ag-bar"><span>Prompt</span><button type="button" class="ag-copy" data-copy-target="p-do" aria-label="Copy the do-it prompt">Copy</button></div><pre id="p-do">Add ai-ui (a Rust port of assistant-ui: chat runtime, AI SDK streaming, Markdown, an optional Slint chat UI) to this project.
+
+1. Get the skill: download https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md and every reference file it links into .claude/skills/ai-ui/, keeping the same relative paths. If you can&#39;t write there, read them from those URLs instead.
+2. Follow the skill. Inspect this project first, then tell me what you found and which crates you plan to add before changing anything.
+3. Then do the work: add the crates, wire them up, and finish with cargo build, cargo clippy -- -D warnings, cargo test and one message actually sent and streamed back. Report what you changed, what you ran, and anything you couldn&#39;t verify.</pre></div><h2 id="discuss">Discuss first</h2><p>Same skill, no changes to your project until you have agreed an approach.</p><div class="ag-block"><div class="ag-bar"><span>Prompt</span><button type="button" class="ag-copy" data-copy-target="p-discuss" aria-label="Copy the discuss prompt">Copy</button></div><pre id="p-discuss">I&#39;m considering ai-ui (a Rust port of assistant-ui: chat runtime, AI SDK streaming, Markdown, an optional Slint chat UI) for this project. Don&#39;t change any files yet.
+
+Read https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md, the reference files it links, and https://iyiolacak.github.io/ai-ui-rewrite-rust/llms.txt. Then look at this project and discuss with me: whether ai-ui fits, which crates we&#39;d need, how it would plug into our async runtime and UI, what the Slint and licence choices mean for us, the known limits, and a step-by-step plan. Wait for my go-ahead before editing anything.</pre></div><h2 id="skill">Install the skill (Claude Code)</h2><p>The skill is a folder the agent reads: <code>SKILL.md</code> plus reference files. The prompts above already make the agent fetch it, so this step is optional. To install it yourself, from your project root:</p><div class="ag-block nowrap"><div class="ag-bar"><span>This project: .claude/skills/ai-ui/</span><button type="button" class="ag-copy" data-copy-target="c-proj" aria-label="Copy the project install command">Copy</button></div><pre id="c-proj">curl -fsSL https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/install.sh | sh</pre></div><div class="ag-block nowrap"><div class="ag-bar"><span>All projects: ~/.claude/skills/ai-ui/</span><button type="button" class="ag-copy" data-copy-target="c-user" aria-label="Copy the all-projects install command">Copy</button></div><pre id="c-user">curl -fsSL https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/install.sh | sh -s -- ~/.claude/skills/ai-ui</pre></div><p class="ag-note">The script is plain POSIX sh using curl; <a href="/ai-ui-rewrite-rust/skill/install.sh">read it</a> before you run it.</p><h3 class="sr-only">Skill files</h3><ul class="ag-list"><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md"><code>SKILL.md</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/prompts/discuss.txt"><code>prompts/discuss.txt</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/prompts/do-it.txt"><code>prompts/do-it.txt</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/reference/backend.md"><code>reference/backend.md</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/reference/crates.md"><code>reference/crates.md</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/reference/runtime.md"><code>reference/runtime.md</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/reference/slint-ui.md"><code>reference/slint-ui.md</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/reference/troubleshooting.md"><code>reference/troubleshooting.md</code></a></li><li><a href="/ai-ui-rewrite-rust/skill/ai-ui/reference/web.md"><code>reference/web.md</code></a></li></ul><details><summary>Show the full SKILL.md</summary><div class="ag-block"><div class="ag-bar"><span>SKILL.md</span><button type="button" class="ag-copy" data-copy-target="p-skill" aria-label="Copy SKILL.md">Copy</button></div><pre id="p-skill">---
+name: ai-ui
+description: ai-ui is a Rust port of assistant-ui (crates.io, version 0.1): a chat runtime with branching threads, tools and approvals, decoders for the AI SDK UI message stream and data stream, bounded streaming Markdown, and an optional Slint chat UI, for native and WebAssembly apps. Use this skill when a user wants to add a chat runtime, AI SDK streaming, Markdown for streamed replies or a Slint chat UI to a Rust app, connect a Vercel AI SDK backend from Rust, port an assistant-ui React app to Rust, or debug the ai-ui-* crates. Triggers - ai-ui, assistant-ui in Rust, Slint chat UI, AI SDK stream in Rust, Vercel AI SDK backend from Rust, ai-ui-core, ThreadView.
+---
+
+# ai-ui
+
+ai-ui is a Rust port of [assistant-ui](https://github.com/assistant-ui/assistant-ui). Ten library crates, all 0.1 on crates.io, plus `examples/thread`, a complete Slint app. It is early software and not affiliated with the assistant-ui or Vercel AI SDK projects.
+
+Do not guess APIs. Read the reference files linked at the end, and the guides they point to, before writing code.
+
+## Pick a mode
+
+Choose from the user&#39;s request.
+
+**Do the work.** The user wants ai-ui added, wired or fixed.
+1. Inspect the project (Step 1) and report what you found and which crates you plan to add.
+2. If the user asked to confirm first, stop and wait. Otherwise continue.
+3. Implement in small steps. Prefer code copied from the guides and `examples/thread` over new code.
+4. Verify (see the checklist) and report.
+
+**Discuss or plan only.** The user asks whether it fits, what it would take, or for a plan. Make no file edits and run no `cargo add`. Read the project, then cover: fit, which crates, how it plugs into their executor and UI, the Slint and licence choices, known limits, and a numbered step plan. Wait for a go-ahead.
+
+If the request is unclear, treat it as discuss mode and ask.
+
+## Step 1: inspect the project
+
+Report these before editing anything:
+- Is it a Rust crate or a workspace? Which edition and Rust version (`rustc --version`, `rust-version` in Cargo.toml)?
+- Which async runtime drives futures: Tokio, the Slint event loop, `wasm-bindgen-futures`, or none?
+- Which UI toolkit, if any? Is Slint already used, and at which version?
+- Does it target `wasm32-unknown-unknown`?
+- Is there an AI SDK (Vercel) backend endpoint? What URL, and how does it authenticate?
+- Does the project need a system prompt, tools or approvals?
+
+## Pick crates
+
+Add only what is needed, with `cargo add`.
+
+| Need | Crates |
+|---|---|
+| Chat runtime, messages, branches, tools, no UI | `ai-ui-core` (always) |
+| Talk to an AI SDK backend | `ai-ui-data-stream` + `ai-ui-http` |
+| State and actions for any UI toolkit (`ThreadView`) | `ai-ui-state` |
+| Markdown for streamed replies in your own renderer | `ai-ui-markdown` |
+| Result-aware copy to the clipboard | `ai-ui-clipboard` |
+| The ready-made Slint chat UI | `ai-ui-slint` (build-dependency) + `ai-ui-markdown-slint` + `ai-ui-state` |
+| Custom wire protocol work, assistant-transport SSE | `ai-ui-stream` |
+| Strict AI SDK 7 UI message stream reducer, standalone | `ai-ui-sdk-stream` |
+
+Most apps need `ai-ui-core`, `ai-ui-state`, `ai-ui-data-stream` and `ai-ui-http`. Details per crate: [reference/crates.md](reference/crates.md).
+
+## Hard rules
+
+**Executor.** The runtime has no executor of its own. Runtime methods do their synchronous work at once and return a future (`RunFuture`) that you must spawn. Drive it with what the project already uses: `slint::spawn_local`, a Tokio `LocalSet`, or `wasm-bindgen-futures`. Use `futures_executor::block_on` only in tests and scripts. If the project has no executor and no UI, say so and ask which to use. See [reference/runtime.md](reference/runtime.md).
+
+**Single thread.** Runtimes are `Rc`-based and single-threaded by design. Never wrap them in `Arc` or `Mutex`, and never move them to a multi-threaded executor. Messages are `Arc` snapshots, so adapters may move them to worker threads.
+
+**Rust versions.** Minimum Rust 1.85 for the runtime crates. `ai-ui-clipboard` needs 1.86, `ai-ui-markdown` 1.88, `ai-ui-slint` and `ai-ui-markdown-slint` 1.92. Do not lower these. If the project&#39;s toolchain is older, tell the user.
+
+**Slint.** Pin `slint` and `slint-build` to `=1.18.1`, with the feature `compat-1-18` on `slint`. `ai-ui-slint` is a build-dependency. In `build.rs`, register `ai_ui_slint::ui_dir()` as the library path named `assistant`, then import from `@assistant/lib.slint`. Full steps: [reference/slint-ui.md](reference/slint-ui.md).
+
+**femtovg patch.** Until a Slint release uses femtovg 0.28, add this to the workspace root `Cargo.toml`. Without it a streaming chat uses about twice the CPU with Slint&#39;s FemtoVG-WGPU renderer. Slint&#39;s software and Skia renderers are not affected.
+
+```toml
+[patch.crates-io]
+femtovg = { git = &quot;https://github.com/iyiolacak/ai-ui-rewrite-rust&quot; }
+```
+
+**Linux.** Slint needs the fontconfig development package: `libfontconfig1-dev` on Debian and Ubuntu, `fontconfig-devel` on Fedora. The runtime and state crates do not need it.
+
+**Licences.** The ai-ui crates are MIT, except `ai-ui-sdk-stream`, which is &quot;MIT AND Apache-2.0&quot;. Slint is GPL-3.0, or royalty-free with an attribution badge, or commercial. Ask the user which Slint licence applies before shipping anything that uses the Slint crates. Do not choose for them. See [THIRD_PARTY.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/THIRD_PARTY.md).
+
+**AI SDK backend.** The client posts model messages. The server passes `body.messages` straight to `streamText` (no `convertToModelMessages`) and returns `result.toUIMessageStreamResponse()`. The system prompt is a top-level `system` field, not a system-role message, because AI SDK 7 rejects system-role messages inside `messages` by default. Proxies must not buffer the response. See [reference/backend.md](reference/backend.md).
+
+**Cumulative results.** A `ChatModelAdapter` yields the whole reply so far in each item, not a delta. A hand-written adapter must mark streaming text parts `PartStatus::Running` or the view will not pace them. The wire decoders do this for you.
+
+**wasm32.** Use `FetchClient` instead of `NativeClient`; pick with `cfg(target_arch = &quot;wasm32&quot;)`. The Slint crates reach the browser only through an app built like `examples/thread`. See [reference/web.md](reference/web.md).
+
+## Verification checklist
+
+Run each, in the user&#39;s project:
+1. `cargo build` (and `cargo check --target wasm32-unknown-unknown` for the crates that should build there, if the project targets the web).
+2. `cargo clippy -- -D warnings`
+3. `cargo test`
+4. Run the app or a small example that sends one message and shows the streamed reply. Without a live backend, use a canned `ChatModelAdapter` or the loopback client in [reference/backend.md](reference/backend.md).
+
+Report three lists: what you changed, what you ran (with results), and what you could not verify (for example a live backend, a GPU window, a licence decision).
+
+## Known limits
+
+Say these up front when they matter to the user&#39;s plan.
+- Version 0.1, early. The repository does not call it production ready.
+- Not yet ported: assistant-transport as a runtime (the wire format is decoded), a concrete HTTP remote thread-list adapter, LangGraph and other framework adapters.
+- Not yet ported: custom per-tool components (generative UI). Tools render through a generic disclosure; an app can set a presenter per tool with `ThreadView::set_tool_presenter`.
+- Not yet ported: attachment, feedback, speech, dictation, suggestion and history adapters, the message queue, composer attachments and quotes.
+- Tools run sequentially.
+- The Slint crates need the femtovg patch above. Markdown styling fidelity in a real GPU window is marked unverified in [STATUS](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md).
+- The interop test covers an AI SDK 7 `streamText` server only. Other backends, authentication and retries are not covered.
+- In the browser build of the example, there are no Markdown worker threads and the example runs only its demo model; use `FetchClient` in your own app.
+- Performance figures in the README are measured on one machine. Do not quote them as guarantees. See the README and `docs/RESULTS.md`.
+
+## Where to look
+
+Skill files:
+- [reference/crates.md](reference/crates.md): the ten crates, key types, MSRV, wasm32.
+- [reference/runtime.md](reference/runtime.md): first runtime, streaming, `ThreadView`, executors.
+- [reference/backend.md](reference/backend.md): AI SDK backend, request and wire formats, errors, cancellation.
+- [reference/slint-ui.md](reference/slint-ui.md): the Slint thread UI in your app.
+- [reference/web.md](reference/web.md): WebAssembly notes.
+- [reference/troubleshooting.md](reference/troubleshooting.md): common failures.
+
+Online guides (repository `https://github.com/iyiolacak/ai-ui-rewrite-rust`):
+- [README](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md)
+- [Getting started](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/01-getting-started.md)
+- [Concepts](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/02-concepts.md)
+- [Streaming and backends](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/03-streaming-and-backends.md)
+- [Building a UI with Slint](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/04-ui-slint.md)
+- [Running on the web](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/05-web.md)
+- [Crate reference](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/06-crates.md)
+- [Coming from assistant-ui](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/08-from-assistant-ui.md)
+- [FAQ](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/10-faq.md)
+- [STATUS](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md), [PROTOCOL](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/PROTOCOL.md), [WEB](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/WEB.md), [patches/README.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/patches/README.md)
+- A complete app: [examples/thread](https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/examples/thread)
+
+API reference on docs.rs: [ai-ui-core](https://docs.rs/ai-ui-core), [ai-ui-stream](https://docs.rs/ai-ui-stream), [ai-ui-data-stream](https://docs.rs/ai-ui-data-stream), [ai-ui-sdk-stream](https://docs.rs/ai-ui-sdk-stream), [ai-ui-http](https://docs.rs/ai-ui-http), [ai-ui-state](https://docs.rs/ai-ui-state), [ai-ui-markdown](https://docs.rs/ai-ui-markdown), [ai-ui-clipboard](https://docs.rs/ai-ui-clipboard), [ai-ui-markdown-slint](https://docs.rs/ai-ui-markdown-slint), [ai-ui-slint](https://docs.rs/ai-ui-slint). Slint: [slint.dev](https://slint.dev). AI SDK: [ai-sdk.dev](https://ai-sdk.dev).</pre></div></details><h2 id="context">Context for any agent</h2><p>Following the <a href="https://llmstxt.org" rel="noopener">llmstxt.org</a> convention: <code>llms.txt</code> is an index of the docs and skill, and <code>llms-full.txt</code> is the README, guides and SKILL.md in one file.</p><div class="ag-url"><a href="https://iyiolacak.github.io/ai-ui-rewrite-rust/llms.txt">https://iyiolacak.github.io/ai-ui-rewrite-rust/llms.txt</a><button type="button" class="ag-copy" data-copy-text="https://iyiolacak.github.io/ai-ui-rewrite-rust/llms.txt" aria-label="Copy the llms.txt URL">Copy URL</button></div><div class="ag-url"><a href="https://iyiolacak.github.io/ai-ui-rewrite-rust/llms-full.txt">https://iyiolacak.github.io/ai-ui-rewrite-rust/llms-full.txt</a><button type="button" class="ag-copy" data-copy-text="https://iyiolacak.github.io/ai-ui-rewrite-rust/llms-full.txt" aria-label="Copy the llms-full.txt URL">Copy URL</button></div><h2 id="facts">Facts agents need</h2><ul class="ag-list"><li>Ten crates on crates.io, version 0.1.</li><li>MSRV is Rust 1.85; <code>ai-ui-markdown</code> needs 1.88 and the Slint crates need 1.92.</li><li>No executor of its own: the runtimes are Rc-based and single-threaded, so drive them from your executor or UI event loop.</li><li>Slint is pinned to <code>=1.18.1</code> with the <code>compat-1-18</code> feature.</li><li>On the FemtoVG-WGPU renderer, CPU use is about 2x higher without this patch, until a Slint release includes the fix:<div class="ag-block nowrap"><div class="ag-bar"><span>Cargo.toml</span><button type="button" class="ag-copy" data-copy-target="c-patch" aria-label="Copy the femtovg patch">Copy</button></div><pre id="c-patch">[patch.crates-io]
+femtovg = { git = &quot;https://github.com/iyiolacak/ai-ui-rewrite-rust&quot; }</pre></div></li><li>Licences: the crates are MIT. Slint is GPL-3.0, royalty-free with the badge, or commercial.</li></ul><p>Read more: <a href="https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md" rel="noopener">README</a>, <a href="https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/" rel="noopener">docs/guide/</a>, <a href="https://docs.rs/ai-ui-core" rel="noopener">docs.rs</a>.</p></div></main><footer><div class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><a class="brand" href="/ai-ui-rewrite-rust/"><img src="/ai-ui-rewrite-rust/logo.svg" width="24" height="24" alt=""><span>AI UI in Rust</span></a><p class="text-sm max-w-xl" style="color: var(--muted)">MIT licence. Ported from assistant-ui (MIT, &copy; AgentbaseAI Inc.); not affiliated with the assistant-ui or Vercel AI SDK projects.</p><nav class="flex gap-5 text-sm" aria-label="Footer"><a href="https://github.com/iyiolacak/ai-ui-rewrite-rust">GitHub</a><a href="https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md">Docs</a></nav></div></footer><p class="sr-only" role="status" aria-live="polite" id="copy-status"></p><script>
+      (function () {
+        var status = document.getElementById('copy-status');
+        function fallback(text) {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          return ok;
+        }
+        function copy(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(text); });
+          }
+          return Promise.resolve(fallback(text));
+        }
+        document.querySelectorAll('.ag-copy').forEach(function (btn) {
+          var label = btn.textContent;
+          btn.addEventListener('click', function () {
+            var t = btn.getAttribute('data-copy-text');
+            if (t === null) { var el = document.getElementById(btn.getAttribute('data-copy-target')); t = el ? el.textContent : ''; }
+            copy(t).then(function (ok) {
+              btn.textContent = ok ? 'Copied' : 'Copy failed';
+              if (ok) btn.setAttribute('data-done', '');
+              if (status) status.textContent = ok ? 'Copied to clipboard' : 'Copy failed';
+              setTimeout(function () { btn.textContent = label; btn.removeAttribute('data-done'); if (status) status.textContent = ''; }, 1800);
+            });
+          });
+        });
+      })();
+    </script></body></html>

@@ -1,0 +1,3 @@
+I'm considering ai-ui (a Rust port of assistant-ui: chat runtime, AI SDK streaming, Markdown, an optional Slint chat UI) for this project. Don't change any files yet.
+
+Read https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md, the reference files it links, and https://iyiolacak.github.io/ai-ui-rewrite-rust/llms.txt. Then look at this project and discuss with me: whether ai-ui fits, which crates we'd need, how it would plug into our async runtime and UI, what the Slint and licence choices mean for us, the known limits, and a step-by-step plan. Wait for my go-ahead before editing anything.

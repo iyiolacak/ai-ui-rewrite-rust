@@ -1,0 +1,3200 @@
+# README.md
+
+# ai-ui-rewrite-rust
+
+A Rust port of [assistant-ui](https://github.com/assistant-ui/assistant-ui): chat runtime, AI SDK and assistant-stream
+wire decoders, and a Slint thread UI, for native and WebAssembly apps.
+
+- Runtime crates (`ai-ui-core`, `-stream`, `-data-stream`, `-http`, `-state`) have no UI dependency; the gate builds
+  them for `wasm32-unknown-unknown`.
+- Follows upstream module for module at one pinned commit, so a backend that serves assistant-ui clients needs no change.
+- Per-update cost does not grow with thread length: a bounded change journal projects only changed rows
+  ([how](docs/guide/07-performance.md)).
+- Markdown is formatted on a worker-thread pool, settled blocks once and the live tail on each delta.
+- Native demo is one Rust binary with no JavaScript engine: `cargo run -p ai-ui-example-thread`.
+
+Against upstream assistant-ui (`@assistant-ui/react` 0.15.33 in headless Chromium) on the same workload: a
+1000-message thread, then a 9 KB prompt whose reply streams for 60 s. Rust is a release build that rasterises in
+software. Four independent runs on 2026-11-11, each 5 to 9 interleaved pairs, under different power settings and load.
+Each cell gives the range of the four run medians; the ratio's first number is the least favourable run
+([RUNS](docs/RUNS.md); every raw file is in `benchmarks/results/`):
+
+| | Rust | React | React / Rust |
+|---|---|---|---|
+| Open the thread, Markdown formatted and painted | 83-105 ms | 1385-2940 ms | 16.6x to 27.9x |
+| Longest iteration or frame while streaming | 5.8-34 ms | 250-917 ms | 23.8x to 42.7x |
+| Memory at the end (Rust RSS, React PSS) | 29.1-30.2 MiB | 850-1032 MiB | 28.2x to 35.4x |
+| Process CPU while streaming 60 s | 4.3-17.2 s | 59.9-73.3 s | 4.2x to 14.0x |
+
+Rust was ahead in every pair of every run. Absolute numbers depend on CPU speed and load: React's open time is the
+more sensitive, so the open ratio is smallest on the fastest runs. Ratios are rounded down.
+
+> Status: early. All ten library crates are on [crates.io](https://crates.io/crates/ai-ui-core) as 0.1; the two Slint
+> crates need a one-line femtovg patch for now ([Using the crates](#using-the-crates)). Not yet ported:
+> assistant-transport as a runtime, attachments, speech, custom per-tool components ([STATUS](docs/STATUS.md)). A port,
+> not affiliated with the assistant-ui or Vercel AI SDK projects.
+
+Try the WebAssembly demo with 10,000 messages on the [landing page](https://iyiolacak.github.io/ai-ui-rewrite-rust/).
+Start with [Why ai-ui](docs/guide/00-why-ai-ui.md) or [Getting started](docs/guide/01-getting-started.md); every
+number is in [RESULTS](docs/RESULTS.md); the browser build is described in [WEB](docs/WEB.md).
+
+## Quickstart
+
+### With a coding agent
+
+Most people add this by asking their coding agent. Paste this into Claude Code (or any coding agent) in your project:
+
+```text
+Add ai-ui (a Rust port of assistant-ui: chat runtime, AI SDK streaming, Markdown, an optional Slint chat UI) to this project.
+
+1. Get the skill: download https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md and every reference file it links into .claude/skills/ai-ui/, keeping the same relative paths. If you can't write there, read them from those URLs instead.
+2. Follow the skill. Inspect this project first, then tell me what you found and which crates you plan to add before changing anything.
+3. Then do the work: add the crates, wire them up, and finish with cargo build, cargo clippy -- -D warnings, cargo test and one message actually sent and streamed back. Report what you changed, what you ran, and anything you couldn't verify.
+```
+
+To talk it through first, a "discuss first" prompt, the Claude Code skill (`skills/ai-ui/`) and `llms.txt` context for
+any agent are on the [agents page](https://iyiolacak.github.io/ai-ui-rewrite-rust/agents/).
+
+### By hand
+
+```sh
+cargo add ai-ui-core
+```
+
+```rust
+use ai_ui_core::{adapter, AppendMessage, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime};
+
+let runtime = LocalThreadRuntime::new(
+    |_options| adapter::from_results([Ok(ChatModelRunResult::text("Hello!"))]),
+    LocalRuntimeOptions::default(),
+);
+let run = runtime.append(AppendMessage::user_text(None, "Hi"))?;
+// Drive `run` on any executor: slint::spawn_local, a Tokio LocalSet, wasm-bindgen-futures...
+```
+
+That snippet is built as [`crates/ai-ui-core/examples/quickstart.rs`](crates/ai-ui-core/examples/quickstart.rs).
+For a full app, run the Slint example: `cargo run -p ai-ui-example-thread` (add `--api URL` for an AI SDK endpoint).
+
+## Crates
+
+| Crate | Upstream | Contents | wasm32 |
+|---|---|---|---|
+| `ai-ui-core` | `@assistant-ui/core` | Message model (upstream JSON shape), branching `MessageRepository`, `ChatModelAdapter`, `ThreadRuntime` with local and external-store runtimes, `ThreadList`, tools and approvals, composers | yes |
+| `ai-ui-stream` | `assistant-stream` | Stream chunks, message accumulator, state operations, incremental partial JSON, `assistant-transport` SSE | yes |
+| `ai-ui-data-stream` | `@assistant-ui/react-data-stream` | `ChatModelAdapter` for AI SDK backends: request conversion, UI message stream and data stream responses | yes |
+| `ai-ui-sdk-stream` | AI SDK `readUIMessageStream` | Exact AI SDK 7 UI-message-stream reducer, checked against the published package | yes |
+| `ai-ui-http` | (fetch in upstream) | HTTP clients for the adapter: native (ureq + rustls) and browser `fetch` | yes |
+| `ai-ui-state` | scoped state (`MessageState`...) | `ThreadView`: UI-agnostic state and actions over any runtime, smooth streaming clock | yes |
+| `ai-ui-markdown` | `@assistant-ui/markdown` | Bounded Markdown parsing and the streaming block splitter | yes |
+| `ai-ui-clipboard` | (browser clipboard) | Result-aware copy for native and browser | yes |
+| `ai-ui-markdown-slint` | (react-markdown renderers) | Markdown to Slint rich text, off-thread formatting, streaming cache | via the example |
+| `ai-ui-slint` | `@assistant-ui/react` UI | Slint thread, messages, composer and actions | via the example |
+| `examples/thread` | assistant-ui default thread | Demo app: built-in streaming model or any AI SDK endpoint; native and browser | demo build |
+
+All ten library crates are published on crates.io (the first eight have no UI dependency); the example is
+`publish = false`. Portions are ported from assistant-ui (MIT, (c) AgentbaseAI Inc.); see [NOTICE](NOTICE).
+
+## Performance
+
+The latest measured Rust improvements and their reproduction commands are in
+[`docs/PERFORMANCE.md`](docs/PERFORMANCE.md): incremental long-thread projection,
+faster stream decoding, cooperative scheduling and bounded large-prompt layout.
+
+Against upstream assistant-ui (React) on the same workload, measured with
+[`benchmarks/react-baseline`](benchmarks/react-baseline) (whole-process CPU and
+memory, same streamed reply, 60 s window; median of 5 interleaved pairs, release build, software renderer on the Rust side,
+2026-11-11):
+
+| | Rust | React |
+|---|---|---|
+| CPU while streaming into a 1000-message thread | 17.2 s | 73.3 s |
+| Opening a 1000-message thread, until Markdown is formatted and shown | 0.11 s | 2.9 s |
+| Memory with 1000 messages | 30 MiB | 1.4 GiB RSS, 0.8 GiB PSS (9 processes) |
+| Longest stall while streaming a 40 KB prompt (200 messages) | 0.11 s | 2.4 s |
+
+The open row compares like with like: Rust until the last message's Markdown is formatted and painted (105 ms; the rows
+are visible after 13 ms, but that is not what React's 2.9 s measures), React until all messages and their Markdown are
+rendered. Method, caveats and more numbers: [`docs/RESULTS.md`](docs/RESULTS.md) and [`docs/STATUS.md`](docs/STATUS.md#performance).
+
+## Using the crates
+
+`ai-ui-slint`, `ai-ui-markdown-slint` and the `examples/thread` app add a Slint UI. Until a Slint release uses
+femtovg 0.28 (or femtovg publishes a 0.27.x with the fix), an app using Slint's FemtoVG-WGPU renderer should add this
+to its `Cargo.toml`; without it a streaming chat uses about twice the CPU in a GPU window
+([patches/README.md](patches/README.md)):
+
+```toml
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
+
+**Slint licence.** This project's code is MIT. Slint itself is available under GPL-3.0, the Slint Royalty-Free
+licence (requires an attribution badge) or a commercial licence; an application using the Slint crates must comply
+with the one it chooses. See [THIRD_PARTY.md](THIRD_PARTY.md). Contributions: [CONTRIBUTING.md](CONTRIBUTING.md);
+security reports: [SECURITY.md](SECURITY.md); changes: [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+# docs/guide/00-why-ai-ui.md
+
+---
+title: Why ai-ui
+description: What ai-ui is, what it gives you that you can check, how it compares with upstream assistant-ui on the same workload, and where its limits are.
+order: 0
+section: Start
+---
+
+# Why ai-ui
+
+**What this page gives you.** The case for ai-ui in one place: the problem it addresses, what you can verify about it,
+a small like-for-like results table with its conditions, and the limits. Each claim points to a file or a command.
+
+## The problem
+
+A chat thread grows. A reply streams in as many small updates, a few bytes at a time. In a UI where each update
+re-renders, re-lays out or re-parses work that scales with the whole thread, the cost of one update grows with the
+number of messages, not with the size of the change.
+
+In upstream assistant-ui on React, that looks like this on our benchmark: with 1000 messages the longest frame interval
+while streaming was 916.6 ms (median of 5 interleaved pairs, range 866.6 to 1183.3 ms), and the main thread was busy for
+about the whole 60 s window. With 10,000 messages, opening the thread took 26.1 s. Conditions and caveats are in the
+table below and in [RESULTS](../RESULTS.md).
+
+## What ai-ui is
+
+ai-ui is a Rust port of [assistant-ui](https://github.com/assistant-ui/assistant-ui), module for module at one pinned
+upstream commit: the message model with branching, a chat runtime, tool calls with approvals, the AI SDK and
+assistant-stream wire protocols, a UI-agnostic state layer, and a Slint thread UI with Markdown. The runtime crates
+have no UI dependency, so a native app, a WebAssembly app or your own UI toolkit can use them. A backend that already
+serves assistant-ui clients needs no change.
+
+## What you get
+
+- **Runtime crates with no UI dependency.** `ai-ui-core`, `ai-ui-stream`, `ai-ui-data-stream`, `ai-ui-http` and
+  `ai-ui-state` do not depend on Slint or any windowing code. See the [crate reference](06-crates.md).
+- **wasm32 is checked by the gate.** `scripts/gate.sh` runs `cargo build --locked --target wasm32-unknown-unknown` for
+  the eight toolkit-independent crates (the full gate, not `--quick`). The Slint demo has its own web build; see
+  [Running on the web](05-web.md).
+- **Wire-compatible decoders.** The AI SDK UI message stream, the AI SDK data stream and assistant-transport are decoded
+  incrementally, with reads that may split anywhere, including inside a UTF-8 character. 96 protocol vectors are saved in
+  `crates/ai-ui-stream/tests/fixtures/protocol-vectors.json`; the counts are below.
+- **Per-update cost that does not grow with thread length.** A bounded change journal in `ai-ui-core` lets a view
+  project only the rows that changed. The mechanism is in [Performance](07-performance.md); the end-to-end measurements
+  are in the table.
+- **Markdown formatted off the UI thread.** `ai-ui-markdown` uses a pool of worker threads, formats settled blocks once
+  and re-formats only the live tail while text streams (`crates/ai-ui-markdown/src/pool.rs`).
+- **One native binary, no JavaScript engine.** `cargo run -p ai-ui-example-thread` builds and runs the demo; there is no
+  Node or browser process in the native case.
+- **Measured against upstream, with ranges.** Every figure comes from `docs/results.json`, is generated into
+  [RESULTS](../RESULTS.md), and is checked by `python3 scripts/results.py check`.
+- **Your own backend or none.** `LocalThreadRuntime` with a custom `ChatModelAdapter` needs no network; an
+  [AI SDK endpoint](03-streaming-and-backends.md) is one flag in the example (`--api URL`).
+
+## Measured against upstream assistant-ui
+
+Rust is this repository's example app with the software renderer (`--bench-render`); React is upstream assistant-ui
+(`@assistant-ui/react` 0.15.33) in headless Chromium. Same history, same demo reply, 60 s window. Medians of 5
+interleaved pairs, measured 2026-11-11, machine load about 4-6. Ranges are min to max over the 5 runs. A second, independent run (9 pairs, lighter load) is in
+[Performance](07-performance.md#second-run) and [RESULTS](../RESULTS.md). Across all four runs of that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU (medians per run; [RUNS](../RUNS.md)).
+
+| Workload | Measure | Rust | React | Ratio (range) | RESULTS row |
+|---|---|---|---|---|---|
+| 1000 messages | open the thread, Markdown formatted and painted | 105.3 ms (100.8 to 150.9) | 2940 ms (2794 to 2987) | 27.9x (18.5x to 29.6x) | 15 |
+| 1000 messages | longest iteration or frame while streaming | 34 ms (17.5 to 35.4) | 916.6 ms (866.6 to 1183.3) | 26.9x (24.4x to 67.6x) | 7 |
+| 1000 messages | memory at the end, Rust RSS vs React PSS | 30.1 MiB (29.7 to 30.4) | 850.3 MiB (841.8 to 895.4) | 28.2x (27.6x to 30.1x) | 14 |
+| 1000 messages | process CPU while streaming 60 s | 17160 ms (13700 to 17650) | 73260 ms (73050 to 73540) | 4.2x (4.1x to 5.3x) | 18 |
+| 10,000 messages | open the thread, Markdown formatted and painted | 435.5 ms (382.9 to 472.1) | 26081 ms (23591 to 27196) | 59.8x (49.9x to 71x) | 6 |
+
+Conditions that apply to every row:
+
+- **Like for like.** "Open" is the same end state on both sides. Rust: until the last message's Markdown is formatted
+  and painted at least once. React: until all messages are in the DOM with their Markdown rendered. Rust's first sync
+  alone (12.9 ms at 1000 messages) is an earlier event and is not compared.
+- **Memory.** PSS is the conservative figure for React because it discounts shared pages. React RSS summed over all
+  Chromium processes was 1481.5 MiB for the same run (row 11).
+- **Rust CPU includes software rasterisation.** React CPU is the whole Chromium process tree.
+- **Ratios** are computed from the stated values and floored to one decimal. The range pairs the best Rust run with the
+  worst React run and the reverse.
+- **Not measured here:** a GPU window against React with a GPU, other browsers, other machines, and scenarios other than
+  these two prompts. Stalls from single events are noisy; read the range, not just the median.
+
+Method and reproduction commands: [Performance](07-performance.md). The earlier "24x" open figure, which compared
+Rust before Markdown was formatted with React after, was withdrawn and is explained in RESULTS.
+
+## How it works
+
+A streamed update changes one message. The repository records which selected-path message changed in a bounded journal;
+each `ThreadView` reads its own cursor and projects only those rows, falling back to a full projection when the thread's
+shape changed or the cursor expired. The Slint host compares row identities (messages are `Arc`, so that is a pointer
+comparison) and updates changed rows in place. The details, with file names, are in [Performance](07-performance.md).
+
+Markdown is the other large cost. Parsing happens on worker threads, the newest source per key wins, and the UI keeps
+showing formatted text while newer text is pending. Visible parts are submitted first. In the browser there are no
+threads, so a wasm-only inline backend is used.
+
+The design rules that make this possible (immutable `Arc` messages, a runtime free of I/O and clocks, adapters that yield
+cumulative results) are described in [Concepts](02-concepts.md).
+
+## Who it is for
+
+- Rust apps, native or WebAssembly, that need a chat thread with branching, tools and approvals.
+- Teams with a backend that already speaks the AI SDK protocols or assistant-transport.
+- People who want the chat runtime without a UI toolkit and will write their own view on `ai-ui-state`.
+
+## Who it is not for
+
+- Projects that need features on the not-yet-ported list: assistant-transport as a runtime, a concrete HTTP remote
+  thread-list adapter, LangGraph and other framework adapters, custom per-tool components, attachment, speech,
+  dictation, suggestion and history adapters, message queue.
+- Web apps that already run well on React and have no reason to change. The port does not remove the need for a Rust
+  toolchain.
+
+## Status and limits
+
+- **Early.** All ten library crates are on crates.io as 0.1 (minor versions may break the API before 1.0). With Slint's
+  FemtoVG-WGPU renderer, an app adds a one-line femtovg patch until a Slint release includes the fix
+  (`patches/README.md`).
+- **Browser demo.** It needs WebGL. On a 2x display the canvas renders at 1x and looks soft (known issue). Frame rates
+  measured in headless Chromium use software WebGL and are a floor.
+- **Fidelity.** Markdown styling in a real GPU window is marked unverified in [STATUS](../STATUS.md).
+- **Protocol conformance.** As of 2026-11-09 ([PROTOCOL](../PROTOCOL.md#conformance-status)): 22 of 23 assistant-stream
+  vectors that were run match (2 skipped), and 52 of 65 AI SDK vectors match, with each of the 13 differences recorded
+  with its reason. The tests are the current truth.
+- **Slint licence.** The code is MIT. Slint is GPL-3.0, a royalty-free licence with a badge, or commercial; apps that use
+  the Slint crates must comply with the one they choose.
+- **Independent project.** A port, not affiliated with the assistant-ui or Vercel AI SDK projects.
+
+## Where to start
+
+- [Getting started](01-getting-started.md): a first runtime in 20 lines, a first window, a first web build.
+- [Concepts](02-concepts.md): the message model and runtimes.
+- [Performance](07-performance.md): why the numbers look like this, and how to reproduce them.
+- [Coming from assistant-ui](08-from-assistant-ui.md): parity table and differences.
+- [RESULTS](../RESULTS.md) and [STATUS](../STATUS.md): the full tables and the ported and not-ported lists.
+
+---
+
+# docs/guide/01-getting-started.md
+
+---
+title: Getting started
+description: Install ai-ui from git, run a first chat runtime in a few lines, stream a reply into the state layer and run the example app.
+order: 1
+section: Start
+---
+
+# Getting started
+
+**What this page gives you.** This page takes you from an empty project to a running chat runtime: install from git, a first runtime in 20 lines, a streamed reply read through the state layer, the example app and a web build. Each snippet is built by the repository's tests or examples.
+
+ai-ui is a Rust port of [assistant-ui](https://github.com/assistant-ui/assistant-ui). It gives native and
+WebAssembly Rust apps the same building blocks that assistant-ui gives React apps: a message model with branching,
+a chat runtime that drives a model adapter, tool calls with approvals, the AI SDK and assistant-stream wire
+protocols, and a Slint thread UI. It follows upstream's architecture module for module, so a backend that already
+serves assistant-ui clients keeps working. The pinned upstream commit and the list of what is and is not ported are in
+[STATUS](../STATUS.md).
+
+It is early: the library crates are on crates.io as 0.1 (`cargo add ai-ui-core`). It is a port, not a product of the assistant-ui or Vercel AI SDK projects.
+
+The point of the port is cost. On the same workload, a Rust thread uses much less CPU and memory than upstream's React
+thread. One example, with its conditions: opening a 1000-message thread (9 KB prompt) until every message's Markdown is
+formatted and painted took 105 ms for Rust and 2.94 s for React, median of 5 interleaved pairs, release build, software
+renderer on the Rust side, headless Chromium for React, measured on 2026-11-11; across four runs that day the open ratio was 16.6x to 27.9x
+([RUNS](../RUNS.md)). Other workloads, ranges and caveats are
+in [RESULTS](../RESULTS.md); [Performance](07-performance.md) explains where the difference comes from.
+
+## What you get
+
+Three layers, each usable without the next:
+
+| Layer | Crates | What it does |
+|---|---|---|
+| Runtime | `ai-ui-core`, `ai-ui-stream`, `ai-ui-data-stream`, `ai-ui-http` | Messages, branches, the run loop, tools, wire decoders, HTTP clients. No UI dependency. |
+| State | `ai-ui-state` | `ThreadView`: what a UI renders (rows, parts, branch numbers, smooth text) and the actions it calls. UI-agnostic. |
+| UI | `ai-ui-slint`, `ai-ui-markdown-slint`, `examples/thread` | A Slint thread, composer and Markdown renderer, plus the demo app. |
+
+The first two layers compile for `wasm32-unknown-unknown`. Every crate is described in the [crate reference](06-crates.md).
+
+## Install
+
+Using a coding agent? The [README](../../README.md#with-a-coding-agent) has a prompt to paste; it follows this guide.
+By hand:
+
+```toml
+[dependencies]
+ai-ui-core = "0.1"
+ai-ui-state = "0.1"
+# Only if you talk to an AI SDK backend:
+ai-ui-data-stream = "0.1"
+ai-ui-http = "0.1"
+# The examples on this page drive futures with a small executor:
+futures-executor = "0.3"
+```
+
+The non-UI crates need Rust 1.85 or newer
+(`ai-ui-markdown` needs 1.88, the Slint crates 1.92). The runtime has no executor of its own, so you choose one:
+`slint::spawn_local`, a Tokio `LocalSet`, `wasm-bindgen-futures`, or `futures_executor::block_on` in tests and scripts.
+
+## A first runtime
+
+A runtime holds one thread. Its model is a `ChatModelAdapter`: any closure from the run options to a stream of results
+works. This one answers every request with a canned text.
+
+```rust
+use ai_ui_core::{
+    adapter, AppendMessage, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime,
+};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // The adapter is the model. This one answers every step with a canned text.
+    let runtime = LocalThreadRuntime::new(
+        |_options| adapter::from_results([Ok(ChatModelRunResult::text("Hello!"))]),
+        LocalRuntimeOptions::default(),
+    );
+
+    // `append` changes the thread now: the user message and an empty, running
+    // assistant message exist before the run has been polled.
+    let run = runtime.append(AppendMessage::user_text(None, "Hi"))?;
+    println!("before the run: {} messages", runtime.messages().len());
+
+    // The returned future does the model work. Any executor can drive it.
+    futures_executor::block_on(run)?;
+
+    for message in runtime.messages().iter() {
+        println!("{:?}: {}", message.role(), message.text());
+    }
+    Ok(())
+}
+```
+
+Running it prints:
+
+```text
+before the run: 2 messages
+User: Hi
+Assistant: Hello!
+```
+
+Two things to notice. First, `append` does its synchronous work immediately: the user message and a running, still
+empty assistant message are in the thread before anything is awaited, which is what lets a UI show them in the same
+frame. Second, the future it returns is the model run. Nothing happens until you spawn it. The same code is built as
+[`quickstart.rs`](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/crates/ai-ui-core/examples/quickstart.rs):
+`cargo run --example quickstart -p ai-ui-core`.
+
+## Stream a reply and read the state
+
+A real model streams. Each item an adapter yields is the whole reply so far, not a delta (the
+[concepts page](02-concepts.md#chatmodeladapter-and-run-results) explains why). A UI does not read the runtime directly:
+it holds a `ThreadView` from `ai-ui-state`, reads `view.state()` when told something changed, and calls the view's
+actions (`send`, `stop`, `reload`, `switch_branch`, ...).
+
+```rust
+use ai_ui_core::{
+    adapter, AssistantMessagePart, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime,
+    PartStatus, RunError, TextPart,
+};
+use ai_ui_state::{PartKind, ThreadView, ViewOptions};
+use std::cell::Cell;
+use std::rc::Rc;
+
+/// One cumulative update: the whole reply so far, and whether the part is still running.
+fn step(text: &str, status: PartStatus) -> Result<ChatModelRunResult, RunError> {
+    Ok(ChatModelRunResult::content(vec![
+        AssistantMessagePart::Text(TextPart {
+            status: Some(status),
+            ..TextPart::new(text)
+        }),
+    ]))
+}
+
+fn reply(view: &ThreadView) -> String {
+    match &view.state().messages[1].parts[0].kind {
+        PartKind::Text { text, .. } => format!("{text:?}"),
+        _ => String::new(),
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let runtime = LocalThreadRuntime::new(
+        |_options| {
+            adapter::from_results([
+                step("Rust", PartStatus::Running),
+                step("Rust is a", PartStatus::Running),
+                step("Rust is a systems language.", PartStatus::Complete),
+            ])
+        },
+        LocalRuntimeOptions::default(),
+    );
+    let view = ThreadView::new(Rc::new(runtime), ViewOptions::default());
+
+    // A UI reads `state()` whenever it is told something changed. That is also
+    // how the view notices a part that is still streaming and starts to pace it.
+    let changes = Rc::new(Cell::new(0u32));
+    let _subscription = view.subscribe({
+        let (view, changes) = (view.clone(), changes.clone());
+        move || {
+            changes.set(changes.get() + 1);
+            let _ = view.state();
+        }
+    });
+
+    let run = view
+        .send("What is Rust?")?
+        .expect("the composer was not empty");
+    futures_executor::block_on(run)?;
+    println!("run finished, shown so far: {}", reply(&view));
+
+    // Once per frame the UI hands the view a clock reading.
+    let mut now_ms = 0.0;
+    while view.needs_frame() {
+        now_ms += 16.0;
+        view.tick(now_ms);
+        if now_ms == 64.0 {
+            println!("after 64 ms: {}", reply(&view));
+        }
+    }
+    println!("after {now_ms} ms: {}", reply(&view));
+    println!(
+        "running: {}, notifications: {}",
+        view.state().is_running,
+        changes.get()
+    );
+    Ok(())
+}
+```
+
+Its output:
+
+```text
+run finished, shown so far: ""
+after 64 ms: "Rust is a"
+after 160 ms: "Rust is a systems language."
+running: false, notifications: 16
+```
+
+The model finished at once, but the view reveals the text at a steady pace, like upstream's `useSmooth`. A frame loop
+calls `view.tick(now_ms)` while `view.needs_frame()` is true; here the loop is simulated with a 16 ms step. The notification
+count varies with the library version and is only printed to show that the subscription fired. In a real app the
+callback asks the UI toolkit for a redraw instead of reading state itself.
+
+The text part is marked `PartStatus::Running` in the first two results. That is how the view knows a part is streaming
+and paces it. The wire decoders set it for you; a hand-written adapter has to set it to get smooth text.
+
+## Run the example app
+
+`examples/thread` is assistant-ui's default thread in Slint: sidebar with threads, messages, reasoning and tool
+disclosure, branch picker, copy, edit and regenerate, a composer and a settings panel. It needs the system fontconfig
+development package (see [troubleshooting](#troubleshooting)) and Rust 1.92.
+
+```sh
+git clone https://github.com/iyiolacak/ai-ui-rewrite-rust
+cd ai-ui-rewrite-rust
+cargo run -p ai-ui-example-thread --release
+```
+
+With no flags it runs a built-in demo model that streams reasoning and then a Markdown answer. A prompt that contains
+"weather" makes it call the `get_weather` tool, which runs without asking. A prompt that contains "email" calls
+`send_email`, which stops and asks you to approve first. Flags go after `--` when you use `cargo run`; they are the
+real ones from `examples/thread/src/main.rs`:
+
+| Flag | Effect |
+|---|---|
+| `--api URL` | Talk to an AI SDK endpoint instead of the demo model (native build only). |
+| `--header NAME:VALUE` | Add a request header with `--api`, for example an authorization header. |
+| `--theme system\|light\|dark`, `--light` | Choose the theme for this run. |
+| `--text-scale F` | Text size factor, clamped to 0.75 to 2.0. |
+| `--reading-width compact\|default\|wide\|xwide\|full` | Width of the message column. |
+| `--open-settings` | Start with the settings panel open. |
+| `--history N` | Start with N messages already in the thread. |
+| `--long-reply-kb K` | Ask the demo model for a reply of about K kilobytes of Markdown. |
+| `--token-delay-ms MS` | Pause between demo tokens (default 18). |
+| `--ask TEXT` | Run a prompt immediately; repeatable. |
+| `--decide allow\|deny` | Answer a pending approval automatically. |
+| `--new-thread` | Open a new thread first. |
+| `--size WxH` | Window or screenshot size (default 900x760). |
+
+Settings changed in the sidebar are saved in `$XDG_CONFIG_HOME/ai-ui-example-thread/settings.json`; flags override them
+for one run. A scenario that exercises the long-thread paths:
+
+```sh
+cargo run -p ai-ui-example-thread --release -- --history 1000 --long-reply-kb 9 --token-delay-ms 4
+```
+
+To try the approval flow without clicking: `-- --ask "Send an email to the team" --decide allow`.
+
+For a GPU renderer, build with `--features gpu-window` and set `SLINT_BACKEND=winit-femtovg`. The default build includes
+Slint's software renderer, which also powers the headless flags: `--screenshot out.png` renders offscreen and exits (with
+`--conversation`, `--expand-all`, `--mid-stream MS`). The software renderer draws styled text as plain characters, so
+screenshots do not show bold or list styling; see the visual fidelity note in [STATUS](../STATUS.md#visual-fidelity).
+`--bench N` and its relatives are the benchmark harness, covered in [Performance](07-performance.md).
+
+To point it at your own backend: `cargo run -p ai-ui-example-thread --release -- --api http://localhost:3000/api/chat`.
+What that request and response look like is in [Streaming and backends](03-streaming-and-backends.md).
+
+## In the browser
+
+The same example builds for WebAssembly and runs the demo model in a canvas. `scripts/build-web-demo.sh` produces the
+JavaScript glue and the `.wasm` file. Flags become query parameters there (`?history=1000&light`). The build steps, what
+works in the browser and its limits are in [Running on the web](05-web.md) and [WEB](../WEB.md).
+
+## Troubleshooting
+
+**`fontconfig` not found when building a Slint crate.** The Slint crates link the system fontconfig. Install the
+development package: `libfontconfig1-dev` on Debian and Ubuntu, `fontconfig-devel` on Fedora. If it lives in a
+non-standard prefix, point pkg-config at it before building:
+
+```sh
+export PKG_CONFIG_PATH=/path/to/prefix/lib/pkgconfig
+```
+
+The runtime and state crates do not need fontconfig, so `ai-ui-core`, `ai-ui-state`, `ai-ui-stream`, `ai-ui-data-stream`
+and `ai-ui-http` build without it.
+
+**`wasm-bindgen` version mismatch.** `scripts/build-web-demo.sh` stops with "wasm-bindgen is X but Cargo.lock needs Y"
+when the command-line tool differs from the library locked in `Cargo.lock` (0.2.129 at the time of writing). Install that
+exact version of the CLI, or set `WASM_BINDGEN=/path/to/wasm-bindgen`. Add the target once with
+`rustup target add wasm32-unknown-unknown`.
+
+**Old toolchain.** The Slint crates and the example need Rust 1.92; `rustup update` fixes most "requires rustc" errors.
+
+**Your own Slint app drops frames during long streams.** Slint 1.18 depends on a femtovg release that recompiles GPU
+pipelines too often for a streaming chat. This workspace carries a patch; an app that uses the Slint crates adds:
+
+```toml
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
+
+ See [patches/README.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/patches/README.md).
+
+**Slint licence.** The code here is MIT, but Slint is available under GPL-3.0, a royalty-free licence that requires an
+attribution badge, or a commercial licence. An app using the Slint crates must comply with the one it picks.
+
+## Where next
+
+- [Concepts](02-concepts.md): the message model, branches, runtimes, tools, smooth streaming and the state layer.
+- [Streaming and backends](03-streaming-and-backends.md): wire protocols and connecting a real backend.
+- [Building a UI with Slint](04-ui-slint.md): the thread UI in detail.
+
+---
+
+# docs/guide/02-concepts.md
+
+---
+title: Concepts
+description: The message model, branching repository, runtimes, thread list, adapters, tools and approvals, smooth streaming and the state layer, and why each exists.
+order: 2
+section: Start
+---
+
+# Concepts
+
+**What this page gives you.** This page defines the types you will use: messages and parts, the branching repository, `ThreadRuntime`, adapters, tools and approvals, smooth streaming and `ThreadView`. For each it says where the code lives and why it has that shape.
+
+This page walks through the ideas the rest of the guide builds on, in the order data moves: a message, the tree of
+messages, the runtime that owns the tree, the adapter that produces model output, tools, smooth streaming, and finally
+the state layer a UI reads. Each section says what the thing is, where it lives, and why it is shaped that way. Two goals
+explain most of the shapes:
+
+- **Correctness against upstream.** Types and behaviours follow [assistant-ui](https://github.com/assistant-ui/assistant-ui)
+  at one pinned commit, and tests are ported from upstream's, so a thread, a backend or a stored history means the same
+  thing in both worlds.
+- **Cost per streamed update.** A chat spends most of its life receiving one small update after another. The design keeps
+  the work for one update independent of how long the thread is, wherever it can.
+
+## The message model
+
+Types live in [`crates/ai-ui-core/src/types.rs`](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/crates/ai-ui-core/src/types.rs).
+A `ThreadMessage` is one of three roles (`MessageRole`): `System`, `User` or `Assistant`.
+
+| Role | Struct | Content parts (`type` tag) |
+|---|---|---|
+| System | `SystemMessage` | `text` |
+| User | `UserMessage` | `text`, `image`, `file`, `data`, `audio`, plus `attachments` |
+| Assistant | `AssistantMessage` | `text`, `reasoning`, `tool-call`, `source`, `file`, `image`, `data`, `generative-ui` |
+
+Only assistant messages have a `status` (`MessageStatus`), because only they are produced over time:
+
+- `Running`: the run is in progress.
+- `RequiresAction { reason }`: paused until the app or the user acts, for tool calls or an interrupt.
+- `Complete { reason }`: finished, with `Stop` or `Unknown`.
+- `Incomplete { reason, error }`: ended early, because it was cancelled, hit a length or content filter, reached the step
+  limit with tool calls pending, or failed (`Error`, with the error detail stored on the message).
+
+Parts have their own `PartStatus` (`Running`, `Complete`, `Incomplete`). That is how a UI knows which paragraph is still
+growing. A tool call is a part (`ToolCallPart`) that carries its arguments (`args` parsed, `args_text` raw), its `result`,
+`is_error`, an optional `approval` and an optional `interrupt`, so a call and its answer live in one place.
+
+Two design choices matter here.
+
+**The JSON shape is upstream's.** Tags are `type` and `role`, field names are camelCase, `createdAt` is epoch
+milliseconds, and fields this port does not model are kept in an `extra` map and written back out. A message exported
+from one side imports on the other, and a backend that expects assistant-ui's message JSON does not need to know which
+client sent it.
+
+**Messages are shared, not copied.** The thread hands out `Arc<ThreadMessage>`. A streamed update replaces one `Arc`;
+every other message keeps its pointer, which is what the state layer later uses to skip unchanged rows.
+
+## The branching repository
+
+`MessageRepository` ([`repository.rs`](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/crates/ai-ui-core/src/repository.rs))
+stores a conversation as a tree, because a conversation with edit and regenerate is not a list. Each message has one
+`parent_id` (`None` for a root). Messages that share a parent are *siblings*, and each parent remembers which child is
+selected. The *head* is the last message of the *selected path* that runs from the root through the selected children.
+`messages()` returns that path, and it is what the UI shows and what is sent to the model.
+
+Branches are created by two operations, and both are ordinary appends under an existing parent:
+
+- **Regenerate** answers the same user message again. Call `start_run` with `parent_id` set to the user message and
+  `source_id` set to the answer being replaced. The new answer becomes a sibling of the old one and is selected.
+- **Edit** replaces a user message. Append a user message with the edited message's parent and `source_id` set to the
+  edited message. The edited text becomes a sibling of the original, and its answer follows it. A `Composer` from
+  `begin_edit` does this for you when you `send` it.
+
+`switch_to_branch(id)` selects the branch containing `id`, and `branches(id)` lists a message and its siblings.
+`branch_position(id)` gives the 1-based position and count that a "2 / 3" branch picker shows.
+
+```rust
+use ai_ui_core::{
+    adapter, AppendMessage, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime,
+    StartRunConfig, ThreadRuntime,
+};
+use std::cell::Cell;
+use std::rc::Rc;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let calls = Rc::new(Cell::new(0));
+    let runtime = LocalThreadRuntime::new(
+        {
+            let calls = calls.clone();
+            move |_options| {
+                calls.set(calls.get() + 1);
+                adapter::from_results([Ok(ChatModelRunResult::text(format!(
+                    "answer {}",
+                    calls.get()
+                )))])
+            }
+        },
+        LocalRuntimeOptions::default(),
+    );
+    futures_executor::block_on(runtime.append(AppendMessage::user_text(None, "Hi"))?)?;
+    let user = runtime.messages()[0].id().clone();
+    let first = runtime.messages()[1].id().clone();
+
+    // Regenerate: answer the same user message again, replacing `first` on the selected path.
+    futures_executor::block_on(runtime.start_run(StartRunConfig {
+        parent_id: Some(user.clone()),
+        source_id: Some(first.clone()),
+        ..Default::default()
+    })?)?;
+    println!("selected: {}", runtime.messages()[1].text());
+    println!("siblings: {}", runtime.branches(&first)?.len());
+
+    // Edit: append a user message with the same parent and a source_id.
+    let mut edit = AppendMessage::user_text(None, "Hello");
+    edit.source_id = Some(user.clone());
+    futures_executor::block_on(runtime.append(edit)?)?;
+    println!(
+        "after edit: {:?}",
+        runtime
+            .messages()
+            .iter()
+            .map(|m| m.text())
+            .collect::<Vec<_>>()
+    );
+
+    // Go back to the first answer's branch.
+    runtime.switch_to_branch(&first)?;
+    println!(
+        "after switch: {:?}",
+        runtime
+            .messages()
+            .iter()
+            .map(|m| m.text())
+            .collect::<Vec<_>>()
+    );
+
+    // Persist and restore.
+    let saved = ThreadRuntime::export(&runtime);
+    println!("exported {} messages", saved.messages.len());
+    Ok(())
+}
+```
+
+This prints:
+
+```text
+selected: answer 2
+siblings: 2
+after edit: ["Hello", "answer 3"]
+after switch: ["Hi", "answer 1"]
+exported 5 messages
+```
+
+The edit left the first branch intact: switching back to the original answer restores the original question too.
+`export()` returns an `ExportedRepository` (every message with its parent, plus the head) and `import()` loads one, so a
+history with all its branches survives a restart. Messages serialize with serde, so storage is up to you.
+`ExportedRepository::from_linear` builds one from a plain list.
+
+Errors that would corrupt the tree (a missing parent, a cycle) are `RepositoryError` values and leave the tree unchanged.
+Upstream throws for these.
+
+*Why a tree.* Edit and regenerate must never destroy what was there, and the model must only see the selected path. A
+tree gives both for free. *Why this implementation.* Appending under the head is constant time, the selected path is cached
+as one shared slice and patched in place when a streamed message replaces the head, and a bounded change journal records
+which path indices changed (`message_changes_since`) plus a `shape_version` that only moves when messages are added,
+moved or removed or the selection changes. Those two counters are what let a view of a long thread skip the messages that
+did not change; see [the state layer](#the-state-layer) below.
+
+## The ThreadRuntime trait
+
+A UI never talks to a concrete runtime. It talks to the `ThreadRuntime` trait
+([`runtime.rs`](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/crates/ai-ui-core/src/runtime.rs)):
+`messages`, `is_running`, `capabilities`, `branches`, `switch_to_branch`, `append`, `reload`, `cancel_run`,
+`add_tool_result`, `respond_to_tool_approval`, `submit_feedback`, composers, `subscribe_dyn`, `export` and `import`, plus
+the two change counters from the previous section. `RuntimeCapabilities` says which of these the thread supports, so a
+UI hides the edit button when `edit` is false instead of showing a button that fails.
+
+Methods do their synchronous work at once and return a `RunFuture` for anything that must wait. They never spawn:
+spawning belongs to your executor. The runtime is single-threaded (`Rc`) like upstream's UI-thread runtime, while
+messages are `Arc` so an adapter can move them to a worker thread. Timestamps and ids come from `LocalRuntimeOptions`
+(`clock`, `ids`), because `SystemTime` does not exist on `wasm32-unknown-unknown`.
+
+There are three implementations, and one trait means the same UI works with all of them.
+
+**`LocalThreadRuntime`**: the library drives the model. You give it a `ChatModelAdapter`, and it owns the run loop, the
+repository, tools and composers. The examples in this guide use it.
+
+**`ExternalStoreRuntime`**: your app owns the messages, the model call and the persistence, and the runtime displays them.
+It is the Rust counterpart of upstream's `useExternalStoreRuntime`. You implement `ExternalStore` (`on_new`, and
+optionally `on_edit`, `on_reload`, `on_cancel`, `on_add_tool_result`, `on_respond_to_tool_approval`, `on_feedback`,
+`on_branch_change`), declare `capabilities`, and push state in with `set_messages`, `set_repository` and `set_running`.
+Nothing is inserted optimistically. Messages you re-send unchanged keep their `Arc`, so an app that stores its own
+messages does not make the view re-render the whole thread.
+
+```rust
+use ai_ui_core::{
+    AppendMessage, ExternalStore, ExternalStoreRuntime, RuntimeCapabilities, StoreFuture,
+    ThreadMessage, ThreadRuntime,
+};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+/// The app owns the messages; the runtime only shows them and forwards actions.
+struct App {
+    sent: Rc<RefCell<Vec<String>>>,
+}
+
+impl ExternalStore for App {
+    fn on_new(&self, message: AppendMessage) -> StoreFuture {
+        // Send it to your own backend here, then call `set_messages` with the new state.
+        if let ai_ui_core::AppendContent::User { content, .. } = &message.content {
+            self.sent
+                .borrow_mut()
+                .push(format!("{} part(s)", content.len()));
+        }
+        Box::pin(async { Ok(()) })
+    }
+    fn capabilities(&self) -> RuntimeCapabilities {
+        RuntimeCapabilities {
+            switch_to_branch: true,
+            copy: true,
+            cancel: true,
+            edit: false,
+            reload: false,
+            feedback: false,
+            answer_tool_call: false,
+        }
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sent = Rc::new(RefCell::new(Vec::new()));
+    let runtime = ExternalStoreRuntime::new(App { sent: sent.clone() });
+    let hello: ThreadMessage = serde_json::from_value(serde_json::json!({
+        "role": "user", "id": "m1", "createdAt": 0,
+        "content": [{ "type": "text", "text": "Hello" }]
+    }))?;
+    runtime.set_messages([hello]);
+    futures_executor::block_on(runtime.append(AppendMessage::user_text(None, "More"))?)?;
+    println!(
+        "{} message(s) shown, {:?} sent",
+        runtime.messages().len(),
+        sent.borrow()
+    );
+    Ok(())
+}
+```
+
+**`ThreadList`**: many threads, one of them the main thread. Its factory creates one runtime per thread, so a list can mix
+local and external-store threads. Switching, creating, renaming, archiving and deleting apply immediately and are
+persisted by background tasks through an optional `ThreadListAdapter` (`list`, `initialize`, `rename`, `archive`,
+`unarchive`, `delete`, `generate_title`, `load`); a failed task undoes its change and the message is available from
+`last_error`. A new thread becomes a regular one when its first message appears. The host supplies a `Spawner` for the
+background tasks. `ThreadView::for_list` follows the main thread and rebinds when it changes.
+
+```rust
+use ai_ui_core::{
+    adapter, AppendMessage, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime, Spawner,
+    ThreadList, ThreadRuntime,
+};
+use std::rc::Rc;
+
+fn main() {
+    // The factory builds one runtime per thread. Background work (persistence,
+    // titles) goes to the host's executor; this one just drives it to completion.
+    let spawner: Spawner = Rc::new(|future| futures_executor::block_on(future));
+    let list = ThreadList::new(
+        |_id| {
+            Rc::new(LocalThreadRuntime::new(
+                |_options| adapter::from_results([Ok(ChatModelRunResult::text("ok"))]),
+                LocalRuntimeOptions::default(),
+            )) as Rc<dyn ThreadRuntime>
+        },
+        spawner,
+        None,
+    );
+    let first = list.main_id();
+    // A thread becomes a regular one when its first message appears.
+    let run = list
+        .main()
+        .append(AppendMessage::user_text(None, "Hi"))
+        .unwrap();
+    futures_executor::block_on(run).unwrap();
+    list.switch_to_new();
+    println!(
+        "regular: {}, main changed: {}",
+        list.regular().len(),
+        list.main_id() != first
+    );
+}
+```
+
+## ChatModelAdapter and run results
+
+An adapter is the model: `fn run(&self, options: ChatModelRunOptions) -> RunStream`, where a `RunStream` is a stream of
+`Result<ChatModelRunResult, RunError>`. Any closure with that signature is an adapter, and `adapter::once` and
+`adapter::from_results` build streams for tests.
+
+`ChatModelRunOptions` carries the selected path up to the message being answered, the `ModelContext` (system prompt,
+tool definitions, call settings, config), an `AbortSignal`, the id of the assistant message being filled, the thread's
+remote id, the parent id, and the assistant message as it stood when the step began, whose content is non-empty when a
+run continues after tool results.
+
+**Each result is cumulative.** A `ChatModelRunResult` holds the whole content so far, not a delta; the runtime replaces the
+message content with it. This matches upstream, and it has three benefits. A consumer that falls behind simply sees a later,
+fuller snapshot. There is no delta bookkeeping in the UI. And a decoder can fold every network read that is already
+available into one result: `ai-ui-stream` does this so that `result()` runs once per wake-up, not once per slice of bytes.
+
+A run ends in one of three ways:
+
+- The stream ends: the message completes, or `RequiresAction` if the last step left unanswered tool calls.
+- `RunError::Aborted` or `cancel_run`: the message becomes `incomplete/cancelled`, with the text received so far kept.
+- `RunError::Failed { message, error }`: the message becomes `incomplete/error` with the detail stored on it, and the run
+  future returns the error. Content received before the failure stays.
+
+If the host drops the run future, the message is marked cancelled and the runtime stops running. The `AbortSignal`
+(`AbortController` on the owner side) is thread-safe and can be polled or awaited, since adapters often do their I/O on
+another thread. The runtime also stops polling an adapter that ignores the signal.
+
+## Tools and approvals
+
+A model can call tools. The tool definitions go to the model through `ModelContext`; the calls come back as `tool-call`
+parts. A `Tool` with an `execute` function runs inside your app, after the model step that asked for it, and its result
+feeds the next step. Tools are registered with `set_tools(ToolRegistry)`.
+
+```rust
+use ai_ui_core::adapter::{self, RunStream};
+use ai_ui_core::{
+    AppendMessage, AssistantMessagePart, ChatModelRunOptions, ChatModelRunResult,
+    LocalRuntimeOptions, LocalThreadRuntime, MessageStatus, RequiresActionReason, Tool,
+    ToolCallPart, ToolRegistry,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Step 1 asks for the tool; step 2 sees its result and answers.
+    let model = |options: ChatModelRunOptions| -> RunStream {
+        match options
+            .message
+            .tool_calls()
+            .next()
+            .and_then(|c| c.result.clone())
+        {
+            None => adapter::from_results([Ok(ChatModelRunResult::content(vec![
+                AssistantMessagePart::ToolCall(ToolCallPart {
+                    tool_call_id: "call-1".into(),
+                    tool_name: "get_weather".into(),
+                    args: serde_json::from_value(json!({ "city": "Oslo" })).unwrap(),
+                    args_text: r#"{"city":"Oslo"}"#.into(),
+                    ..Default::default()
+                }),
+            ])
+            .with_status(MessageStatus::RequiresAction {
+                reason: RequiresActionReason::ToolCalls,
+            }))]),
+            Some(result) => adapter::from_results([Ok(ChatModelRunResult::text(format!(
+                "It is {} degrees in Oslo.",
+                result["temp_c"]
+            )))]),
+        }
+    };
+    let runtime = LocalThreadRuntime::new(model, LocalRuntimeOptions::default());
+    runtime.set_tools(
+        ToolRegistry::new().with(
+            "get_weather",
+            Tool::new(json!({
+                "type": "object",
+                "properties": { "city": { "type": "string" } },
+                "required": ["city"]
+            }))
+            .description("Current weather for a city")
+            .execute(|_args, _context| async { Ok(json!({ "temp_c": 7 })) }),
+        ),
+    );
+    futures_executor::block_on(
+        runtime.append(AppendMessage::user_text(None, "Weather in Oslo?"))?,
+    )?;
+    println!("{}", runtime.messages().last().unwrap().text());
+    Ok(())
+}
+```
+
+That prints `It is 7 degrees in Oslo.` The run took two model steps: the first ended in `RequiresAction` with an open call,
+the runtime ran `get_weather`, and the second step saw the result in `options.message`.
+
+The controls around that loop:
+
+- **`requires_approval()`** on a `Tool` makes the run pause before executing. The call gets a pending `ToolApproval` with a
+  prompt (`approval_prompt(|name, args| ...)` customises the question), the run future resolves, and `is_running` is false.
+  `respond_to_tool_approval(message_id, approval_id, approved, reason)` records the decision and returns a new `RunFuture`
+  that resumes the run. Approving runs the tool. Denying never runs it; the model hears `{"error": reason}` as the tool
+  result. A decided approval cannot be answered twice (`RuntimeError::ApprovalNotFound`).
+- **`max_steps`** in `LocalRuntimeOptions` (default 2) limits model steps per run, so a model that keeps calling tools
+  cannot loop forever. At the limit the message ends `incomplete/tool-calls`.
+- **Human tools.** A call to a tool without `execute` is left for the host. Answer it with `add_tool_result`, which
+  resumes the run when it answers the last open call. `human_tool_names` narrows which tools the run waits for.
+- **Cancelling** aborts a running tool through the `AbortSignal` in its `ToolContext`.
+- **Cut-off arguments never run.** If a response ends inside a tool call's argument JSON, the runtime gives the call an
+  error result and neither executes it nor offers it for approval, whichever decoder produced it. A repaired partial value
+  is a preview for display, not an instruction to act on.
+
+Tools run one after another. Per-tool presentation goes through `ThreadView::set_tool_presenter`; a fully custom component
+per tool (generative UI) is not ported. See [STATUS](../STATUS.md).
+
+*Why this design.* Running tools in the runtime, not the UI, keeps the approval flow identical for every front end and
+makes the dangerous cases (denied, cancelled, truncated) testable without a window.
+
+## Smooth streaming
+
+Model output arrives in bursts: a hundred characters, a pause, then three. Shown as received, that looks jerky.
+`SmoothText` ([`smooth.rs`](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/crates/ai-ui-core/src/smooth.rs)) is a
+port of upstream's `useSmooth`. It reveals a target text at a steady pace. Each character takes
+`min(max_char_interval_ms, drain_ms / remaining)`, so a large backlog is revealed faster (it drains in about `drain_ms`),
+while the last characters and a slow trickle are at most `max_char_interval_ms` apart. Defaults are 250 and 5 ms.
+`max_chars_per_frame` caps the work per frame.
+
+It is a plain state machine with no clock of its own: the caller passes `now_ms` to `tick`. That keeps it testable and
+usable on `wasm32`, and it means the pacing follows the display's frame loop rather than a timer. If a regeneration
+replaces the text with something that does not extend what is shown, it starts over. Revealing never splits a UTF-8
+character. You normally do not use it directly: `ThreadView` creates one per streaming part (configured with
+`ViewOptions { smooth }`) and exposes the pace through `tick` and `needs_frame`.
+
+## The state layer
+
+`ai-ui-state` is the boundary between runtimes and UIs. `ThreadView::new(runtime, options)` wraps any `ThreadRuntime`.
+`view.state()` returns an `Arc<ThreadState>`:
+
+- `ThreadState`: `messages: Vec<Arc<MessageState>>`, `is_empty`, `is_running`, `capabilities`.
+- `MessageState`: `id`, `role`, `index`, `is_last`, `branch_number` and `branch_count`, `parts: Vec<PartState>`, the joined
+  `text`, `status`, a readable `error`, `is_generating`, `is_copied`, `can_edit`, `can_reload`, `can_copy`,
+  `can_feedback`, `feedback`, and the underlying message.
+- `PartKind`: `Text`, `Reasoning`, `ToolCall` (with `ToolCallState`: arguments, result, `ToolStatus`, approval, expanded,
+  `ToolPresentation`), `Source`, `Image`, `File`, `Data`, `GenerativeUi`.
+
+The view also holds UI-local state that must not live in the runtime: smooth-text animators, which reasoning and tool
+sections are expanded, and the "copied" confirmation. Actions mirror upstream's scoped actions: `send`, `stop`, `reload`,
+`switch_branch`, `begin_edit`, `copy_text`, `toggle_part`, `respond_to_approval`, `add_tool_result`, `submit_feedback`.
+
+*Why a state layer.* Upstream splits runtime, scoped state and primitives so that rendering logic does not depend on a
+framework. Here that split has a second purpose: toolkit code reads one value and never touches the runtime, so a Slint
+UI, a terminal UI or a test can sit on the same `ThreadView`.
+
+*How it stays cheap.* The state is a vector of `Arc<MessageState>` rows, and a row that did not change is the same `Arc`
+as before, so a UI finds what changed by pointer comparison. To rebuild rows, the view asks the runtime
+`message_changes_since(its own cursor)`, which names the selected indices that changed since the view last looked. It
+rebuilds those rows and keeps the others, and when the previous `ThreadState` is not held elsewhere it updates it in place.
+`structure_version` tells it that no branch moved, so it reuses each row's branch position instead of looking it up. If the
+runtime does not track changes, the journal no longer covers the view's cursor (it is bounded), or something global
+changed (the thread started running, capabilities changed), the view falls back to a full pass. The fallback is the safe
+path; the journal is an optimisation that must be correct whenever it is used. The `ai-ui-state` perf test and
+[Performance](07-performance.md) show how this is measured.
+
+## Data flow
+
+The path from a backend to pixels, with the crate that owns each step:
+
+```mermaid
+flowchart LR
+    B[(Model backend)] -->|HTTP body bytes| H["ai-ui-http: NativeClient / FetchClient"]
+    subgraph adapter ["DataStreamAdapter (ai-ui-data-stream), a ChatModelAdapter"]
+        H -->|ByteStream| D["Decoder (ai-ui-stream): SSE / data stream to Chunks"]
+        D -->|Chunk| A[MessageAccumulator]
+    end
+    A -->|"cumulative ChatModelRunResult"| R["LocalThreadRuntime run loop (ai-ui-core)"]
+    R -->|"add_or_update(Arc message)"| P[(MessageRepository + change journal)]
+    R <-->|execute / approvals| T[ToolRegistry]
+    P -->|notify| V["ThreadView (ai-ui-state)"]
+    C["frame clock: tick(now_ms)"] --> V
+    V -->|"Arc ThreadState, changed rows only"| U["UI (ai-ui-slint or your own)"]
+    U -->|"send / stop / reload / switch_branch / approve"| V
+    V -->|actions| R
+```
+
+Reading it left to right: bytes are decoded into chunks, the accumulator folds chunks into one cumulative message, and
+the run loop stores it in the repository by replacing one `Arc`. The repository notifies subscribers, and the view turns
+the change into new rows for exactly the messages that changed. The UI redraws those rows. Actions travel back the same
+way. For an external-store thread, replace the left half with your own code calling `set_messages`; for a custom model,
+replace the adapter box.
+
+Next: [Streaming and backends](03-streaming-and-backends.md) covers the left half of the diagram. The architecture
+decisions behind it are in [ARCHITECTURE](../ARCHITECTURE.md), and every crate is listed in the [crate reference](06-crates.md).
+
+---
+
+# docs/guide/03-streaming-and-backends.md
+
+---
+title: Streaming and backends
+description: How model output becomes messages - chunks, decoders for the three wire protocols, the HTTP clients - and how to connect and test a real backend.
+order: 3
+section: Build
+---
+
+# Streaming and backends
+
+**What this page gives you.** This page shows how bytes from a backend become messages: the four-stage pipeline, the three wire formats and their decoders, request building, the HTTP clients, a connection to a real backend, and how to test without a network.
+
+[Concepts](02-concepts.md) described the runtime from the adapter inwards. This page covers the other side: how bytes from
+a backend become the cumulative results an adapter yields, which wire formats are understood, how a request is built,
+and how to connect and test a real backend. Byte-level detail lives in the reference documents
+[PROTOCOL](../PROTOCOL.md) (the protocol audit and conformance record) and [AI-SDK-STREAM](../AI-SDK-STREAM.md) (the strict AI SDK 7
+reducer); this page links to them rather than repeating them.
+
+## The pipeline
+
+Every network adapter does the same four things, and each has one type:
+
+1. **Transport** (`HttpClient`, `ai-ui-data-stream`): send a request, return a status, headers and a `ByteStream` of body
+   reads. The reads can split anywhere, including inside a UTF-8 character.
+2. **Decoder** (`StreamDecoder`, `ai-ui-stream`): `push(bytes)` returns the `Chunk`s that are now complete, `finish()`
+   flushes at end of input. Each wire format has one decoder.
+3. **Accumulator** (`MessageAccumulator`): folds chunks into the assistant message and produces a `ChatModelRunResult`.
+4. **Run stream** (`run_stream`): ties the three together and yields the cumulative result to the runtime.
+
+### Chunks
+
+A `Chunk` is the one internal vocabulary all wire formats are translated into, modelled on assistant-stream's
+`AssistantStreamChunk`. A chunk has a `path` (the index of the part it applies to) and a `ChunkKind`: `PartStart` (a
+`PartInit` of text, reasoning, tool call, source, file or data), `PartFinish`, `TextDelta`, `ToolCallArgsTextFinish`,
+`ToolCallApproval`, `Annotations`, `Data`, `StepStart`, `StepFinish`, `MessageFinish`, `Result` (a tool result), `Error` and
+`UpdateState`. Tool arguments arrive as `TextDelta`s on a tool-call part. One vocabulary means a new wire format needs only a
+decoder, and everything after it (the accumulator, the runtime, tool continuation, the UI) is shared.
+
+### The accumulator
+
+`MessageAccumulator` applies chunks in order and never panics on bad input: an invalid chunk is dropped and recorded in
+`warnings()`. `result()` builds the cumulative `ChatModelRunResult`, `status()` reports `Running` until the message
+finishes, and `finish()` settles a message at a clean end of stream: `RequiresAction` if a tool call is still open,
+otherwise `Complete`. Configurable `Limits` bound tool-argument size and state size so a hostile or broken stream cannot
+allocate without limit.
+
+`run_stream(bytes, decoder, accumulator)` does the reading. It folds every slice that is ready into one result, so a burst of
+reads costs one `result()` call, and it yields to the executor after a bounded number of slices so a source that is always
+ready cannot starve painting or cancellation. A transport or decoding error ends the run, but content accumulated before
+it is delivered first and stays on the message.
+
+### Partial JSON
+
+Tool arguments are JSON that arrives in fragments. A UI wants to show `{"city":"Oslo"` as it grows, but nothing may act on
+it until it is complete. `ai-ui-stream::partial_json::Parser` keeps an incremental parse: after each `append` the
+`snapshot()` holds the best reading so far, a `State` of `Partial` or `Complete`, and the path of the value still being
+written. It enforces limits on bytes, nodes and depth.
+
+```rust
+use ai_ui_stream::partial_json::{Limits, Parser, State};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut parser = Parser::new(Limits::default())?;
+    for fragment in [r#"{"city":"Os"#, r#"lo","units":"#, r#""metric"}"#] {
+        parser.append(fragment)?;
+        let snapshot = parser.snapshot();
+        let complete = snapshot.state == State::Complete;
+        println!("{} (complete: {complete})", snapshot.value);
+    }
+    Ok(())
+}
+```
+
+```text
+{"city":"Os"} (complete: false)
+{"city":"Oslo"} (complete: false)
+{"city":"Oslo","units":"metric"} (complete: true)
+```
+
+The accumulator keeps the raw argument text (`args_text`) separately from the parsed `args`, and the runtime runs a tool
+only from complete arguments. A response that ends mid-arguments produces an error result for that call instead of
+executing a repaired guess (see [Tools and approvals](02-concepts.md#tools-and-approvals)).
+
+## Three wire formats
+
+| Format | Marker | Framing | Decoder | Selected by |
+|---|---|---|---|---|
+| AI SDK UI message stream (v5 to v7) | `x-vercel-ai-ui-message-stream: v1` | SSE, one JSON object per `data:` event, optional `[DONE]` | `UiMessageStreamDecoder` | `DataStreamAdapter` (default) |
+| AI SDK data stream (v4) with assistant-ui's `aui-*` extensions | `x-vercel-ai-data-stream: v1` | `CODE:JSON` lines, no SSE | `DataStreamDecoder` | `DataStreamAdapter`, by header |
+| assistant-transport (assistant-stream) | none | SSE, `data: <JSON>`, ends `data: [DONE]` | `SseDecoder`, `run_stream_from_sse` | your own adapter |
+
+The UI message stream header is the same for AI SDK v5, v6 and v7, so it does not tell you the SDK version. The format is
+a superset over time: newer versions add optional fields.
+
+### The AI SDK UI message stream
+
+Events are typed JSON objects: `start`, `text-start` / `text-delta` / `text-end` (with an `id`), the `reasoning-*`
+equivalents, `tool-input-start` / `tool-input-delta` / `tool-input-available` / `tool-input-error`,
+`tool-output-available` / `tool-output-error` / `tool-output-denied`, `tool-approval-request` / `tool-approval-response`,
+`source-url`, `source-document`, `file`, `data-<name>`, `start-step`, `finish-step`, `reset-step`, `finish`, `abort`,
+`error` and `message-metadata`. The decoder below feeds the bytes in 11-byte reads to show that framing does not matter:
+
+```rust
+use ai_ui_stream::{MessageAccumulator, StreamDecoder, UiMessageStreamDecoder};
+
+fn text_of(result: &ai_ui_core::ChatModelRunResult) -> String {
+    result
+        .content
+        .iter()
+        .flatten()
+        .filter_map(|part| match part {
+            ai_ui_core::AssistantMessagePart::Text(t) => Some(t.text.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+fn main() -> Result<(), String> {
+    let wire = concat!(
+        "data: {\"type\":\"text-start\",\"id\":\"t1\"}\n\n",
+        "data: {\"type\":\"text-delta\",\"id\":\"t1\",\"delta\":\"Hello, \"}\n\n",
+        "data: {\"type\":\"text-delta\",\"id\":\"t1\",\"delta\":\"world\"}\n\n",
+        "data: {\"type\":\"text-end\",\"id\":\"t1\"}\n\n",
+        "data: {\"type\":\"finish\",\"finishReason\":\"stop\"}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let mut decoder = UiMessageStreamDecoder::default();
+    let mut accumulator = MessageAccumulator::default();
+    // Network reads can split anywhere, even inside a UTF-8 character.
+    for read in wire.as_bytes().chunks(11) {
+        for chunk in decoder.push(read)? {
+            accumulator.push(chunk);
+        }
+        let result = accumulator.result();
+        if !text_of(&result).is_empty() {
+            println!(
+                "{} -> {:?}",
+                String::from_utf8_lossy(read).escape_debug(),
+                text_of(&result)
+            );
+        }
+    }
+    for chunk in decoder.finish()? {
+        accumulator.push(chunk);
+    }
+    accumulator.finish();
+    println!("{:?}", accumulator.status());
+    Ok(())
+}
+```
+
+It prints the text as it grows (`Hello, `, then `Hello, world`) and ends with `Complete { reason: Stop }`. The same loop
+with a tool call whose arguments stream in two pieces:
+
+```rust
+use ai_ui_stream::{MessageAccumulator, StreamDecoder, UiMessageStreamDecoder};
+
+fn main() -> Result<(), String> {
+    // A tool call whose arguments stream in pieces, as a real model produces them.
+    let wire = concat!(
+        "data: {\"type\":\"tool-input-start\",\"toolCallId\":\"c1\",\"toolName\":\"get_weather\"}\n\n",
+        "data: {\"type\":\"tool-input-delta\",\"toolCallId\":\"c1\",\"inputTextDelta\":\"{\\\"city\\\":\"}\n\n",
+        "data: {\"type\":\"tool-input-delta\",\"toolCallId\":\"c1\",\"inputTextDelta\":\"\\\"Oslo\\\"}\"}\n\n",
+        "data: {\"type\":\"tool-input-available\",\"toolCallId\":\"c1\",\"toolName\":\"get_weather\",\"input\":{\"city\":\"Oslo\"}}\n\n",
+    );
+    let mut decoder = UiMessageStreamDecoder::default();
+    let mut accumulator = MessageAccumulator::default();
+    for chunk in decoder.push(wire.as_bytes())? {
+        accumulator.push(chunk);
+    }
+    for chunk in decoder.finish()? {
+        accumulator.push(chunk);
+    }
+    for part in accumulator.parts() {
+        if let Some(call) = part.as_tool_call() {
+            println!(
+                "{}: args_text={} args={}",
+                call.tool_name,
+                call.args_text,
+                serde_json::Value::Object(call.args.clone())
+            );
+        }
+    }
+    Ok(())
+}
+```
+
+prints `get_weather: args_text={"city":"Oslo"} args={"city":"Oslo"}`. Note that, as in upstream's decoder, the UI-stream
+decoder holds tool input back until `tool-input-available` and then writes it as one piece; the legacy data stream below
+streams argument text progressively.
+
+`ai-ui-stream` is deliberately lenient on this wire: content that arrived is kept, and a lifecycle violation such as a delta
+before its start produces a warning, not a failed run. The strict reducer that mirrors AI SDK 7 error for error is a
+separate crate, `ai-ui-sdk-stream`, described in [AI-SDK-STREAM](../AI-SDK-STREAM.md). For a valid stream both give the same
+content; they differ only on malformed or unusual ones. Which events `ai-ui-stream` does not represent yet
+(`reasoning-file`, `custom`, `steering-message`, citations, message metadata, tool `inputEncoding` and `title`, abort
+reason) is tracked in [PROTOCOL](../PROTOCOL.md#conformance-status). Two deliberate improvements over assistant-ui's own
+UI-stream adapter are worth knowing: `data-*` parts with an `id` replace the earlier part with that name and id, and
+`reset-step` discards the parts of the current step.
+
+### The data stream and the `aui-*` extensions
+
+The older format is one `CODE:JSON` per line: `0` text, `g` reasoning, `b` / `c` / `9` tool input start, delta and complete
+call, `a` tool result, `d` finish message, `e` finish step, `f` start step, `h` source, `k` file, `2` data, `8` annotations,
+`3` error. assistant-ui adds codes of its own on the same framing: `aui-state` (state operations), `aui-text-delta`,
+`aui-reasoning-delta`, `aui-data`, `aui-reasoning-part-start` and `aui-tool-call-approval`, and extends several stock codes
+with fields such as `parentId`, `artifact`, `isPreliminary` and `modelContent`. `DataStreamDecoder` handles all of these. As
+upstream's default decoder it is strict: a malformed value or a reference to an unknown tool call fails the stream.
+The full code table is in [PROTOCOL](../PROTOCOL.md#a2-legacy-ai-sdk-data-stream-ai4319).
+
+### assistant-transport
+
+assistant-stream's own SSE format carries the chunk vocabulary almost directly: 13 event types, each with a numeric `path`
+addressing a part (`part-start`, `text-delta`, `tool-call-approval`, `result`, `update-state`, and so on), ending with
+`data: [DONE]`. Because it is not an AI SDK format, `DataStreamAdapter` does not select it. Wrap your response bytes with
+`run_stream_from_sse` inside your own adapter:
+
+```rust
+use ai_ui_core::adapter::RunStream;
+use ai_ui_core::{AppendMessage, ChatModelRunOptions, LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_stream::{run_stream_from_sse, MessageAccumulator};
+use std::convert::Infallible;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+/// A response body that arrives in the given reads.
+struct Reads(std::vec::IntoIter<Vec<u8>>);
+
+impl futures_core::Stream for Reads {
+    type Item = Result<Vec<u8>, Infallible>;
+    fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        Poll::Ready(self.0.next().map(Ok))
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // An assistant-transport response: part-start, text deltas addressed by part path, [DONE].
+    let wire = concat!(
+        "data: {\"type\":\"part-start\",\"part\":{\"type\":\"text\"},\"path\":[]}\n\n",
+        "data: {\"type\":\"text-delta\",\"textDelta\":\"Served \",\"path\":[0]}\n\n",
+        "data: {\"type\":\"text-delta\",\"textDelta\":\"by assistant-transport\",\"path\":[0]}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let runtime = LocalThreadRuntime::new(
+        move |_options: ChatModelRunOptions| -> RunStream {
+            // In an app, `bytes` is the body of your own HTTP request.
+            let bytes = Reads(
+                wire.as_bytes()
+                    .chunks(24)
+                    .map(<[u8]>::to_vec)
+                    .collect::<Vec<_>>()
+                    .into_iter(),
+            );
+            run_stream_from_sse(bytes, MessageAccumulator::default())
+        },
+        LocalRuntimeOptions::default(),
+    );
+    futures_executor::block_on(runtime.append(AppendMessage::user_text(None, "Hi"))?)?;
+    println!("{}", runtime.messages()[1].text());
+    println!("{:?}", runtime.messages()[1].status());
+    Ok(())
+}
+```
+
+Malformed or unknown events are dropped with a warning, as in assistant-stream. `update-state` carries state operations
+(`set`, `append-text`) with string paths, which the accumulator applies to the message's `unstable_state` metadata. The
+result is delivered to the next request as `state`. A runtime for assistant-transport with server-owned state is not
+ported yet ([STATUS](../STATUS.md#not-yet-ported)).
+
+## Requests: `ai-ui-data-stream`
+
+`DataStreamAdapter<C: HttpClient>` is a `ChatModelAdapter`. For each model step it builds a JSON body, POSTs it, checks the
+status, picks a decoder and returns the run stream. `request_body(options, extra)` is public if you need the same body in your
+own transport. The body follows `useDataStreamRuntime`:
+
+| Field | Content |
+|---|---|
+| `messages` | The selected path plus the assistant message being continued, converted to model-style `role` / `content` messages (`to_model_messages`). |
+| `system` | The system prompt, when the app set one. |
+| `tools` | Tool name to `{ parameters, description }`. Schemas only; there is no `execute` on the wire. |
+| `unstable_assistantMessageId` | The id of the assistant message being filled. |
+| `threadId` | The thread's remote id, when it has one. |
+| `parentId` | The id of the message being answered (`null` for the first). |
+| `runConfig` | The run configuration, normally `{}`. |
+| `state` | The message's `unstable_state`, when not null. |
+| call settings and config | Flattened into the top level (for example `temperature`, `modelName`). |
+| `DataStreamOptions::body` | Extra fields from your callback, applied last, so they can override anything above. |
+
+`Content-Type: application/json` is always set; other headers come from `DataStreamOptions::headers`, a closure called per
+request so a refreshed token is picked up. The conversion drops what a model request cannot carry (reasoning, sources,
+timestamps) and gives an old tool call that never completed the error result `{"error":"Tool call was not completed"}`, as upstream does, instead of leaving it dangling.
+
+```rust
+use ai_ui_data_stream::{DataStreamOptions, Protocol};
+use std::rc::Rc;
+
+fn main() {
+    let token = "secret-token".to_owned();
+    let mut options = DataStreamOptions::new("https://example.com/api/chat");
+    // Evaluated for every request, so a refreshed token is picked up.
+    options.headers = Some(Rc::new(move || {
+        vec![("Authorization".into(), format!("Bearer {token}"))]
+    }));
+    // Extra top-level body fields, given the thread's remote id when it has one.
+    options.body = Some(Rc::new(|thread_id| {
+        let mut extra = serde_json::Map::new();
+        extra.insert("model".into(), "my-model".into());
+        extra.insert("threadId".into(), thread_id.into());
+        extra
+    }));
+    // Skip header detection when you know what the server sends.
+    options.protocol = Some(Protocol::UiMessageStream);
+    println!("{}", options.api);
+}
+```
+
+### Errors
+
+| What happens | What the thread shows |
+|---|---|
+| The request cannot be made (DNS, refused, TLS) | The `HttpError` text; the message becomes `incomplete/error`. |
+| A non-2xx status | `RunError::Failed` with the text `Status 503`. The response body is not read into the message. |
+| The stream is malformed or cut inside an event | The run fails; text received before the failure stays on the message. |
+| An `error` event inside the stream | The message becomes `incomplete/error` with `{ code, message }` (and `severity` when valid) as detail; content so far stays. |
+| `cancel_run`, or dropping the run future | `incomplete/cancelled`, text so far kept. |
+
+`ThreadView` turns the stored error into a readable `MessageState::error`, and the run future returns the same `RunError`
+to your executor.
+
+## HTTP clients: `ai-ui-http`
+
+`HttpClient` has one method, `post(request, signal) -> ResponseFuture`. Two implementations ship:
+
+- **`NativeClient`** (not `wasm32`): `ureq` with rustls. Each request runs on its own worker thread, and the body is passed
+  through a bounded queue (64 reads of up to 16 KiB), so a slow consumer slows reading instead of buffering the response.
+  It returns non-2xx responses to the adapter instead of failing, which is how `Status 503` is reported. Use
+  `NativeClient::with_agent(agent)` for proxies or timeouts, and keep `http_status_as_error(false)` on that agent.
+- **`FetchClient`** (`wasm32`): browser `fetch` with `credentials: same-origin`; set `include_credentials` for cross-origin
+  cookies. Dropping the response body cancels the reader and aborts the request.
+
+A client that owns your auth, retries or a different TLS stack only has to implement the trait.
+
+### Cancellation
+
+`runtime.cancel_run()` (or `ThreadView::stop`, or the composer's cancel) fires the run's `AbortSignal`. The signal reaches
+the client as the second argument of `post`. The runtime stops polling the adapter's stream immediately and marks the message
+`incomplete/cancelled`, so the UI reacts at once even if the server keeps the connection open. The native worker thread stops
+at its next read and when the consumer is gone; the browser client aborts the fetch. The test
+`cancelling_stops_a_stream_the_server_keeps_open` in `crates/ai-ui-http/tests/native.rs` checks that a cancelled run ends in
+under three seconds against a server that holds the connection for five.
+
+## Connect a real backend
+
+Step by step, for an AI SDK backend.
+
+**1. The server.** Any server that accepts a JSON POST and answers with an AI SDK stream works. With the AI SDK it is
+a handler that passes the body to `streamText` and returns the UI message stream. This is the shape of the repository's interop
+server, `benchmarks/ai-sdk-stream/interop-server.mjs` (shortened here):
+
+```js
+const body = JSON.parse(await readBody(req));
+const result = streamText({
+  model,
+  messages: body.messages,   // model-style messages, passed straight through
+  system: body.system,
+  tools,                     // your tools, with their own execute
+});
+const response = result.toUIMessageStreamResponse();
+// copy response.status, response.headers and the streamed body to the client
+```
+
+Two details from [PROTOCOL](../PROTOCOL.md#b3-request-body-contract) matter. `messages` are model messages, so do not
+run `convertToModelMessages` over them (that is for a client that posts UI messages). And AI SDK 7 rejects system-role
+messages inside `messages` by default, which is why the system prompt travels as a top-level field. `tools` in the body
+are schemas only; the backend decides whether to use them.
+
+**2. The client.** Build a runtime whose adapter is `DataStreamAdapter`. This compiles; set `AI_UI_API` to run it against a
+live endpoint.
+
+```rust
+use ai_ui_core::{AppendMessage, LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_data_stream::{DataStreamAdapter, DataStreamOptions};
+use ai_ui_http::NativeClient;
+use std::rc::Rc;
+
+/// A runtime whose model is an AI SDK endpoint.
+fn chat_runtime(api: &str, token: String) -> LocalThreadRuntime {
+    let mut options = DataStreamOptions::new(api);
+    options.headers = Some(Rc::new(move || {
+        vec![("Authorization".into(), format!("Bearer {token}"))]
+    }));
+    LocalThreadRuntime::new(
+        DataStreamAdapter::new(NativeClient::new(), options),
+        LocalRuntimeOptions::default(),
+    )
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Set AI_UI_API to a running endpoint to try it; without it the example only builds the runtime.
+    let Ok(api) = std::env::var("AI_UI_API") else {
+        println!("set AI_UI_API=http://localhost:3000/api/chat to send a message");
+        return Ok(());
+    };
+    let runtime = chat_runtime(&api, std::env::var("AI_UI_TOKEN").unwrap_or_default());
+    let run = runtime.append(AppendMessage::user_text(None, "Say hello in five words."))?;
+    match futures_executor::block_on(run) {
+        Ok(()) => println!("{}", runtime.messages().last().unwrap().text()),
+        Err(error) => println!("run failed: {error}"),
+    }
+    Ok(())
+}
+```
+
+In the example app the same thing is `--api URL`, with `--header NAME:VALUE` for credentials.
+
+**3. What goes out.** A POST to the URL with `Content-Type: application/json` and a body like this (printed by the loopback
+example below for the message "Hello"):
+
+```json
+{
+  "messages": [{ "content": [{ "text": "Hello", "type": "text" }], "role": "user" }],
+  "parentId": "1a1cb95041d-1",
+  "runConfig": {},
+  "tools": {},
+  "unstable_assistantMessageId": "1a1cb95041d-2"
+}
+```
+
+The ids come from the runtime's `ids` option and are only examples.
+
+**4. What must come back.** Status 2xx, then a streamed body. With the AI SDK, the response carries
+`x-vercel-ai-ui-message-stream: v1` and a body of SSE events (`data: {...}` separated by a blank line). Without
+that header the adapter assumes the UI message stream; set `DataStreamOptions::protocol` if you serve the data stream and
+cannot send its `x-vercel-ai-data-stream: v1` header. Proxies must not buffer the response, or the reply arrives in one piece.
+
+**5. Multi-step runs.** If the model calls a tool you registered with `execute`, the runtime runs it and sends a second request
+whose `messages` end with the assistant's tool call and its result. A backend that already executed the tool itself (the
+interop server does) sends the result in the same stream, and no second request is needed.
+
+**6. Check it.** The repository's `crates/ai-ui-http/tests/interop_ai_sdk.rs` runs this exact path against a real AI SDK 7
+server over a mock model, with reasoning, a streamed tool call executed by the server, a second step, and a follow-up turn.
+It needs Node and `npm ci --ignore-scripts` in `benchmarks/ai-sdk-stream`. The result covers the AI SDK UI message stream
+only; other backends, authentication and retries are not covered ([STATUS](../STATUS.md#interop-with-a-real-backend)).
+
+## Testing without a network
+
+Because the adapter only needs an `HttpClient`, a backend is easy to fake. This client records the request and answers with
+a canned stream, split into 16-byte reads to exercise the decoder:
+
+```rust
+use ai_ui_core::{AbortSignal, AppendMessage, LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_data_stream::{
+    ByteStream, DataStreamAdapter, DataStreamOptions, HttpClient, HttpRequest, HttpResponse,
+    ResponseFuture,
+};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+/// A client that never touches the network: it records the request and
+/// answers with a canned AI SDK UI message stream, split into small reads.
+#[derive(Clone, Default)]
+struct Loopback {
+    last_request: Rc<RefCell<Option<serde_json::Value>>>,
+}
+
+impl HttpClient for Loopback {
+    fn post(&self, request: HttpRequest, _signal: AbortSignal) -> ResponseFuture {
+        *self.last_request.borrow_mut() = serde_json::from_slice(&request.body).ok();
+        let wire = concat!(
+            "data: {\"type\":\"text-start\",\"id\":\"t\"}\n\n",
+            "data: {\"type\":\"text-delta\",\"id\":\"t\",\"delta\":\"Hi there\"}\n\n",
+            "data: {\"type\":\"finish\",\"finishReason\":\"stop\"}\n\n",
+            "data: [DONE]\n\n",
+        );
+        let reads: Vec<Result<Vec<u8>, _>> =
+            wire.as_bytes().chunks(16).map(|c| Ok(c.to_vec())).collect();
+        let body: ByteStream = Box::pin(Reads(reads.into_iter()));
+        Box::pin(std::future::ready(Ok(HttpResponse {
+            status: 200,
+            headers: vec![("x-vercel-ai-ui-message-stream".into(), "v1".into())],
+            body,
+        })))
+    }
+}
+
+struct Reads(std::vec::IntoIter<Result<Vec<u8>, ai_ui_data_stream::HttpError>>);
+impl futures_core::Stream for Reads {
+    type Item = Result<Vec<u8>, ai_ui_data_stream::HttpError>;
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        std::task::Poll::Ready(self.0.next())
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Loopback::default();
+    let seen = client.last_request.clone();
+    let runtime = LocalThreadRuntime::new(
+        DataStreamAdapter::new(
+            client,
+            DataStreamOptions::new("http://backend.test/api/chat"),
+        ),
+        LocalRuntimeOptions::default(),
+    );
+    futures_executor::block_on(runtime.append(AppendMessage::user_text(None, "Hello"))?)?;
+    println!("{}", runtime.messages()[1].text());
+    println!(
+        "{}",
+        serde_json::to_string_pretty(seen.borrow().as_ref().unwrap())?
+    );
+    Ok(())
+}
+```
+
+It prints `Hi there` followed by the request body shown above. To test the real client, bind a `TcpListener` on
+`127.0.0.1:0` and point `NativeClient` at it; the example below does so for the data stream protocol, and
+`crates/ai-ui-http/tests/native.rs` also covers an error status and cancellation against a server that never closes:
+
+```rust
+use ai_ui_core::{AppendMessage, LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_data_stream::{DataStreamAdapter, DataStreamOptions};
+use ai_ui_http::NativeClient;
+use std::io::{BufRead, BufReader, Read, Write};
+use std::net::TcpListener;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // A one-request HTTP server on a loopback port.
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let url = format!("http://{}/api/chat", listener.local_addr()?);
+    std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut reader = BufReader::new(stream.try_clone().unwrap());
+        let mut length = 0;
+        loop {
+            let mut line = String::new();
+            reader.read_line(&mut line).unwrap();
+            if let Some(v) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                length = v.trim().parse().unwrap();
+            }
+            if line == "\r\n" {
+                break;
+            }
+        }
+        reader.read_exact(&mut vec![0; length]).unwrap();
+        let body = "0:\"Hello from a socket\"\nd:{\"finishReason\":\"stop\"}\n";
+        write!(
+            stream,
+            "HTTP/1.1 200 OK\r\nx-vercel-ai-data-stream: v1\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        )
+        .unwrap();
+    });
+
+    let runtime = LocalThreadRuntime::new(
+        DataStreamAdapter::new(NativeClient::new(), DataStreamOptions::new(url)),
+        LocalRuntimeOptions::default(),
+    );
+    futures_executor::block_on(runtime.append(AppendMessage::user_text(None, "Hi"))?)?;
+    println!("{}", runtime.messages()[1].text());
+    Ok(())
+}
+```
+
+For decoder work, replay bytes in arbitrary partitions: `crates/ai-ui-stream/tests/fixtures/protocol-vectors.json` holds 96 wire
+vectors from the protocol audit, and `crates/ai-ui-stream/tests/protocol_vectors.rs` and `ai_sdk_vectors.rs` run them. As of
+2026-11-09 the status in [PROTOCOL](../PROTOCOL.md#conformance-status) was 22 of the 23 assistant-stream vectors run matching and 52 of
+65 AI SDK vectors matching, with each of the 13 differences recorded with its reason. Those figures are a snapshot; the tests are
+the current truth.
+
+Next: [Building a UI with Slint](04-ui-slint.md) puts a thread on screen, and [Running on the web](05-web.md) covers the browser.
+
+---
+
+# docs/guide/04-ui-slint.md
+
+---
+title: Building a UI with Slint
+description: The Slint thread UI, the Markdown stack behind it, how the example binds them to a runtime, settings, scaling, keyboard and focus, renderers, and how to embed the thread in your own Slint app.
+order: 4
+section: Build
+---
+
+# Building a UI with Slint
+
+**What this page gives you.** This page covers the Slint thread UI: the components in `ai-ui-slint`, the Markdown stack, how `examples/thread` binds them to a runtime, settings, scaling, keyboard and focus, renderers, and embedding the thread in your own Slint app.
+
+The runtime crates know nothing about windows. The Slint UI is two layers on top of them:
+
+- `crates/ai-ui-slint` is a Slint source library: the components, fonts, icons and the `AssistantTheme` global.
+- `examples/thread` is a complete application that binds those components to a runtime through `ai-ui-state`. It is both the demo and the reference for how to write the binding.
+
+The components are presentation only. They draw what the host gives them and report what the user did. The host owns the conversation, the clipboard, disclosure state and every effect. That split is what lets the same components sit on the local runtime, an external store, or a thread list.
+
+## What is in `ai-ui-slint`
+
+The Rust side of the crate is one function, `ai_ui_slint::ui_dir()`, which returns the folder holding `lib.slint`. It has no dependencies, no renderer and no runtime code. Everything else is `.slint` source under `crates/ai-ui-slint/ui/`. A consumer imports from `lib.slint` only; files under `components/` are internal and can change.
+
+The main components, all exported from `lib.slint`:
+
+| Component | What it does |
+|---|---|
+| `AssistantThread` | Scrolling list of `ChatRow` messages. Tracks whether the reader follows the bottom, exposes `scroll-to-bottom()`, forwards every message action. |
+| `AssistantMessage` (internal) | One row: user or assistant bubble, parts, status line, the action bar (copy, edit, regenerate, feedback) and the branch picker. |
+| `AssistantComposer` | The input. Enter sends, Shift+Enter adds a line, Escape stops a running reply. Optional attachments row. |
+| `AssistantEditComposer` | Inline editor shown inside a message while it is being edited. |
+| `AssistantReasoningPreview` | Reasoning text in a bounded, collapsible viewport. |
+| `AssistantToolFallback` (internal) | The default disclosure for a tool call: arguments, optional detail and result as plain text, with optional copy buttons. |
+| `AssistantApproval` | The prompt for a tool that needs approval, with the choices the runtime offers. |
+| `AssistantBranchPicker` | Previous/next control with "n / m". Disabled while a run is active. |
+| `AssistantMarkdown` | Renders Markdown blocks: paragraphs, headings, code with a copy button, tables, rules. |
+| `AssistantSuggestions` | Up to four suggested prompts on an empty thread. |
+| `AssistantThreadList` | The sidebar: New Thread row, search field, one row per thread with a running indicator, a menu (Rename, Archive, Delete) and inline rename. |
+| `AssistantThreadSelector` | A compact dropdown over a string model, with keyboard navigation and typeahead. |
+| `AssistantSettingsMenu` | The Settings row and popover: text size, reading width, theme. |
+| `AssistantAttachmentList`, `AssistantAttachmentChip`, `AssistantSourceCard` | Attachment and source presentation. |
+| `AssistantButton`, `AssistantIconButton`, `AssistantCopyButton`, `AssistantFeedback`, `AssistantScrollbar`, `AssistantTooltipContent` | Building blocks. |
+| `AssistantPagedText`, `AssistantChunkedText` | Long text shown as bounded pages or measured chunks, so one huge message does not stall layout. |
+
+The shared records live in `models.slint`: `ChatRow`, `ChatPart`, `ChatPartKind`, `MessageRole`, `ApprovalRequest`, `ApprovalChoice` and others. A row carries its parts, a status string and tone, a branch token with `branch-number` and `branch-count`, and flags such as `can-edit`, `can-regenerate`, `can-copy` and `copied`. Fonts are Inter (regular, medium, semibold) and IBM Plex Mono for code, registered by `theme.slint`, with their licences next to them.
+
+## The Markdown stack
+
+Markdown is the expensive part of a chat UI, so it is kept off the UI thread and out of the per-frame path.
+
+1. **`ai-ui-markdown`** parses and projects. `parse` builds a bounded `Document`; `presentation::project` produces sanitized render blocks. Raw HTML, images and unsupported URLs become text, never executable content. It does no I/O and has hard limits (`MAX_SOURCE_BYTES`, `MAX_EVENTS`, `MAX_NESTING`, `MAX_OUTPUT_BYTES`) that fail with an error instead of truncating.
+2. **Settled blocks and a live tail.** While a reply streams only its end can change. `split::StreamSplit` keeps the blocks before the last two as settled, so each is formatted once, and re-parses only the live tail on each update. Two blocks stay live because a half-typed line can be absorbed by the block before it a moment later. If the source contains a link reference or footnote definition, which can change earlier blocks, the splitter stops settling and treats the whole source as the tail. Finished text is always formatted in one piece, which is exact for every document.
+3. **Worker pool.** On native targets `pool::CoordinatorPool` runs several `Coordinator`s, one worker thread each, sharded by key. A key always goes to the same shard, so only the newest source for it is kept while a parse runs, and older results are labelled as previews. The default is one worker per core, leaving one for the UI thread, between 1 and 8. Setting `AI_UI_MARKDOWN_WORKERS=1` in the example restores a single worker for comparisons.
+4. **`ai-ui-markdown-slint`** is the UI-side adapter. Its `Factory` trait maps portable blocks into the record types your own `.slint` generates (Slint generates distinct types per application). `cache::Cache` and `streaming::StreamingCache` hold the formatted blocks on the UI thread. You call `observe_one(key, text, streaming)` when a text changes, `poll()` on a timer, `take_changed()` to learn which texts finished, and `view(key, source, streaming)` to get the blocks. While a newer source is still being formatted the previous formatting stays on screen, so streaming text never flashes back to plain text.
+
+Markdown blocks carry no font sizes, which is why a text size change does not touch this stack (see Scaling below). In the browser there are no worker threads, so the same projection runs inline on the UI thread under a 4 ms budget per poll. See [Running on the web](05-web.md).
+
+## How the example wires it
+
+`examples/thread/src/app.rs` is the binding. The shape is short:
+
+- A `ThreadView` from `ai-ui-state` turns any `ThreadRuntime` into `ThreadState`: an `Arc<MessageState>` per message plus run status. The example subscribes to the view and calls `App::sync` on every notification.
+- The runtime keeps a bounded change journal (`MessageChanges`). The view reads it with its own cursor, so a notification costs work in proportion to what changed. If a view falls behind the journal it falls back to one full read.
+- `sync` compares each message's `Arc` pointer with the pointer the row last showed. Only rows whose pointer changed are rebuilt. A rebuilt row reuses its parts model: `update_row` writes only the parts that differ into the existing `VecModel`, so Slint re-lays out those parts and not the whole message. Rows that no longer match the thread are removed, and a structural change also drops Markdown work for messages outside the newest window.
+- The Markdown cache is keyed by message id and part index. `sync` declares changed texts newest first, so the visible end of the thread formats first, and a 1 ms timer polls for finished work and refreshes only the rows whose text completed.
+- Window callbacks (`send`, `stop`, `switch-branch`, `regenerate`, `begin-edit`, `save-edit`, `toggle-part`, `resolve-approval`, `submit-feedback`, thread rename/archive/delete/search) forward to `ThreadView` and `ThreadList`. Expanded or collapsed state is owned by the host, so it survives Slint recycling rows.
+
+## Settings
+
+The sidebar footer has a Settings row. It opens a popover with three groups:
+
+| Group | Options |
+|---|---|
+| Text size | Small (0.9), Default (1.0), Large (1.15), Extra large (1.3) |
+| Reading width | Compact, Default, Wide, Extra wide, Full |
+| Theme | System, Light, Dark |
+
+Reading width sets the maximum width of the message column at text scale 1.0: Compact 576 px, Default 704, Wide 880, Extra wide 1100, and Full, which uses the whole main area with 40 px side padding. The pixel width is multiplied by the text scale so the line length in characters stays the same, and the layout clamps it to the available area. The theme defaults to dark. System follows the operating system.
+
+In the popover, Up and Down (and Home and End) move a cursor, Enter or Space chooses, and Escape closes it and returns focus to the Settings row. The popover scrolls when the window is shorter than its content.
+
+**Keyboard shortcuts.** Ctrl+= makes text larger by one step, Ctrl+- smaller, and Ctrl+0 resets to Default. Cmd works the same on macOS. They are caught by a `FocusScope` around the window, so they work from the composer. The plain `+` and `_` keys count too, so the shortcut works without holding Shift on layouts where `=` needs it. The steps stop at the ends.
+
+**Saved file.** Native runs save settings to `$XDG_CONFIG_HOME/ai-ui-example-thread/settings.json`, falling back to `~/.config/...` and then `%APPDATA%`. The file is small JSON:
+
+```json
+{
+  "text_scale": 1.0,
+  "reading_width": "default",
+  "theme": "dark"
+}
+```
+
+`reading_width` is one of `compact`, `default`, `wide`, `xwide`, `full`. Reading and writing never fail the app: a missing or malformed file means defaults, bad fields are ignored, numbers are clamped (0.75 to 2.0), and a failed write is ignored. Writes go through a temporary file that is renamed over the target. Screenshot and benchmark runs neither read nor write the file.
+
+**Command-line flags** override the saved values for one run and do not save until you change something in the UI:
+
+```sh
+cargo run -p ai-ui-example-thread -- --theme light --text-scale 1.15 --reading-width wide
+cargo run -p ai-ui-example-thread -- --light          # same as --theme light
+cargo run -p ai-ui-example-thread -- --api https://example.com/api/chat
+```
+
+`--open-settings` opens the popover, which is useful with `--screenshot`. In the browser, the same options come from the page; see the web guide.
+
+## Scaling
+
+Text size is one property: `AssistantTheme.text-scale`, a global in `theme.slint`. Every font size in message text, Markdown, code, reasoning, tool calls, approvals, source and attachment cards, buttons, the branch picker, the action row and the composer multiplies by it. Icons in scaled rows scale with the text. `AssistantTheme.hit-scale` is `max(1, text-scale)`: hit targets grow with the text but never shrink below their normal size, which is 28 to 32 px.
+
+Nothing on the Rust side re-runs when you change it. The host sets the property; Slint re-evaluates only the rows the `ListView` has instantiated. Markdown is not re-parsed because its blocks hold unsized styled text. The measurements are in [PERFORMANCE](../PERFORMANCE.md#settings-text-size-reading-width-theme), including the note that layout cost does not grow with thread length because only visible rows lay out.
+
+In your own app, set the theme and scale the same way:
+
+```rust,ignore
+use slint::ComponentHandle;
+
+let theme = ui.global::<AssistantTheme>();
+theme.set_text_scale(1.15);
+theme.set_follow_system(false);
+theme.set_scheme(AssistantColorScheme::Light);
+```
+
+## Keyboard and focus
+
+- **Composer.** Enter sends when no run is active; Shift+Enter inserts a newline. While a run is active Enter does nothing and inserts no newline. Escape stops the run.
+- **Focus follows intent.** After switching threads, starting an edit, or pressing the scroll-to-bottom button, focus moves to the composer. A run that starts does not steal focus from the sidebar if the sidebar has it.
+- **Focus rings are for the keyboard.** A click focuses a button without drawing a ring; Tab draws one, and a later click hides it again. Tests in `crates/ai-ui-slint/tests/focus_visible.rs` cover this.
+- **Hit targets.** An icon button's pointer area reaches past its visual (a 32 px target around a 24 px icon), and actions that opt in ignore a fast double click.
+- **Thread list.** Enter or Space activates a row or New Thread; inline rename takes Enter to commit and Escape to cancel.
+- **Following the bottom.** `AssistantThread.following` turns off only when the user scrolls away from the end, and back on when they return within a few pixels. Streaming content grows under a reader who follows and stays put for one who does not.
+- **Accessibility.** Controls carry accessible labels (for example "Message input", "Settings", "Copy message"), and the Settings row exposes a default action.
+
+## Renderers
+
+The example enables Slint's winit backend with two renderers: femtovg on wgpu for windows, and the software renderer for tests, screenshots and benchmarks.
+
+- **GPU window.** `SLINT_BACKEND=winit-femtovg cargo run -p ai-ui-example-thread --features gpu-window`. The `gpu-window` feature makes `build.rs` embed fonts and images as files instead of pixels. GPU renderers draw any font size from the font file.
+- **Software renderer.** The default build embeds resources for it. Offscreen `--screenshot out.png` and `--bench` use it. It draws glyphs pre-rendered at sizes it finds in the source, so `build.rs` sets `SLINT_FONT_SIZES` to the sizes the four text scales produce; without that a scaled size would snap to the nearest embedded one. This adds about 1.4 MB to the binary. Component tests in `ai-ui-slint` render offscreen with their own software platform.
+- **Browser.** The web build uses the femtovg renderer on WebGL with winit on a canvas.
+
+Software-renderer screenshots show layout, not GPU text or effects.
+
+**The femtovg patch.** The workspace carries `patches/femtovg`, femtovg 0.27.0 with one upstream change backported by hand (femtovg #366, "Keep WGPU pipelines across flushes that don't use them"). Without it, a streaming chat whose frames differ in what they draw recompiled GPU pipelines every few frames. The patch applies through `[patch.crates-io]` in the workspace `Cargo.toml` and is meant to go away when Slint depends on femtovg 0.28 or later. An application outside this workspace must add the same entry; see [patches/README.md](../../patches/README.md) for the numbers and the removal condition.
+
+## Embedding the thread in your own app
+
+Use the same Slint version as the crates, `=1.18.1`.
+
+```toml
+[dependencies]
+slint = { version = "=1.18.1", features = ["compat-1-18"] }
+ai-ui-core = "0.1"
+ai-ui-state = "0.1"
+ai-ui-markdown-slint = "0.1"
+
+[build-dependencies]
+ai-ui-slint = "0.1"
+slint-build = "=1.18.1"
+
+# Until a Slint release uses femtovg 0.28: without it a streaming chat uses about twice the CPU with the
+# FemtoVG-WGPU renderer (see patches/README.md).
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
+
+`build.rs` registers the library path (this is the example's build script, trimmed):
+
+```rust,ignore
+use std::collections::HashMap;
+
+fn main() {
+    let libraries = HashMap::from([("assistant".to_string(), ai_ui_slint::ui_dir())]);
+    let config = slint_build::CompilerConfiguration::new().with_library_paths(libraries);
+    slint_build::compile_with_config("ui/app.slint", config).unwrap();
+}
+```
+
+Then import from `@assistant` in your `.slint`. Slint generates record types per application, so re-export the ones your Rust code needs:
+
+```slint
+import "@assistant/assets/Inter-Regular.ttf";
+import "@assistant/assets/Inter-Medium.ttf";
+import { AssistantTheme, AssistantThread, AssistantComposer, ChatRow } from "@assistant/lib.slint";
+export { ChatRow, ChatPart, AssistantTheme, AssistantColorScheme } from "@assistant/lib.slint";
+
+export component AppWindow inherits Window {
+    default-font-family: "Inter";
+    background: AssistantTheme.background;
+
+    in property <[ChatRow]> messages;
+    in property <bool> running;
+    in property <int> thread-revision: 1;
+    in-out property <string> draft;
+    callback send(string) -> bool;
+    callback stop();
+    callback toggle-part(string, string);
+
+    VerticalLayout {
+        AssistantThread {
+            vertical-stretch: 1;
+            messages: root.messages;
+            busy: root.running;
+            conversation-revision: root.thread-revision;
+            toggle-part(message-id, part-id) => { root.toggle-part(message-id, part-id); }
+        }
+        AssistantComposer {
+            busy: root.running;
+            draft <=> root.draft;
+            submit(text) => { return root.send(text); }
+        }
+    }
+}
+```
+
+On the Rust side, follow `examples/thread/src/app.rs`: build a `ThreadView` over your runtime, keep an `Rc<VecModel<ChatRow>>`, update it from a view subscription, and map the window callbacks to view actions. Give each Markdown text a key, feed changed texts to a `StreamingCache`, and poll it on a short timer.
+
+Three rules from the components' own documentation matter when you write the host:
+
+- Change `conversation-revision` whenever the selected conversation changes, even if the model is emptied and refilled in between.
+- Every action that can have an effect (copy, open a source, retry an upload) is off by default. Turn on `can-copy-message`, `can-copy-code`, `can-open-source` and the like only when the host handles them, and revalidate the identifiers a callback carries before acting.
+- Slint, which is not MIT, has its own licence terms: GPL-3.0, the Royalty-Free licence with an attribution badge, or a commercial licence. See [THIRD_PARTY.md](../../THIRD_PARTY.md).
+
+Next: [Running on the web](05-web.md) for the WebAssembly build of this same example, and the [crate reference](06-crates.md) for the Rust side.
+
+---
+
+# docs/guide/05-web.md
+
+---
+title: Running on the web
+description: Build the thread UI for WebAssembly, embed the demo in a page, and know what works in the browser and what does not.
+order: 5
+section: Build
+---
+
+# Running on the web
+
+**What this page gives you.** This page covers the WebAssembly build: which crates run in the browser, the build command, embedding the demo in a page, the size of the output, and the known limits (WebGL required, small-text softness).
+
+The runtime crates have no I/O, clock or thread dependencies, so they compile for `wasm32-unknown-unknown` unchanged. The Slint example also builds for the browser: the same `examples/thread` application, drawn with Slint's femtovg renderer on WebGL, with winit driving a `<canvas>`. The reference is [WEB.md](../WEB.md); this page explains it and adds the embedding details.
+
+## What runs in the browser
+
+| Piece | In the browser |
+|---|---|
+| `ai-ui-core`, `ai-ui-stream`, `ai-ui-sdk-stream`, `ai-ui-data-stream`, `ai-ui-state`, `ai-ui-markdown` | Yes. No I/O, clock or thread dependencies. |
+| `ai-ui-http` | Yes. `FetchClient` (browser `fetch`) replaces `NativeClient` (ureq) on wasm32. |
+| `ai-ui-clipboard` | Yes. `navigator.clipboard` on `wasm32-unknown-unknown`; arboard on desktop. |
+| `ai-ui-markdown-slint`, `ai-ui-slint` | Through the example only. They are Slint crates with `publish = false`. |
+| `examples/thread` | Yes, as the demo. |
+
+Check any single crate with:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo check --target wasm32-unknown-unknown -p ai-ui-core
+```
+
+`scripts/gate.sh` builds the non-Slint crates for wasm32 as part of the full gate (`--quick` skips the wasm builds).
+
+## Building the demo
+
+`scripts/build-web-demo.sh` does the whole build. From a checkout:
+
+```sh
+scripts/build-web-demo.sh
+```
+
+It reads the `wasm-bindgen` version from `Cargo.lock` (`0.2.129`), finds the binary on `PATH` or in `WASM_BINDGEN`, and fails with a clear message if the two versions differ. Then it:
+
+1. Runs `cargo build --locked --release --target wasm32-unknown-unknown -p ai-ui-example-thread --features gpu-window`. The `gpu-window` feature makes the Slint build embed fonts and images as files, which the GPU renderer wants, instead of as pixels for the software renderer.
+2. Runs `wasm-bindgen --target web --no-typescript --out-name ai_ui_example_thread` over the `.wasm`.
+3. Writes `dist-web/ai-ui-web-demo.tar.gz` containing `ai_ui_example_thread.js`, `ai_ui_example_thread_bg.wasm` and `pixel-snap.js`, and `dist-web/ai-ui-web-demo.sha256`.
+
+If `wasm-bindgen` is not on `PATH`:
+
+```sh
+WASM_BINDGEN=/path/to/wasm-bindgen scripts/build-web-demo.sh
+```
+
+The version must match exactly because the glue code and the `.wasm` are generated as a pair; a mismatch fails at load time with an unhelpful error, which is why the script checks first. Unpack the tarball next to your page:
+
+```sh
+mkdir -p public/wasm
+tar -xzf dist-web/ai-ui-web-demo.tar.gz -C public/wasm
+```
+
+## Embedding the demo in a page
+
+Serve the files and a page with a `<canvas>` inside a container that has a definite size. Slint's winit backend looks for a canvas with the id `canvas`, so give it that id. `pixel-snap.js` (in the tarball) lays the canvas out on whole device pixels; call it before `init()`:
+
+```html
+<div id="stage" style="width: 100%; height: 640px">
+  <canvas id="canvas" tabindex="0"></canvas>
+</div>
+<script type="module">
+  import { pixelSnap } from "./wasm/pixel-snap.js";
+  import init from "./wasm/ai_ui_example_thread.js";
+  pixelSnap(document.getElementById("canvas"));
+  await init();
+</script>
+```
+
+`tabindex="0"` lets the canvas take keyboard focus. The canvas fills its container's padding box, so size the container with CSS. Do not size the canvas itself; the helper does, and winit rewrites its inline size.
+
+**Why the helper.** The canvas backing store is a whole number of device pixels, but a container that is centred, sized in `vh`, or shown on a 1.25x or 1.5x display makes the canvas box fractional. Firefox then resamples the canvas bilinearly and all text softens; Chrome snaps the box and hides it. The helper insets the canvas to whole device pixels so the two match 1:1. Details and measurements are in [WEB.md](../WEB.md).
+
+### Passing options
+
+The app reads the same options as the desktop command line, in either of two places, with the first taking priority:
+
+- `window.__AUI_ARGS`, set before `init()` runs: `window.__AUI_ARGS = "history=1000&light"`.
+- The page's query string: `?history=1000&light`.
+
+Each `key=value` pair becomes `--key value`, and a bare `key` becomes `--key`. So `history=1000&light` is `--history 1000 --light`. Values are URL-decoded. Useful options in the browser:
+
+| Option | Effect |
+|---|---|
+| `history=N` | Start with a generated thread of N messages. |
+| `light`, `theme=system\|light\|dark` | Theme. |
+| `text-scale=1.15`, `reading-width=wide` | Text size and reading width for this session. |
+| `long-reply-kb=9`, `token-delay-ms=4` | Shape of the demo model's replies. |
+
+`--api` (an AI SDK endpoint) is not available in the browser build of the example. There is no settings file in the browser build, so settings last for the page session.
+
+### Milestones on `window.__aui`
+
+The demo publishes counters on `window.__aui`, which a page can poll:
+
+- `frames`: number of frames drawn so far.
+- `started`, `firstFrame`, `lastFrame`: `performance.now()` timestamps.
+- `importMs` and `messages`, when a mock thread was loaded with `thread=URL`.
+
+Panics are routed to `console.error`. `firstFrame` is the right signal for hiding a loading cover.
+
+### Load on click
+
+The WebAssembly file is large for a web page, so the landing site does not load it until the visitor asks. The pattern is small:
+
+```ts
+function hasWebGL(): boolean {
+  try {
+    const c = document.createElement("canvas");
+    return !!(c.getContext("webgl2") || c.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
+
+async function load() {
+  if (!hasWebGL()) { showMessage("This browser has no WebGL."); return; }
+  window.__AUI_ARGS = "history=10000";
+  const mod = await import(new URL("wasm/ai_ui_example_thread.js", document.baseURI).href);
+  try {
+    await mod.default();
+  } catch (e) {
+    // winit unwinds out of run() as control flow; anything else is a real failure.
+    if (!/control flow/.test(String(e))) { showMessage(`Could not start: ${e}`); return; }
+  }
+  const wait = () => window.__aui?.firstFrame ? hideCover() : setTimeout(wait, 50);
+  wait();
+}
+button.addEventListener("click", load);
+```
+
+Two details come from the landing site's implementation. First, hovering or focusing the button can add `<link rel="prefetch">` tags for the glue and the `.wasm`, so the files are in the cache when the click comes, and nothing is compiled until then. Second, winit's `run()` throws a "control flow" exception on purpose to hand control back to the browser's event loop. Treat that one as success.
+
+## Size
+
+From the landing site's measurement of the release build (`lto`, `opt-level` 3), taken 2026-11-11: the `.wasm` file is 9,500,548 bytes raw (9.06 MiB), 2.81 MiB with `gzip -9` and 1.91 MiB with brotli at quality 11. Serve it with gzip or brotli compression.
+
+These three numbers are not in `docs/RESULTS.md` or `docs/WEB.md` on this branch. They are in `site/data/benchmarks.json` on the landing branch, which is the site's single source for figures. Re-measure after any dependency change; the file is dominated by Slint, femtovg and the embedded fonts.
+
+## HTTP and clipboard in your own app
+
+The example cannot call a backend in the browser, but your app can. `ai-ui-http::FetchClient` implements the `HttpClient` trait that `ai-ui-data-stream` uses, over `fetch` with `credentials: same-origin`. Set `include_credentials` for cross-origin cookies. Dropping the response body cancels the reader and aborts the request.
+
+```rust,ignore
+use ai_ui_core::{LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_data_stream::{DataStreamAdapter, DataStreamOptions};
+use ai_ui_http::FetchClient;
+
+let adapter = DataStreamAdapter::new(
+    FetchClient::default(),
+    DataStreamOptions::new("/api/chat"),
+);
+let runtime = LocalThreadRuntime::new(adapter, LocalRuntimeOptions::default());
+```
+
+The fetch client is exercised in headless Chromium by `crates/ai-ui-http/tests/browser/run.py`. It needs `wasm-bindgen` 0.2.129 (`WASM_BINDGEN`) and Playwright (`AI_UI_PLAYWRIGHT_MODULE`), and opens no window. `crates/ai-ui-clipboard/tests/browser/run.py` does the same for the clipboard.
+
+`ai-ui-clipboard` reports the real outcome of a copy. Call `Clipboard::copy` synchronously inside the user gesture, for example a click handler, because browsers reject writes outside one. The API needs a secure context (HTTPS or `localhost`). One write may be pending at a time; a second returns `CopyError::Busy`.
+
+## Limits
+
+- **No Markdown worker threads.** Native builds format Markdown on a pool of worker threads. The browser build runs a wasm-only inline backend on the UI thread, with a 4 ms budget per poll and only the newest source per key. Long replies cost UI-thread time that native builds spend elsewhere.
+- **Demo model only.** The example's browser build runs the built-in demo model. Use `FetchClient` with `ai-ui-data-stream` in your own app to reach a real backend.
+- **HiDPI softness.** The canvas backing store follows `devicePixelRatio` (checked in Chrome at real scale factors 1.25, 1.5 and 2, see [WEB.md](../WEB.md)); Playwright's `deviceScaleFactor` emulation does not, so headless screenshots taken with it show a 1x canvas. A fractional canvas box softens text in Firefox unless you use `pixel-snap.js` (above). Small text, code blocks especially, can still look softer than DOM text on 1x displays because femtovg draws unhinted grayscale glyphs. Safari was not tested.
+- **WebGL is expected.** The demo is built for the femtovg WebGL renderer, and the landing page refuses to start it in a browser without WebGL, hence the check above.
+- **Frame rates in headless tests are a floor.** Headless Chromium uses software WebGL (SwiftShader), so a frame rate measured there is the GPU emulated on a busy CPU. Treat headless numbers as a floor, not as what a browser with a GPU gives, and do not compare them with native numbers.
+
+## Cloudflare Pages notes
+
+The landing site (`site/` on the landing branch, built with Astro) is configured for Cloudflare Pages; nothing is deployed from the repository.
+
+| Setting | Value |
+|---|---|
+| Root directory | `site` |
+| Build command | `npm ci && npm run build` |
+| Build output directory | `dist` |
+
+The Pages build image has no Rust toolchain. Build the wasm files first (`npm run wasm` in `site/`, which runs the cargo and `wasm-bindgen` steps and writes `public/wasm`), then run `npx wrangler pages deploy dist` from CI, or add the wasm step to a CI job that uploads `dist`. `public/_headers` sets `Cache-Control: public, max-age=3600` for `/wasm/*` and `X-Content-Type-Options: nosniff` for everything. A longer cache lifetime is safe only if the file names change with each build.
+
+Next: the [crate reference](06-crates.md).
+
+---
+
+# docs/guide/06-crates.md
+
+---
+title: Crate reference
+description: Every crate in the ai-ui workspace: purpose, key types, features, wasm32 support, publishing status, dependencies and a short usage example.
+order: 6
+section: Reference
+---
+
+# Crate reference
+
+**What this page gives you.** This page lists every crate in the workspace with its purpose, key types, features, wasm32 support, publishing status and a short example, plus a table for choosing which crates to depend on.
+
+The workspace has ten library crates and one example application. Names below were checked against each crate's `lib.rs` and its compiled rustdoc. For the narrative, start with [Concepts](02-concepts.md); for the layering rationale, see [ARCHITECTURE](../ARCHITECTURE.md).
+
+## Dependency graph
+
+Built from the `Cargo.toml` files (an arrow points from a crate to a crate it depends on):
+
+```mermaid
+graph TD
+  core[ai-ui-core]
+  stream[ai-ui-stream]
+  sdk[ai-ui-sdk-stream]
+  data[ai-ui-data-stream]
+  http[ai-ui-http]
+  state[ai-ui-state]
+  md[ai-ui-markdown]
+  mdslint[ai-ui-markdown-slint]
+  slint[ai-ui-slint]
+  clip[ai-ui-clipboard]
+  ex[examples/thread]
+
+  stream --> core
+  data --> core
+  data --> stream
+  http --> core
+  http --> data
+  state --> core
+  mdslint --> md
+  ex --> core
+  ex --> state
+  ex --> data
+  ex --> http
+  ex --> mdslint
+  ex --> clip
+  ex -. build .-> slint
+  ex -. wasm32 only .-> md
+```
+
+`ai-ui-core`, `ai-ui-sdk-stream`, `ai-ui-markdown`, `ai-ui-clipboard` and `ai-ui-slint` depend on no other workspace crate. `ai-ui-sdk-stream` depends only on `serde_json`.
+
+## Status at a glance
+
+| Crate | wasm32 | Checked by | Publishing |
+|---|---|---|---|
+| `ai-ui-core` | yes | gate, CI | on crates.io (0.1) |
+| `ai-ui-stream` | yes | gate, CI | on crates.io (0.1) |
+| `ai-ui-sdk-stream` | yes | gate, CI | on crates.io (0.1) |
+| `ai-ui-data-stream` | yes | gate, CI | on crates.io (0.1) |
+| `ai-ui-http` | yes (`FetchClient`) | gate, CI | on crates.io (0.1) |
+| `ai-ui-state` | yes | gate, CI | on crates.io (0.1) |
+| `ai-ui-markdown` | yes, without the thread-based modules | gate, CI | on crates.io (0.1) |
+| `ai-ui-clipboard` | yes (`navigator.clipboard`) | gate (`scripts/gate.sh`) | on crates.io (0.1) |
+| `ai-ui-markdown-slint` | only inside the example | demo build | on crates.io (0.1); needs the femtovg patch with FemtoVG-WGPU |
+| `ai-ui-slint` | no Rust code to compile; Slint sources only | demo build | on crates.io (0.1); needs the femtovg patch with FemtoVG-WGPU |
+
+"gate" means `scripts/gate.sh` builds the crate with `--target wasm32-unknown-unknown`. "CI" means the `wasm` job in `.github/workflows/ci.yml` does too; that job does not list `ai-ui-clipboard` today, the local gate does. The Slint crates reach wasm32 through `examples/thread`, which `scripts/build-web-demo.sh` builds ([web guide](05-web.md)).
+
+None of the library crates defines Cargo features. Platform differences are `cfg(target_arch)` and `cfg(target_os)` switches, not flags. The only feature in the workspace is `gpu-window` on the example. This guide does not assume the crates are on crates.io; depend on them by path or Git.
+
+Minimum Rust versions in the manifests: workspace default 1.85, `ai-ui-clipboard` 1.86, `ai-ui-markdown` 1.88, both Slint-facing crates 1.92.
+
+## ai-ui-core
+
+The Rust port of `@assistant-ui/core`: the message model, the branching message repository, the model adapter contract and the runtimes. Depends only on `serde`, `serde_json` and `futures-core`.
+
+Key items:
+
+- `ThreadMessage` (with `UserMessage`, `AssistantMessage`, `SystemMessage`) and the part types (`TextPart`, `ReasoningPart`, `ToolCallPart`, `SourcePart`, and so on). The JSON shape matches upstream, and fields the port does not model round-trip through `extra`.
+- `MessageRepository`: the branch tree with a selected path, export/import and `MessageChanges`, the bounded journal views use to read only what changed.
+- `ChatModelAdapter`: `fn run(&self, ChatModelRunOptions) -> RunStream`, a stream of cumulative `ChatModelRunResult`s. A closure with that signature works. `adapter::once` and `adapter::from_results` build streams for tests.
+- `ThreadRuntime`: the trait UIs bind to. `LocalThreadRuntime` implements it with append, run loop, cancel, branches, tool results and human tools; `ExternalStoreRuntime` implements it over an `ExternalStore` you own.
+- `ThreadList` with a `ThreadListAdapter`: list, rename, archive, delete, titles; optimistic changes roll back on failure.
+- `SmoothText` / `SmoothOptions`: the smooth-streaming reveal.
+- `AbortController` / `AbortSignal`, `Subscription` (drop to unsubscribe), `ToolRegistry` / `Tool`.
+
+The runtime is single-threaded (`Rc`) and executor-agnostic: methods do their synchronous work at once and return a `RunFuture` that you spawn. There is no ambient clock or randomness, which is why the crate builds for wasm32.
+
+```rust,ignore
+use ai_ui_core::{adapter, AppendMessage, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime, ThreadRuntime};
+
+let runtime = LocalThreadRuntime::new(
+    |_options| adapter::from_results([Ok(ChatModelRunResult::text("Hello!"))]),
+    LocalRuntimeOptions::default(),
+);
+let run = runtime.append(AppendMessage::user_text(None, "Hi")).unwrap();
+futures_executor::block_on(run).unwrap();
+assert_eq!(runtime.messages().last().unwrap().text(), "Hello!");
+```
+
+Compiled and run against this checkout by hand; the same example is a doctest in the crate.
+
+## ai-ui-stream
+
+The port of `assistant-stream`: typed chunks, the accumulator that folds them into an assistant message, partial JSON for tool arguments, and the `assistant-transport` SSE serialization. Depends on `ai-ui-core`.
+
+Key items:
+
+- `Chunk` / `ChunkKind` / `PartInit` / `FinishReason`: the typed stream events.
+- `MessageAccumulator` (with `AccumulatorLimits`): `push(chunk)`, `result()` for the cumulative `ChatModelRunResult`, `finish()`, `status()`, `warnings()`.
+- `StreamDecoder`: the trait a wire format implements. Provided: `SseDecoder` (assistant-transport), `DataStreamDecoder` (AI SDK data stream) and `UiMessageStreamDecoder` (AI SDK UI message stream).
+- `run_stream` and `run_stream_from_sse`: turn a response byte stream into a `RunStream` for an adapter. Slices that are ready are folded into one result per wake-up.
+- Modules `partial_json` and `state` (state operations) for the pieces behind it.
+
+```rust,ignore
+use ai_ui_stream::{run_stream_from_sse, MessageAccumulator};
+use ai_ui_core::RunStream;
+
+// `bytes` is any futures Stream of Result<Vec<u8>, E> where E: Display.
+fn adapter_stream(bytes: impl futures_core::Stream<Item = Result<Vec<u8>, String>> + 'static) -> RunStream {
+    run_stream_from_sse(bytes, MessageAccumulator::default())
+}
+```
+
+Compiled against this checkout.
+
+## ai-ui-sdk-stream
+
+A bounded, incremental fold of the AI SDK 7 UI message stream (`x-vercel-ai-ui-message-stream: v1`) into messages. It depends only on `serde_json`, forbids unsafe code, denies `unwrap`/`expect`/`panic` in its sources, and is checked by a differential test against the published AI SDK. The header names a wire format, not an SDK major version. Legacy data-stream and assistant-transport adapters are not part of this crate.
+
+Key items:
+
+- `Runtime`: the single-owner engine. `Runtime::new(message_id, Config)`, `ticket()`, `push(ticket, bytes, observe)`, `end(ticket)`, `cancel(ticket)`, `restart(message)`, `view()`.
+- `RunTicket`: a run's identity. Feeding with a stale ticket returns `FeedOutcome::IgnoredStale` without parsing.
+- `Delivery` and `MessageView`: what `push` hands your callback. The view is borrowed, so the ordinary delta path never clones the message; call `snapshot()` only when you need an owned JSON value.
+- `Config` / `Limits` (`event_bytes`, `run_bytes`, `parts`), `UnknownPolicy`, `ServerErrorPolicy`.
+- `UiReducer`, `Update`, `ApplyResult`, `StreamError`.
+
+Limits are this crate's policy, not upstream protocol limits, and oversized input fails explicitly rather than truncating.
+
+```rust,ignore
+use ai_ui_sdk_stream::{Config, Runtime};
+
+let mut runtime = Runtime::new("msg-1", Config::default()).unwrap();
+let ticket = runtime.ticket();
+let wire = b"data: {\"type\":\"start\",\"messageId\":\"msg-1\"}\n\n\
+             data: {\"type\":\"text-start\",\"id\":\"t\"}\n\n\
+             data: {\"type\":\"text-delta\",\"id\":\"t\",\"delta\":\"Hi\"}\n\n";
+runtime
+    .push(ticket, wire, |delivery| {
+        let _parts = delivery.view.part_count();
+    })
+    .unwrap();
+println!("{}", runtime.view().snapshot());
+```
+
+Compiled and run against this checkout; it prints a message with one streaming text part containing `Hi`.
+
+## ai-ui-data-stream
+
+The port of `@assistant-ui/react-data-stream`: a `ChatModelAdapter` for AI SDK backends. It sends upstream's request body and reads either a UI message stream or a data stream, detected from the AI SDK response headers. Depends on `ai-ui-core` and `ai-ui-stream`.
+
+Key items:
+
+- `DataStreamAdapter<C>` and `DataStreamOptions`: `DataStreamOptions::new(api)` with optional `headers` and `body` closures evaluated per request and an explicit `protocol`.
+- `HttpClient`: one method, `post(HttpRequest, AbortSignal) -> ResponseFuture`. Implement it for your own HTTP stack.
+- `HttpRequest`, `HttpResponse` (`header(name)`), `HttpError`, `ByteStream`.
+- `Protocol` and `resolve_protocol`.
+- `request_body`, `to_model_messages` and `to_language_model_messages`: the request-body pieces, public so you can build your own transport.
+
+```rust,ignore
+use ai_ui_core::{LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_data_stream::{DataStreamAdapter, DataStreamOptions};
+
+let adapter = DataStreamAdapter::new(my_http_client, DataStreamOptions::new("https://example.com/api/chat"));
+let runtime = LocalThreadRuntime::new(adapter, LocalRuntimeOptions::default());
+```
+
+The ready-made clients are in `ai-ui-http`; the example in the next section compiles.
+
+## ai-ui-http
+
+Ready-made `HttpClient` implementations. Depends on `ai-ui-core` and `ai-ui-data-stream`, plus target-specific dependencies: `ureq` with rustls off wasm32, and `wasm-bindgen`, `web-sys` and friends on wasm32.
+
+Key items:
+
+- `NativeClient` (not wasm32): `NativeClient::new()` or `NativeClient::with_agent(ureq::Agent)`. One worker thread per request.
+- `FetchClient` (wasm32 only): browser `fetch`, `credentials: same-origin` by default, with `include_credentials: bool` for cross-origin cookies. Dropping the response body aborts the request.
+
+The two never exist in the same build, so write code that picks the client with `cfg(target_arch = "wasm32")`.
+
+```rust,ignore
+use ai_ui_core::{LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_data_stream::{DataStreamAdapter, DataStreamOptions};
+use ai_ui_http::NativeClient;
+
+let adapter = DataStreamAdapter::new(
+    NativeClient::new(),
+    DataStreamOptions::new("https://example.com/api/chat"),
+);
+let runtime = LocalThreadRuntime::new(adapter, LocalRuntimeOptions::default());
+```
+
+Compiled against this checkout (it does not connect to anything). On wasm32, replace `NativeClient::new()` with `FetchClient::default()`. A Chromium smoke test (`crates/ai-ui-http/tests/browser/run.py`) exercises `FetchClient`.
+
+## ai-ui-state
+
+The UI-agnostic state layer, after upstream's scoped state. A UI renders `ThreadState` from a `ThreadView` and calls the view's actions, whatever toolkit it uses and whichever runtime sits below. Depends on `ai-ui-core`.
+
+Key items:
+
+- `ThreadView`: `new(runtime, ViewOptions)`, `for_list(&ThreadList, ..)`, `subscribe(callback)`, `state() -> Arc<ThreadState>`, `rebind(runtime)`, `tick(now_ms)` and `needs_frame()` for smooth-streaming animation.
+- Actions on the view: `send`, `stop`, `reload`, `switch_branch`, `begin_edit`, `edit_composer`, `copy_text`, `mark_copied`, `toggle_part`, `respond_to_approval`, `add_tool_result`, `submit_feedback`.
+- `ThreadState` (`messages: Vec<Arc<MessageState>>`, `is_empty`, `is_running`, `capabilities`) and `MessageState` with `PartState`.
+- `PartKind`: `Text`, `Reasoning`, `ToolCall`, `Source`, `Image`, and the other part kinds.
+- `ToolCallState`, `ToolStatus`, `ToolPresentation`, `ApprovalState`, `ApprovalDecision`.
+- A row cache keyed by `Arc` identity: a message that did not change keeps its `Arc`, which is how the example decides which Slint rows to rebuild. The clock is supplied by the caller (`tick(now_ms)`, `mark_copied(id, now_ms)`).
+
+```rust,ignore
+use ai_ui_core::{adapter, ChatModelRunResult, LocalRuntimeOptions, LocalThreadRuntime};
+use ai_ui_state::{ThreadView, ViewOptions};
+use std::rc::Rc;
+
+let runtime = LocalThreadRuntime::new(
+    |_options| adapter::from_results([Ok(ChatModelRunResult::text("Hello!"))]),
+    LocalRuntimeOptions::default(),
+);
+let view = ThreadView::new(Rc::new(runtime), ViewOptions { smooth: None });
+let _subscription = view.subscribe(|| println!("changed"));
+let run = view.send("Hi").unwrap().unwrap();
+futures_executor::block_on(run).unwrap();
+assert_eq!(view.state().messages.len(), 2);
+```
+
+Compiled and run against this checkout. Drop the returned `Subscription` to unsubscribe.
+
+## ai-ui-markdown
+
+The port of `@assistant-ui/markdown`: a bounded, safe parser and block projection for streaming chat text. Dependencies: `pulldown-cmark`, `url`, `serde`. It never fetches images, opens links, renders HTML or performs I/O; those are inert data, and links need an explicit host action.
+
+Key items:
+
+- `parse(source) -> Result<Document, ParseError>` with `Document`, `Block`, `Inline`, `Alignment`. Hard limits `MAX_SOURCE_BYTES` (1 MiB), `MAX_EVENTS`, `MAX_NESTING`, `MAX_OUTPUT_BYTES` fail with an error, never a silent truncation.
+- `presentation::project(source)`: the UI-independent projection into `RenderBlock`s, plus `safe_destination` for link targets.
+- `split::StreamSplit` and `split::top_level_blocks`: settled blocks versus the live tail for streaming text.
+- `scheduling::Scheduler`: coalesces snapshots and tracks revisions.
+- Native only: `coordinator::Coordinator` (a latest-snapshot worker), `pool::CoordinatorPool` (several coordinators sharded by key; `default_workers()`, at most `MAX_WORKERS` = 8) and `worker::Worker`.
+
+On wasm32 the thread-based modules are compiled out; the browser demo runs `project` inline.
+
+```rust,ignore
+use ai_ui_markdown::{parse, split::StreamSplit};
+
+let document = parse("# Title\n\nSome **bold** text.").unwrap();
+assert_eq!(document.blocks.len(), 2);
+
+// While text streams, settled blocks are formatted once and only the tail again.
+let mut split = StreamSplit::new();
+let (settled, tail) = split.update("one\n\ntwo\n\nthree\n\nfo");
+println!("{} settled blocks, live tail {} bytes", settled.len(), tail.len());
+```
+
+Compiled and run against this checkout.
+
+## ai-ui-markdown-slint
+
+Converts the portable Markdown presentation into Slint records and manages the UI-thread cache. On crates.io (0.1). Depends on `ai-ui-markdown` and Slint (`=1.18.1`, default features off).
+
+Key items:
+
+- `Factory`: you implement `cell` and `block` to map the shared `Block<C>` / `BlockKind` / `Alignment` into the record types your own `.slint` generates.
+- `convert` and `literal`: build blocks from a presentation, or from literal source with a warning when formatting is unavailable. Run them on the Slint thread.
+- `cache::Cache`, `cache::Backend` (nonblocking executor contract), `cache::Limits`, `cache::NativeBackend` (a worker pool; not on wasm32).
+- `streaming::StreamingCache<K, F, B>`: `observe_one(key, text, streaming)`, `poll()`, `take_changed()`, `view(key, source, streaming)`, `retain(keep)`, `has_pending()`. Each settled block is a cache entry of its own.
+
+```rust,ignore
+use ai_ui_markdown_slint::{cache::{Limits, NativeBackend}, streaming::StreamingCache};
+
+let backend = NativeBackend::start(2048, 256 * 1024).ok();
+let mut markdown = StreamingCache::new(
+    MyFactory, // your `Factory` implementation
+    backend,
+    Limits { keys: 2048, presentation_units: 8 * 1024 * 1024 },
+);
+markdown.observe_one((message_id, part_index), &text, still_streaming);
+// On a timer: if markdown.poll() { for key in markdown.take_changed() { /* refresh that row */ } }
+```
+
+Fenced as `ignore` because it needs your generated Slint types; `examples/thread/src/markdown.rs` is the compiling version.
+
+## ai-ui-slint
+
+The Slint component library: thread, messages, composer, branch picker, action bar, reasoning and tool disclosures, thread list, settings menu and Markdown blocks. On crates.io (0.1), no Cargo dependencies, `#![forbid(unsafe_code)]`. The Rust API is one function; everything else is `.slint` under `ui/`, listed in [Building a UI with Slint](04-ui-slint.md).
+
+Key items:
+
+- `ai_ui_slint::ui_dir() -> PathBuf`: the folder containing `lib.slint`, for the consuming build script. Use it at build time only.
+- From `lib.slint`: `AssistantThread`, `AssistantComposer`, `AssistantMarkdown`, `AssistantThreadList`, `AssistantSettingsMenu`, `AssistantApproval`, `AssistantBranchPicker`, `AssistantTheme` and the records `ChatRow` and `ChatPart`.
+- Its dev-dependency on Slint is for offscreen component tests; consumers pick their own backend and renderer.
+
+```rust,ignore
+// build.rs
+let libraries = std::collections::HashMap::from([("assistant".to_string(), ai_ui_slint::ui_dir())]);
+let config = slint_build::CompilerConfiguration::new().with_library_paths(libraries);
+slint_build::compile_with_config("ui/app.slint", config).unwrap();
+```
+
+## ai-ui-clipboard
+
+Host-owned clipboard text operations that report whether the copy worked. No Slint or conversation-state dependency. On Linux, Windows and macOS it uses `arboard` (with Wayland data control) on a bounded worker thread; on `wasm32-unknown-unknown` it uses `navigator.clipboard`.
+
+Key items:
+
+- `Clipboard::new()`, `copy(text, completion)`, `read_text(completion)`, `shutdown()`. Dropping the handle also shuts it down.
+- `Completion`: a boxed `FnOnce(Result<(), CopyError>) + Send`. `ReadCompletion` is the same for reads.
+- `CopyError`: `TooLarge`, `Unavailable`, `Busy`, `Rejected`, `Cancelled`, `WorkerStopped`. `ReadError` is its read counterpart. Errors never contain clipboard content.
+- `MAX_COPY_BYTES` (1 MiB) and `MAX_READ_BYTES` (4 MiB).
+
+On native, the completion runs on the worker, so dispatch UI updates back to the UI thread. In the browser, call `copy` synchronously inside the user gesture.
+
+```rust,ignore
+use ai_ui_clipboard::{Clipboard, CopyError};
+
+if let Ok(clipboard) = Clipboard::new() {
+    let _ = clipboard.copy(
+        "hello".to_string(),
+        Box::new(|result: Result<(), CopyError>| {
+            if let Err(error) = result {
+                eprintln!("copy failed: {error}");
+            }
+        }),
+    );
+}
+```
+
+Compiled against this checkout (not run: running it writes to the system clipboard).
+
+## Choosing crates
+
+| You want | Use |
+|---|---|
+| A runtime and tools, no UI | `ai-ui-core` |
+| A backend that speaks the AI SDK protocols | `ai-ui-core` + `ai-ui-data-stream` + `ai-ui-http` |
+| A custom transport | `ai-ui-core` + `ai-ui-stream` (assistant-transport) or `ai-ui-sdk-stream` (AI SDK 7 UI messages, standalone) |
+| State for your own UI toolkit | the above + `ai-ui-state` |
+| Markdown in your own renderer | `ai-ui-markdown` |
+| The Slint thread UI | all of the above + `ai-ui-markdown-slint` + `ai-ui-slint`; see [the Slint guide](04-ui-slint.md) |
+
+Next: [Performance](07-performance.md) for the measured results, or [Coming from assistant-ui](08-from-assistant-ui.md) for the parity table.
+
+---
+
+# docs/guide/07-performance.md
+
+---
+title: Performance
+description: Why ai-ui is fast, the measured results against upstream assistant-ui, and how to reproduce every number.
+order: 7
+section: Reference
+---
+
+# Performance
+
+**What this page gives you.** This page explains where the cost goes, with file names; gives the measured results against upstream assistant-ui with their conditions; lists what was not measured and what was corrected; and gives the commands to reproduce every figure.
+
+This page has two parts. The first explains the design decisions behind the speed, with the files that hold them.
+The second gives the measurements, how to read them, what they do not cover and how to reproduce them. Every figure
+comes from [RESULTS](../RESULTS.md) (generated from [`results.json`](../results.json)). The engineering record,
+including rejected experiments, is [PERFORMANCE](../PERFORMANCE.md).
+
+## Why it is fast
+
+A streaming chat does the same small thing many times: a few bytes arrive, one message grows, one row on screen
+changes. A slow chat redoes work proportional to the whole thread for each of those events. Most of the design is
+about making the cost of one event independent of everything else in the thread.
+
+### One streamed update costs the same at any thread length
+
+The repository behind every runtime (`crates/ai-ui-core/src/repository.rs`) keeps a bounded change journal: the last
+64 content revisions, stored as the indices of the selected-path messages that changed, not as copies of message
+bodies. Each `ThreadView` (`crates/ai-ui-state/src/view.rs`) owns its own cursor, so one consumer never consumes
+another's changes. When the cursor is current and the thread's shape is unchanged, the view projects only the rows
+that changed. If the cursor is missing or expired, or the structure changed (an edit, a branch switch, a new
+message), the view falls back to a full projection. Correctness never depends on the journal.
+
+The second half is `ThreadRuntime::structure_version`. While the tree's shape is unchanged, the view reuses branch
+positions instead of looking each message up again, and patches its state and the repository's selected path in place
+when nobody else holds a reference (`Arc::get_mut`). Retained snapshots stay immutable; copying them costs more, and
+the code never mutates through a shared pointer.
+
+The effect, from the 2026-11-10 record in PERFORMANCE: with smooth streaming on, one streamed update through runtime
+and projection went from 8.5 to 1.7 microseconds at 1,000 existing messages and from 38.4 to 4.7 microseconds at
+5,000 (median of five interleaved pairs). With 10 messages it did not change. That is a runtime-plus-projection
+workload, not frame latency.
+
+### Row sync touches only changed rows
+
+The Slint side does not rebuild the list when a reply grows. The example host compares row identities (messages are
+`Arc`, so identity is a pointer comparison) and updates changed rows and their part models in place. Streaming text
+goes into one in-place row model per document. Animators for smooth streaming exist only for parts that are
+streaming. The example's `App::sync` still compares identities across the selected thread; PERFORMANCE lists that as a
+remaining cost.
+
+### Markdown runs off the UI thread
+
+`ai-ui-markdown` formats on a pool of worker threads (`crates/ai-ui-markdown/src/pool.rs`): one per core minus one for
+the UI, between 1 and 8. Several coordinators sit behind one API, and a key always maps to the same shard. Each
+shard keeps one parse in flight and only the newest source for a key. An older completion is labelled a preview, so
+the UI keeps showing formatted text while newer text is pending instead of flashing plain text. The Slint cache
+(`crates/ai-ui-markdown-slint/src/cache.rs`) is told which parts are visible, in priority order, so the parts the
+person can see are submitted first. The browser build has no threads and runs a wasm-only inline backend instead.
+
+### Settled blocks are formatted once, plus a live tail
+
+Streaming Markdown is not re-parsed from the start on every delta. `StreamSplit` (`split.rs`) cuts the text into
+settled blocks and a live tail; `StreamingCache` formats each settled block once and re-formats only the tail on each
+frame. The result is tested to be equivalent to formatting the whole document, over every prefix of five documents.
+
+### Long reasoning text is chunked
+
+Reasoning can run to tens of kilobytes. The example (`examples/thread/src/chunks.rs`) shows it as chunks that are
+appended once and never re-wrapped, with each chunk's height held in a property so the layout reads a cached value.
+Layout and paint per frame at the end of a 40 KB reasoning stream went from 5.7 ms to 2.3 ms, and stayed flat over
+the stream. Collapsed reasoning is not converted at all.
+
+### Cheap decoding and fair scheduling
+
+Complete SSE lines borrow the incoming bytes. Fragmented lines reuse a scratch buffer. The assistant-transport decoder
+moves its JSON tree into typed deserialization instead of cloning it. The stream's 64-read budget now yields even for
+heartbeat-only reads, so a fast stream cannot starve input and painting. Cumulative snapshots are coalesced; protocol
+events never are. On the recorded workload (10,000 deltas, 240,000 bytes), the UI-message decoder plus accumulator
+took 4.7 ms instead of 8.0 ms with 4 KB reads.
+
+### A femtovg pipeline-cache patch
+
+In a real GPU window, femtovg 0.27 dropped every cached render pipeline that a flush did not use, so a streaming
+chat recompiled pipelines every few frames (about 70% of the main thread). The repository carries upstream's fix as
+a patch in `patches/femtovg` (see `patches/README.md`). Process CPU in a 30 s run fell from 23.1-25.5 s to
+11.8-14.1 s, and the median frame rate rose from 105-108 to 141-142 fps, the display's limit. An app that embeds the
+Slint crates adds the same `[patch.crates-io]` entry until Slint ships femtovg 0.28.
+
+### The list and large messages
+
+The thread is a Slint `ListView`, so layout and paint cost follows the rows on screen. PERFORMANCE records that
+changing text scale or reading width with 20,000 messages costs a few milliseconds of layout, and that the cost does
+not grow with thread length because only visible rows relayout. STATUS still lists row instantiation across the whole
+thread as a known remaining cost, so this guide does not claim a fully virtualised model.
+
+A user message over 64 KiB or with at least 1,000 newlines is shown one verbatim page at a time (at most 16 KiB and
+400 newlines; `examples/thread/src/paging.rs`). The runtime still holds the whole message, and copy, edit and model
+requests use the full source. In a same-window layout microbenchmark with a 32,742-byte message, first layout and
+paint took 9.589 ms raw against 5.554 ms paged. That is a layout figure, not a whole-application one.
+
+### Memory
+
+The Rust side keeps parsed text once and instantiates Slint rows. Resident memory in the like-for-like runs was
+30 MiB at 1,000 messages and 64 MiB at 10,000 (table below). In the larger Rust-only runs, RESULTS records 166 MiB at
+5,000 long structured messages and 552 MiB at 20,000 (117.9 MB of text, one run). Memory grows with the thread, as it must,
+but slowly compared with a DOM.
+
+One experiment was tried and reverted: one list row per Markdown block. It stayed within noise in rendering and
+increased application work, because every update re-compared the blocks. The measurement is in PERFORMANCE.
+
+## The measurements
+
+Workload: upstream's thread (`@assistant-ui/react` 0.15.33 with plain CSS, in headless Chromium) against
+`ai-ui-example-thread --bench N --bench-reply-kb K --bench-render` (offscreen, software raster, at most 60 frames a
+second). The same history, the same demo reply (reasoning, then the answer, one word every 18 ms) and the same 60 s
+window on both sides. Each cell is the median of 5 interleaved Rust and React pairs, release build, run on
+2026-11-11, machine load about 4-6. Ranges are the minimum to maximum over the five runs. Ratios are the median
+React value divided by the median Rust value, floored to one decimal.
+
+### 1,000 messages, 9 KB prompt
+
+| Measure | Rust | React | Ratio | Range of ratio | RESULTS row |
+|---|---|---|---|---|---|
+| Open the thread, like for like | 105.3 ms (100.8-150.9) | 2940 ms (2794-2987) | 27.9x | 18.5x-29.6x | 15 |
+| CPU while streaming, 60 s | 17160 ms (13700-17650) | 73260 ms (73050-73540) | 4.2x | 4.1x-5.3x | 18 |
+| Memory at the end, RSS | 30.1 MiB (29.7-30.4) | 1481.5 MiB (1474.5-1526.6) | 49.2x | 48.5x-51.4x | 11 |
+| Memory at the end, Rust RSS vs React PSS | 30.1 MiB | 850.3 MiB (841.8-895.4) | 28.2x | 27.6x-30.1x | 14 |
+| Longest iteration or frame while streaming | 34 ms (17.5-35.4) | 916.6 ms (866.6-1183.3) | 26.9x | 24.4x-67.6x | 7 |
+
+### 200 messages, 40 KB prompt
+
+| Measure | Rust | React | Ratio | Range of ratio | RESULTS row |
+|---|---|---|---|---|---|
+| Open the thread, like for like | 33.2 ms (31.8-46.6) | 1104 ms (1029-1197) | 33.2x | 22x-37.6x | 13 |
+| CPU while streaming, 60 s | 17020 ms (13660-19450) | 51160 ms (41900-57120) | 3x | 2.1x-4.1x | 19 |
+| Memory at the end, RSS | 24.6 MiB (24.5-24.8) | 1212.7 MiB (1210-1268) | 49.2x | 48.7x-51.7x | 10 |
+| Memory at the end, Rust RSS vs React PSS | 24.6 MiB | 584 MiB (582.4-640.9) | 23.7x | 23.4x-26.1x | 16 |
+| Longest stall | 109.9 ms (36.2-136.2) | 2399.9 ms (2183.2-2649.9) | 21.8x | 16x-73.2x | 5 |
+
+### 10,000 messages, 9 KB prompt
+
+| Measure | Rust | React | Ratio | Range of ratio | RESULTS row |
+|---|---|---|---|---|---|
+| Open the thread, like for like | 435.5 ms (382.9-472.1) | 26081 ms (23591-27196) | 59.8x | 49.9x-71x | 6 |
+| CPU while streaming, 60 s | 22800 ms (20930-23220) | 83500 ms (76060-84710) | 3.6x | 3.2x-4x | 20 |
+| Memory at the end, RSS | 63.6 MiB (63.3-64) | 3717.8 MiB (3675.4-3926) | 58.4x | 57.4x-62x | 8 |
+| Memory at the end, Rust RSS vs React PSS | 63.6 MiB | 3088.9 MiB (3051.1-3298.6) | 48.5x | 47.6x-52.1x | 9 |
+| Longest stall | 41.1 ms (28.3-46) | 11599.5 ms (9833-12899.5) | 282.2x | 213.7x-455.8x | 1 |
+
+Source for all rows: `benchmarks/results/like-for-like/raw`, a release build of 424a4fb plus the open reporting of
+that change. The summary script is `benchmarks/results/like-for-like/summarize.py`.
+
+### Second run
+
+A second, independent run of the 1,000-message comparison (2026-11-11, 9 interleaved pairs, release build, machine load
+about 3-5 against 4-6 for the first run). Raw files and commands: `benchmarks/results/like-for-like-run2/`. The first run's
+table above is unchanged; the full rows are in RESULTS (rows marked "run 2").
+
+| Measure | Rust | React | Ratio | Range of ratio |
+|---|---|---|---|---|
+| Open the thread, like for like | 97.5 ms (85.7-213.2) | 2472 ms (1870-2874) | 25.3x | 8.7x-33.5x |
+| Longest iteration or frame | 16.68 ms (11.73-30.53) | 550 ms (416.6-983.3) | 32.9x | 13.6x-83.8x |
+| Memory at the end, Rust RSS vs React PSS | 30.1 MiB (29.8-30.2) | 888 MiB (793.2-1066.3) | 29.5x | 26.2x-35.7x |
+| Memory at the end, RSS | 30.1 MiB (29.8-30.2) | 1531.5 MiB (1427.7-1708.5) | 50.8x | 47.2x-57.3x |
+| CPU while streaming, 60 s | 9690 ms (7570-14990) | 69360 ms (68190-73360) | 7.1x | 4.5x-9.6x |
+
+The runs differ because of machine load: Rust's CPU was 17.2 s in run 1 and 9.7 s in run 2 (ratio 4.2x against 7.1x). CPU is
+load-sensitive and is not a headline figure. Open, stall and memory agreed within the ranges.
+
+Larger fixtures were measured earlier (2026-11-10, 3 interleaved pairs, load 6-25, long structured replies):
+
+| Workload | Measure | Rust | React | Ratio | RESULTS row |
+|---|---|---|---|---|---|
+| 2,000 messages (12.2 MB) | open the thread | 527.1 ms (485.5-528.3) | 42090 ms (42090-96584) | 79.8x | 2 |
+| 2,000 messages | longest iteration or frame | 41.5 ms (35-74.8) | 1633.2 ms (1633.2-4583.1) | 39.3x | 4 |
+| 2,000 messages | resident memory | 88.1 MiB | 2946.3 MiB (2946.3-3449.1) | 33.4x | 12 |
+| 2,000 messages | process CPU, 60 s | 9130 ms | 60260 ms | 6.6x | 17 |
+| 5,000 messages (29.7 MB) | open the thread | 1256.7 ms (807.3-1256.7) | at least 120000 ms | at least 95.4x | 3 |
+
+Two cautions apply to these. For 2,000 messages, one of three React runs did not finish opening within the harness's
+120 s limit and is excluded, which understates React. For 5,000 messages React did not finish in 3 of 3 runs, so
+120 s is a floor, not a measurement, and the ratio is a lower bound. Those older runs also used a harness that
+measured React's open without checking the Markdown, which if anything understates React.
+
+Rust against its own earlier state (not a React comparison): in a real GPU window, 1,000 messages, 30 s, process CPU
+fell from 23.1-25.5 s to 11.8-14.1 s (1.8x, RESULTS rust-only row 1) and the median frame rate rose from 105 to 141 fps
+(1.3x, row 2) after the femtovg patch.
+
+## How to read these numbers
+
+**What "open" means.** On the Rust side it is the time from the start of the history import until the last message's
+Markdown is formatted and painted at least once: import, first sync, formatting on the worker threads, and a forced
+frame. On the React side it is navigation until all messages are in the DOM with their Markdown rendered (every
+reply's table present), plus two frames. Rust's first sync alone, when rows are on screen but Markdown is not yet
+formatted, was 12.9 ms at 1,000 messages. It is a different, earlier event and is not compared with React.
+
+**RSS and PSS.** RSS counts every resident page of a process, so summing it over Chromium's nine processes counts
+shared pages several times. PSS divides shared pages among the processes that map them. The PSS ratio is therefore the
+conservative memory comparison (28.2x against 49.2x at 1,000 messages). Rust runs as one process, where RSS is
+the right figure.
+
+**Medians and ranges.** Each value is the median of 5 interleaved runs. A range is the minimum to maximum of the
+runs. The extremes of a ratio pair the best Rust run with the worst React run, so a wide ratio range is a statement
+about noise, not a claim. The "longest stall" rows are single events and are the noisiest.
+
+**A shared, busy machine.** The machine has 12 cores, is shared, and ran at load 4-6 for the like-for-like runs. Runs
+are interleaved (Rust, React, Rust, React...) so load hits both sides alike. Absolute times move between days; only
+the ratios and ranges are meaningful.
+
+**Different clocks, same workload.** Rust's "longest stall" is the longest loop iteration, unpaced. React's is the
+longest animation-frame interval. Rust's figures include software rasterisation on the CPU. React's CPU is the whole
+Chromium process tree, including its own raster and compositing. React's main-thread busy time does not count raster
+threads, which favours React. The React thread uses plain CSS and does somewhat less than upstream's default
+Tailwind and Radix thread, which also favours React.
+
+**Where React won.** No case was found on these workloads where React wins or ties.
+
+## What we did not measure
+
+- Any product other than upstream assistant-ui. This guide makes no comparison with others.
+- React in a real GPU window. The harness cannot open one, so there is no GPU Rust-against-React ratio; the GPU rows
+  are Rust against its earlier self.
+- Long fixtures re-run with raw files kept: the 2,000- and 5,000-message rows come from 3 pairs on a loaded machine
+  and have not been repeated at 5 pairs. React at 20,000 messages was started and interrupted.
+- Fast-scroll frame time and composer typing latency with React. They were smoke-tested on Rust only and are not in
+  the comparison tables.
+- Memory growth over a five-minute stream.
+- Retina or other high-DPI displays, and hardware other than the one machine above.
+- Network and model latency. The demo reply is local; nothing here says how quickly a backend answers.
+
+## Correction history
+
+An earlier README and RESULTS headlined opening a 1,000-message thread at 0.12 s for Rust, against 2.9 s for React
+(24x). The Rust figure was the time before Markdown had been formatted; the React figure ended with Markdown
+rendered, so the comparison was not like for like. It was corrected on 2026-11-11. The measured like-for-like
+ratio at 1,000 messages is 27.9x (18.5x to 29.6x), reflecting formatting that had since been cut from 0.52 s to
+0.09-0.11 s by the worker pool. The 2026-11-10 values for 1,000 and 200 messages were also withdrawn, because their
+raw files were not kept; the table above replaces them.
+
+## Reproduce it yourself
+
+The Rust side needs a release build; the React side needs Node and a headless Chromium. From the repository root:
+
+```sh
+cargo build --release -p ai-ui-example-thread
+cd benchmarks/react-baseline
+npm ci --ignore-scripts && npm run build
+export PLAYWRIGHT=/path/to/node_modules/playwright   # any Playwright package
+export CHROME=/path/to/chrome-headless-shell          # if Playwright's browser is not installed
+node bench.mjs 1000 9 60        # one React run: 1000 messages, 9 KB prompt, 60 s; JSON on stdout
+./compare.sh 1000 9 5           # five interleaved Rust and React pairs; raw output on stdout
+```
+
+The Rust half of one pair is `target/release/ai-ui-example-thread --bench 1000 --bench-reply-kb 9 --bench-render`.
+To keep one file per run with the load average, use `benchmarks/results/run-pairs.sh stream 1000 9 5 OUT` with
+`RUST_BIN`, `REACT_BASELINE`, `PLAYWRIGHT` and `CHROME` set (the script header lists them), then summarise with
+`python3 benchmarks/results/like-for-like/summarize.py`. `python3 scripts/results.py check` verifies that RESULTS.md
+and `results.json` agree.
+
+To judge a Rust change against another revision, build both and alternate them:
+
+```sh
+scripts/ab-bench.sh BASE_REV NEW_REV 5 > ab.txt     # NEW_REV may be WORKTREE for uncommitted changes
+```
+
+It runs three scenarios (1,000 messages with render, 1,000 without, 200 messages with a 40 KB reply with render)
+interleaved. Compare medians of p95, total and iterations over 4 ms, and keep the change only if nothing regresses.
+The Rust-only decode and projection benchmarks are the ignored tests listed in PERFORMANCE, for example
+`cargo test --locked --release -p ai-ui-state --test perf projection_cost_per_streamed_update -- --ignored --nocapture`.
+Do not run them while compiling or while another benchmark is running.
+
+Next: [Coming from assistant-ui](08-from-assistant-ui.md) for the parity table, or [Contributing and testing](09-contributing.md) for the gate and the A/B method.
+
+---
+
+# docs/guide/08-from-assistant-ui.md
+
+---
+title: Coming from assistant-ui
+description: What is ported from assistant-ui, how packages map to crates, where the Rust API differs, and what is not there yet.
+order: 8
+section: Reference
+---
+
+# Coming from assistant-ui
+
+**What this page gives you.** This page maps assistant-ui packages to crates, lists what is not ported, shows where the Rust API differs from the TypeScript one, states what a backend needs, and ends with a migration checklist.
+
+ai-ui follows upstream's architecture module for module. The reference is assistant-ui commit `eb65bd4` (MIT). A
+feature counts as ported when it behaves as upstream does, checked by tests derived from upstream's. The
+authoritative list is [STATUS](../STATUS.md); this page organises it for someone who knows the TypeScript packages.
+
+## Package to crate map
+
+| Upstream | Crate | Status |
+|---|---|---|
+| `@assistant-ui/core` types and `MessageRepository` | `ai-ui-core` | Ported. Same JSON shape; unknown fields round-trip. |
+| `ChatModelAdapter`, local thread runtime | `ai-ui-core` | Ported: append, edit, regenerate, branches, cancel, tool-result continuation, `maxSteps`, human tools, feedback, export and import. |
+| Thread and edit composers | `ai-ui-core` | Ported: send, cancel, edit branching. No attachment adapter or dictation. |
+| `useExternalStoreRuntime` | `ai-ui-core` | Ported. App-owned messages with edit, reload, cancel, tool and feedback callbacks; `Arc` identity kept for unchanged messages. |
+| Thread list, `useRemoteThreadListRuntime` | `ai-ui-core` (`ThreadList`) | Ported: switch, new, rename, archive, unarchive, delete, generated titles, load; optimistic with rollback. The host supplies the `Spawner`. |
+| `assistant-stream` (chunks, accumulator, state operations, partial JSON, assistant-transport SSE) | `ai-ui-stream` | Ported. Timing metadata is not computed. |
+| AI SDK UI message stream and data stream | `ai-ui-stream` | Both protocols, including assistant-ui's `aui-*` data-stream extensions. |
+| AI SDK `readUIMessageStream` | `ai-ui-sdk-stream` | A separate strict AI SDK 7 reducer, checked against the published package. |
+| `@assistant-ui/react-data-stream` | `ai-ui-data-stream` | Ported: request conversion, protocol detection, error statuses (without the response text). |
+| `fetch` in upstream | `ai-ui-http` | Native (ureq and rustls) and browser `fetch` clients. |
+| `useSmooth` | `ai-ui-core` (`SmoothText`) | Same pacing as upstream. |
+| Frontend tools and approvals | `ai-ui-core` (`Tool`, `ToolRegistry`) | Ported with approvals; tools run sequentially. |
+| Scoped state (`MessageState`, `ThreadState`, `ComposerState`) | `ai-ui-state` | `ThreadView`, a UI-agnostic projection with scoped actions. |
+| `@assistant-ui/react` thread look | `ai-ui-slint` | Thread, messages, composer, suggestions, reasoning and tool disclosure, branch picker, copy, edit, regenerate and feedback actions. |
+| `@assistant-ui/markdown` | `ai-ui-markdown`, `ai-ui-markdown-slint` | Parsed off the UI thread; settled blocks plus a live tail. |
+| Clipboard (browser API) | `ai-ui-clipboard` | Reports whether the copy actually worked, on native and in the browser. |
+
+## What is not ported yet
+
+These gaps are listed in STATUS, not hidden:
+
+- **Runtimes.** assistant-transport (server-owned state) as a runtime; a concrete HTTP remote thread-list adapter;
+  LangGraph and other framework adapters. The assistant-transport wire format is decoded; what is missing is the
+  runtime that owns state on the server.
+- **Generative UI.** Custom per-tool components. Tools render through a generic disclosure by default, and an app
+  can register a presenter per tool (`ThreadView::set_tool_presenter`) to choose the title, summary and status. A
+  custom Slint component per tool is not available.
+- **Attachments.** Composer attachments with an adapter, and quotes.
+- **Dictation and speech.** No speech or dictation adapters.
+- **Other adapters.** Feedback, suggestion and history adapters, and the message queue.
+- **Look.** The Slint UI follows upstream's default thread; Markdown styling fidelity in a real GPU window is marked
+  unverified in STATUS, because offscreen screenshots use the software renderer.
+
+## Where the Rust API differs
+
+**No React hooks.** Upstream exposes state through hooks that re-render components. Here `ai-ui-state::ThreadView`
+wraps any `ThreadRuntime`, projects it into plain data (message rows, parts, `isLast`, branch number and count,
+`isCopied`, composer state) and offers the scoped actions. A UI subscribes, reads the view, and updates its own
+widgets. The Slint example does this; another toolkit can too. `ThreadView` replaces `useThread`, `useMessage`
+and `useComposer`.
+
+**One runtime trait.** `ThreadRuntime` is a trait. The local runtime, the external-store runtime and thread-list
+threads implement it, so the same UI works with all of them.
+
+**Ownership, not ambient state.** Messages are immutable snapshots held in `Arc`. The view keeps a row cache keyed by
+`Arc` identity, so an unchanged message is a pointer comparison and not a deep compare. An external-store app that
+re-sends an unchanged message keeps its `Arc` and costs nothing downstream. Errors are `Result`s, not exceptions.
+
+**No executor of its own.** Runtime methods do their synchronous work at once (the user message and the running
+assistant message appear immediately) and return a future that you spawn: `slint::spawn_local`, a Tokio `LocalSet`,
+or `wasm-bindgen-futures`. The runtime is single-threaded (`Rc`), like upstream's. Messages are `Arc` so adapters can
+move them to worker threads. Do not wrap it in locks to make it look concurrent.
+
+**No ambient clock or randomness.** Timestamps and ids come from options, and `ThreadView` takes a caller-supplied
+clock for smooth streaming. That is what lets the core compile for `wasm32-unknown-unknown`. `createdAt` is epoch
+milliseconds.
+
+**Subscriptions** are callbacks with a guard that unsubscribes when dropped, called after each state change and never
+while internal state is borrowed.
+
+**`AbortSignal`** becomes `ai-ui-core::abort`, a thread-safe signal an adapter can await or poll.
+
+**Streaming adapters.** `ChatModelAdapter::run` returns a stream of cumulative `ChatModelRunResult`s, as upstream
+does. A single result is a one-item stream. `run_stream` folds all slices that are ready into one result per wake-up.
+
+## What a backend needs
+
+Nothing new. The port reads and writes the wire protocols upstream's clients use: the AI SDK UI message stream, the
+AI SDK data stream with assistant-ui's extensions, and the assistant-transport SSE format. A backend that serves
+assistant-ui over these needs no change. A real AI SDK 7 `streamText` server over a mock model is exercised end to end
+by `crates/ai-ui-http/tests/interop_ai_sdk.rs`: reasoning, a server tool call, a second step, and a follow-up turn
+that replays the tool call. Not covered: other backends, authentication and retries. Details are in
+[Streaming and backends](03-streaming-and-backends.md).
+
+## Migration checklist
+
+1. Pick the runtime: `LocalThreadRuntime` with a `ChatModelAdapter` (for example `ai-ui-data-stream` against your AI
+   SDK endpoint), or `ExternalStoreRuntime` if your app owns the messages.
+2. Replace hook calls with a `ThreadView` over that runtime, and call its actions where you called the hook's.
+3. Spawn the futures the runtime returns on your executor.
+4. Convert message storage, if any. The JSON shape is upstream's, so exported threads import without a mapping.
+5. Re-create tools as `Tool` values with `execute`, or mark them `requires_approval`. Replace custom tool
+   components with a presenter, or accept the generic disclosure.
+6. Replace anything that used attachments, dictation or assistant-transport-as-runtime. These are the gaps above.
+7. For a thread list, implement `ThreadListAdapter` and supply the `Spawner`.
+8. Check wasm if you target the web: `cargo check --target wasm32-unknown-unknown -p <crate>`.
+
+## Licence of the toolkit
+
+The Slint crates need a Slint licence of your choice; the runtime crates do not depend on Slint. See
+[Building a UI with Slint](04-ui-slint.md) and [FAQ](10-faq.md).
+
+Next: [Contributing and testing](09-contributing.md), or the [FAQ](10-faq.md) for short answers.
+
+---
+
+# docs/guide/09-contributing.md
+
+---
+title: Contributing and testing
+description: Repository layout, prerequisites, the gate, tests, the benchmark method, and the conventions for code, docs and licences.
+order: 9
+section: Reference
+---
+
+# Contributing and testing
+
+**What this page gives you.** This page covers the repository layout, prerequisites, the gate (`scripts/gate.sh`), the tests, the benchmark and A/B method, how to add a crate, and the documentation and licence conventions.
+
+Read [CONTRIBUTING.md](../../CONTRIBUTING.md) and [AGENTS.md](../../AGENTS.md) first. This page expands them.
+Behaviour follows upstream assistant-ui, and gaps are listed in [STATUS](../STATUS.md) rather than implied.
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `crates/` | Ten crates: `ai-ui-core`, `-stream`, `-sdk-stream`, `-data-stream`, `-http`, `-state`, `-markdown`, `-clipboard`, and the Slint crates `ai-ui-markdown-slint` and `ai-ui-slint` |
+| `examples/thread` | The demo app and the host of the Slint components; also the web demo and the `--bench` harness |
+| `benchmarks/` | `react-baseline`, `ai-sdk-stream` (AI SDK oracle), `upstream-look`, `results` (scripts behind `docs/results.json`), `performance-2026-11-10` (raw samples) |
+| `docs/` | Reference documents, the guide in `docs/guide/`, and `results.json` |
+| `scripts/` | `gate.sh`, `ab-bench.sh`, `build-web-demo.sh`, `results.py`, `check-guide.py` |
+| `patches/` | The carried femtovg patch, described in `patches/README.md` |
+
+Ownership by crate is in AGENTS.md: the core stays free of UI, I/O, ambient clocks and randomness; `ai-ui-sdk-stream`
+is a separate strict reducer that you should not casually merge with the compatibility-oriented decoder in
+`ai-ui-stream`; application-specific caching and paging belong in the host, not the components.
+
+## Prerequisites
+
+- **Rust.** The workspace `rust-version` is 1.85. A few crates need more, because their locked dependencies do:
+  1.86 for `ai-ui-clipboard`, 1.88 for `ai-ui-markdown`, 1.92 for `ai-ui-slint` and `ai-ui-markdown-slint`. Do not
+  raise a version to make a convenience API compile.
+- **fontconfig headers** for the Slint crates: `libfontconfig1-dev` on Debian and Ubuntu. If `pkg-config` cannot find
+  them, point `PKG_CONFIG_PATH` at the directory holding `fontconfig.pc`. Without the headers, build only the
+  toolkit-independent crates: `-p ai-ui-core -p ai-ui-stream -p ai-ui-data-stream -p ai-ui-http -p ai-ui-state
+  -p ai-ui-markdown`.
+- **wasm.** `rustup target add wasm32-unknown-unknown`. Browser tests and the web demo need `wasm-bindgen` 0.2.129,
+  the version in `Cargo.lock`; set `WASM_BINDGEN=/path/to/wasm-bindgen` if it is not on `PATH`.
+- **Node** for the AI SDK interop check (`benchmarks/ai-sdk-stream`) and the React baseline.
+- **Chromium** for the browser tests: set `AI_UI_PLAYWRIGHT_MODULE` and, optionally, `AI_UI_BROWSER_EXECUTABLE`.
+
+## The gate
+
+`scripts/gate.sh` runs the same checks CI runs, in this order:
+
+1. `cargo fmt --all --check`
+2. `cargo clippy --locked ... --all-targets -- -D warnings`
+3. `cargo doc --locked --no-deps` on the runtime crates, with `RUSTDOCFLAGS="-D warnings"`
+4. The AI SDK interop check: `npm ci --ignore-scripts` and `npm run verify` in `benchmarks/ai-sdk-stream`, then
+   `AI_UI_REQUIRE_INTEROP=1` so a skipped interop test fails
+5. `cargo build --locked --target wasm32-unknown-unknown` for the non-Slint crates
+6. `cargo test --locked`
+
+`scripts/gate.sh --quick` limits the scope to the runtime crates and skips the interop and wasm steps; it needs no
+fontconfig headers or Node. Run the full gate before you propose a change that touches the Slint crates, wasm or
+a wire protocol.
+
+## Tests
+
+- **Ported behaviour.** Derive tests from upstream's for each module you port, and add a test for every behaviour
+  change.
+- **Headless Slint window tests.** The Slint crates test components in offscreen windows
+  (`crates/ai-ui-slint/tests/`, for example `action_bar.rs`, `composer_keys.rs`, `paged_text.rs`). They need no
+  display. Render behaviour changes in an offscreen test and look at the image. The software renderer draws styled
+  text as plain characters, so it does not establish Markdown styling fidelity; check that in a real window with
+  `--features gpu-window`.
+- **Browser tests.** `crates/ai-ui-clipboard/tests/browser` and `crates/ai-ui-http/tests/browser` run headless Chromium
+  through `run.py` against a wasm build.
+- **Interop.** `crates/ai-ui-http/tests/interop_ai_sdk.rs` runs against a real AI SDK 7 server over a mock model.
+- **Debug builds are not for timing.** They include repository invariant walks.
+- **Test status (2026-11-11, origin/main c2beb60).** Three consecutive full workspace runs (`cargo test --workspace --offline --release`): 334 passed, 0 failed, 7 ignored each time, no flaky tests observed. The ignored tests are 5 perf benchmarks, 1 example test and 1 doc test.
+
+## Benchmark method
+
+A change that claims to be faster must be measured, and the measurement must be reproducible:
+
+- Use release builds, the same toolchain, workload and profile for both revisions.
+- Warm up, then alternate the two builds (A, B, A, B...) with `scripts/ab-bench.sh BASE_REV NEW_REV [PAIRS]`. Do not
+  compile or run other benchmarks at the same time.
+- Report medians and ranges, keep the raw samples, and separate decoding, snapshots, projection, layout and paint, and
+  whole-process CPU. A faster parser is not a frame measurement.
+- The development machine is shared and busy (load 4-25 in recorded runs). Absolute numbers move; ratios from
+  interleaved pairs are what count. Say so in the write-up.
+- **Rule: results are published only if they were measured and can be reproduced.** Put the command and the raw files
+  in the repository, record rejected experiments next to accepted ones in [PERFORMANCE](../PERFORMANCE.md), and add
+  comparisons against upstream to `docs/results.json`. `python3 scripts/results.py render` rewrites the tables in
+  RESULTS.md and floors every ratio to one decimal; `check` fails if the page and the JSON disagree.
+- Do not add machine-specific compiler flags, `unsafe` code or dependencies without evidence that the bottleneck
+  warrants them.
+
+## Adding a crate or a feature
+
+1. A new crate goes in `crates/<name>` (the workspace takes `crates/*`). Inherit `edition`, `license` and
+   `rust-version` from the workspace, and give it a one-line `description`. Mark it `publish = false` if it depends on
+   Slint.
+2. Decide whether it must build for wasm. If so, add it to `RUNTIME` and `WASM` in `scripts/gate.sh` and to the CI
+   package set, and keep it free of threads, clocks and file I/O.
+3. If its dependencies need a newer Rust than 1.85, declare that in the crate's `rust-version`, and expect CI to check
+   it with that exact toolchain.
+4. Port the matching upstream tests. Record anything left out in STATUS.
+5. Update the crate table in [Crate reference](06-crates.md), and [Coming from assistant-ui](08-from-assistant-ui.md)
+   if it changes parity.
+6. For a runtime feature that is hot, check the contracts in AGENTS.md: the bounded change journal, in-place updates
+   only when a snapshot is uniquely held, and the 64-read yield in the stream scheduler.
+
+## Documentation conventions
+
+Every guide page is plain Markdown with front matter: `title`, `description` (one sentence), `order` (the number in the
+file name) and `section` (Start, Build or Reference). The rules in the [guide index](README.md) apply:
+
+- Performance numbers come only from `docs/RESULTS.md` or `docs/results.json`, with their conditions. Never mix a
+  Rust time before Markdown formatting with a React fully rendered time.
+- Compare only with upstream assistant-ui. State limits. No hype words, no emoji.
+- Code must match the APIs in this repository. A snippet not compiled by tests is fenced as `rust,ignore`.
+- Run `python3 scripts/check-guide.py` before you commit. It checks front matter, that the order matches the file
+  name, and that every relative link resolves.
+
+## Licensing
+
+The project's own code is MIT (`LICENSE`). Portions are ported from assistant-ui (MIT, AgentbaseAI Inc.); keep the
+notice in `NOTICE`, and mark new files that derive from upstream as ported from it. Bundled fonts, icons and
+adapted code (Inter and IBM Plex Mono under the SIL Open Font License, Lucide icons under ISC, one file adapted from
+the Vercel AI SDK under Apache-2.0) are listed in `THIRD_PARTY.md` with their licences beside the files. Add an entry
+there when you bring in third-party material. Slint is GPL-3.0, royalty-free with an attribution badge, or commercial;
+only the Slint crates and the example depend on it.
+
+## CI policy
+
+The gate is what counts, and it runs locally or on self-hosted machines. The project does not depend on paid, hosted
+CI runners. `.github/workflows/ci.yml` mirrors the gate for whoever runs it, and PERFORMANCE records that a hosted
+run on 2026-11-10 failed before any step started, which is why local results are what a change is judged on.
+Report what you ran (the commands and the test counts) in your pull request.
+
+Next: the [FAQ](10-faq.md), or [STATUS](../STATUS.md) for what is ported and what is not.
+
+---
+
+# docs/guide/10-faq.md
+
+---
+title: FAQ
+description: Short answers to the questions people ask first about ai-ui, the Rust port of assistant-ui.
+order: 10
+section: Reference
+---
+
+# FAQ
+
+**What this page gives you.** This page gives short answers to the questions people ask first, each with a pointer to the page or file that holds the detail.
+
+## Is it production ready?
+
+No. The repository describes itself as early (0.1). The runtime, the wire-protocol decoders and the Slint
+thread are tested, and the gate (formatting, Clippy, documentation, tests, wasm builds, AI SDK interop) passes
+locally. But it is a young port with listed gaps (see "What is not supported yet"), Markdown styling in a real GPU
+window is marked unverified in [STATUS](../STATUS.md), and nothing is released. Evaluate it against your own needs
+before you depend on it.
+
+## Why Rust?
+
+So that the same chat runtime can run in a native app and in WebAssembly, without a JavaScript engine in the
+native case, and with predictable cost per streamed update. The core is free of UI, I/O, clocks and randomness, so
+it compiles for `wasm32-unknown-unknown`. Where this shows up in speed is described in [Performance](07-performance.md).
+
+## Why Slint?
+
+Slint is the toolkit the bundled UI uses: it runs on native desktops and in the browser, and its software renderer
+makes headless tests possible. It is a choice for the UI crates only. The runtime crates (`ai-ui-core`, `-stream`,
+`-data-stream`, `-http`, `-state`, `-markdown`, `-clipboard`) do not depend on Slint.
+
+## Does it work with my backend or the AI SDK?
+
+If your backend already serves assistant-ui, yes without changes: the crates read the AI SDK UI message stream, the AI
+SDK data stream with assistant-ui's extensions, and the assistant-transport SSE format. The integration test runs a
+real AI SDK 7 `streamText` server over a mock model, covering reasoning, a server tool call, a second step and a
+follow-up turn. Other backends, authentication and retries are not covered by that test. See
+[Streaming and backends](03-streaming-and-backends.md).
+
+## Can I use it on the web, and how big is it?
+
+Yes. `examples/thread` builds for `wasm32-unknown-unknown` (`scripts/build-web-demo.sh`) and runs on a canvas with
+Slint's femtovg renderer on WebGL. Browser `fetch` and the clipboard are supported. Limits: no Markdown worker threads
+(Markdown is formatted inline on the UI thread), the demo runs only the built-in demo model, and small text,
+especially code, can look softer than DOM text on 1x displays, and a fractional canvas box softens text in Firefox
+unless the page uses the bundled `pixel-snap.js`. The guide does not state a size for the bundle, because no size is recorded in
+the repository's reference documents. Build it and measure `dist-web/`. See [Running on the web](05-web.md).
+
+## How does it compare with assistant-ui in speed, and what is the catch?
+
+On the recorded workloads, Rust opened a 1,000-message thread, Markdown formatted and painted, in 105 ms against
+2.94 s for React (27.9x), used 17.2 s of CPU against 73.3 s for 60 s of streaming (4.2x), and 30 MiB of memory
+against 1481 MiB RSS or 850 MiB PSS. Those are medians of 5 interleaved pairs on 2026-11-11; across all four runs that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU ([RUNS](../RUNS.md)).
+
+The catch: the comparison is against upstream's thread with plain CSS in headless Chromium on a shared, busy machine;
+the Rust side was offscreen with software raster; it was one machine; no GPU window was compared; and the 2026-11-10
+numbers had to be corrected. Read "How to read these numbers" in [Performance](07-performance.md).
+
+## Is it on crates.io?
+
+Yes, all ten library crates, version 0.1: the eight toolkit-independent ones (`ai-ui-core`, `ai-ui-stream`,
+`ai-ui-data-stream`, `ai-ui-sdk-stream`, `ai-ui-http`, `ai-ui-state`, `ai-ui-markdown`, `ai-ui-clipboard`) and the two
+Slint crates (`ai-ui-slint`, `ai-ui-markdown-slint`). With Slint's FemtoVG-WGPU renderer, add the one-line femtovg patch
+from the README until a Slint release includes the fix. The example app is not published.
+
+## Which licence?
+
+The project's own code is MIT, with portions ported from assistant-ui (MIT). Slint, used by the UI crates, is
+available under GPL-3.0, a royalty-free licence that requires an attribution badge, or a commercial licence. An app
+using the Slint crates must comply with the one it picks. Details are in `THIRD_PARTY.md` and `NOTICE`.
+
+## Can I use my own UI toolkit with the runtime crates?
+
+Yes. `ai-ui-core` and `ai-ui-state` do not depend on a toolkit. `ThreadView` projects any `ThreadRuntime` into plain
+data and actions; a UI subscribes to it and updates its widgets. The Slint crates are one consumer. See
+[Coming from assistant-ui](08-from-assistant-ui.md) for how `ThreadView` replaces React hooks.
+
+## How do branches, edit and regenerate work?
+
+As in upstream. `MessageRepository` is a tree of messages with a selected path. Editing a user message creates a
+sibling branch; regenerating an assistant message does the same. The branch picker shows the current branch number and
+count (`ThreadView` exposes both) and selects between siblings. Thread export and import use upstream's JSON shape.
+
+## How do I stream tool calls?
+
+Tool calls arrive as parts of the streamed assistant message, with their arguments filled in incrementally (partial
+JSON is repaired as it grows). A `Tool` with `execute` runs in your app after each model step and its result feeds the
+next step, up to `maxSteps`. A tool with `requires_approval` pauses the run until you call
+`respond_to_tool_approval`. Tools run sequentially. A tool executed by the server arrives already resolved in the
+stream. See [Concepts](02-concepts.md).
+
+## What is not supported yet?
+
+Assistant-transport as a runtime (the format is decoded), a concrete HTTP remote thread-list adapter, LangGraph and
+other framework adapters, custom per-tool components (generative UI), attachment, speech, dictation, suggestion and
+history adapters, the message queue, and composer attachments and quotes. The full list is in
+[Coming from assistant-ui](08-from-assistant-ui.md) and [STATUS](../STATUS.md).
+
+## How do I reproduce the benchmarks?
+
+Build `ai-ui-example-thread` in release, build `benchmarks/react-baseline` with `npm ci --ignore-scripts && npm run
+build`, set `PLAYWRIGHT` and `CHROME`, then run `./compare.sh 1000 9 5` from that directory. Raw per-run files and
+the summary scripts are described in [Performance](07-performance.md#reproduce-it-yourself). `python3
+scripts/results.py check` confirms that [RESULTS](../RESULTS.md) matches `docs/results.json`.
+
+## Do numbers in this guide come from somewhere I can check?
+
+Yes. Every figure is copied from `docs/RESULTS.md` or `docs/results.json` with its conditions. If a figure is not
+there, the guide does not state it, which is why there is no bundle size above.
+
+## How do I contribute?
+
+Run `scripts/gate.sh`, port tests from upstream for behaviour changes, and publish results only when they are measured
+and reproducible. See [Contributing and testing](09-contributing.md).
+
+## Who maintains it?
+
+The repository is under the GitHub account `iyiolacak`; the licence names "The assistant-ui Rust port contributors".
+It is not affiliated with the assistant-ui or Vercel AI SDK projects. `SECURITY.md` says the private security contact
+will be set when the repository is published.
+
+Next: [Why ai-ui](00-why-ai-ui.md) for the summary, or [Getting started](01-getting-started.md) to try it.
+
+---
+
+# skills/ai-ui/SKILL.md
+
+---
+name: ai-ui
+description: ai-ui is a Rust port of assistant-ui (crates.io, version 0.1): a chat runtime with branching threads, tools and approvals, decoders for the AI SDK UI message stream and data stream, bounded streaming Markdown, and an optional Slint chat UI, for native and WebAssembly apps. Use this skill when a user wants to add a chat runtime, AI SDK streaming, Markdown for streamed replies or a Slint chat UI to a Rust app, connect a Vercel AI SDK backend from Rust, port an assistant-ui React app to Rust, or debug the ai-ui-* crates. Triggers - ai-ui, assistant-ui in Rust, Slint chat UI, AI SDK stream in Rust, Vercel AI SDK backend from Rust, ai-ui-core, ThreadView.
+---
+
+# ai-ui
+
+ai-ui is a Rust port of [assistant-ui](https://github.com/assistant-ui/assistant-ui). Ten library crates, all 0.1 on crates.io, plus `examples/thread`, a complete Slint app. It is early software and not affiliated with the assistant-ui or Vercel AI SDK projects.
+
+Do not guess APIs. Read the reference files linked at the end, and the guides they point to, before writing code.
+
+## Pick a mode
+
+Choose from the user's request.
+
+**Do the work.** The user wants ai-ui added, wired or fixed.
+1. Inspect the project (Step 1) and report what you found and which crates you plan to add.
+2. If the user asked to confirm first, stop and wait. Otherwise continue.
+3. Implement in small steps. Prefer code copied from the guides and `examples/thread` over new code.
+4. Verify (see the checklist) and report.
+
+**Discuss or plan only.** The user asks whether it fits, what it would take, or for a plan. Make no file edits and run no `cargo add`. Read the project, then cover: fit, which crates, how it plugs into their executor and UI, the Slint and licence choices, known limits, and a numbered step plan. Wait for a go-ahead.
+
+If the request is unclear, treat it as discuss mode and ask.
+
+## Step 1: inspect the project
+
+Report these before editing anything:
+- Is it a Rust crate or a workspace? Which edition and Rust version (`rustc --version`, `rust-version` in Cargo.toml)?
+- Which async runtime drives futures: Tokio, the Slint event loop, `wasm-bindgen-futures`, or none?
+- Which UI toolkit, if any? Is Slint already used, and at which version?
+- Does it target `wasm32-unknown-unknown`?
+- Is there an AI SDK (Vercel) backend endpoint? What URL, and how does it authenticate?
+- Does the project need a system prompt, tools or approvals?
+
+## Pick crates
+
+Add only what is needed, with `cargo add`.
+
+| Need | Crates |
+|---|---|
+| Chat runtime, messages, branches, tools, no UI | `ai-ui-core` (always) |
+| Talk to an AI SDK backend | `ai-ui-data-stream` + `ai-ui-http` |
+| State and actions for any UI toolkit (`ThreadView`) | `ai-ui-state` |
+| Markdown for streamed replies in your own renderer | `ai-ui-markdown` |
+| Result-aware copy to the clipboard | `ai-ui-clipboard` |
+| The ready-made Slint chat UI | `ai-ui-slint` (build-dependency) + `ai-ui-markdown-slint` + `ai-ui-state` |
+| Custom wire protocol work, assistant-transport SSE | `ai-ui-stream` |
+| Strict AI SDK 7 UI message stream reducer, standalone | `ai-ui-sdk-stream` |
+
+Most apps need `ai-ui-core`, `ai-ui-state`, `ai-ui-data-stream` and `ai-ui-http`. Details per crate: [reference/crates.md](reference/crates.md).
+
+## Hard rules
+
+**Executor.** The runtime has no executor of its own. Runtime methods do their synchronous work at once and return a future (`RunFuture`) that you must spawn. Drive it with what the project already uses: `slint::spawn_local`, a Tokio `LocalSet`, or `wasm-bindgen-futures`. Use `futures_executor::block_on` only in tests and scripts. If the project has no executor and no UI, say so and ask which to use. See [reference/runtime.md](reference/runtime.md).
+
+**Single thread.** Runtimes are `Rc`-based and single-threaded by design. Never wrap them in `Arc` or `Mutex`, and never move them to a multi-threaded executor. Messages are `Arc` snapshots, so adapters may move them to worker threads.
+
+**Rust versions.** Minimum Rust 1.85 for the runtime crates. `ai-ui-clipboard` needs 1.86, `ai-ui-markdown` 1.88, `ai-ui-slint` and `ai-ui-markdown-slint` 1.92. Do not lower these. If the project's toolchain is older, tell the user.
+
+**Slint.** Pin `slint` and `slint-build` to `=1.18.1`, with the feature `compat-1-18` on `slint`. `ai-ui-slint` is a build-dependency. In `build.rs`, register `ai_ui_slint::ui_dir()` as the library path named `assistant`, then import from `@assistant/lib.slint`. Full steps: [reference/slint-ui.md](reference/slint-ui.md).
+
+**femtovg patch.** Until a Slint release uses femtovg 0.28, add this to the workspace root `Cargo.toml`. Without it a streaming chat uses about twice the CPU with Slint's FemtoVG-WGPU renderer. Slint's software and Skia renderers are not affected.
+
+```toml
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
+
+**Linux.** Slint needs the fontconfig development package: `libfontconfig1-dev` on Debian and Ubuntu, `fontconfig-devel` on Fedora. The runtime and state crates do not need it.
+
+**Licences.** The ai-ui crates are MIT, except `ai-ui-sdk-stream`, which is "MIT AND Apache-2.0". Slint is GPL-3.0, or royalty-free with an attribution badge, or commercial. Ask the user which Slint licence applies before shipping anything that uses the Slint crates. Do not choose for them. See [THIRD_PARTY.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/THIRD_PARTY.md).
+
+**AI SDK backend.** The client posts model messages. The server passes `body.messages` straight to `streamText` (no `convertToModelMessages`) and returns `result.toUIMessageStreamResponse()`. The system prompt is a top-level `system` field, not a system-role message, because AI SDK 7 rejects system-role messages inside `messages` by default. Proxies must not buffer the response. See [reference/backend.md](reference/backend.md).
+
+**Cumulative results.** A `ChatModelAdapter` yields the whole reply so far in each item, not a delta. A hand-written adapter must mark streaming text parts `PartStatus::Running` or the view will not pace them. The wire decoders do this for you.
+
+**wasm32.** Use `FetchClient` instead of `NativeClient`; pick with `cfg(target_arch = "wasm32")`. The Slint crates reach the browser only through an app built like `examples/thread`. See [reference/web.md](reference/web.md).
+
+## Verification checklist
+
+Run each, in the user's project:
+1. `cargo build` (and `cargo check --target wasm32-unknown-unknown` for the crates that should build there, if the project targets the web).
+2. `cargo clippy -- -D warnings`
+3. `cargo test`
+4. Run the app or a small example that sends one message and shows the streamed reply. Without a live backend, use a canned `ChatModelAdapter` or the loopback client in [reference/backend.md](reference/backend.md).
+
+Report three lists: what you changed, what you ran (with results), and what you could not verify (for example a live backend, a GPU window, a licence decision).
+
+## Known limits
+
+Say these up front when they matter to the user's plan.
+- Version 0.1, early. The repository does not call it production ready.
+- Not yet ported: assistant-transport as a runtime (the wire format is decoded), a concrete HTTP remote thread-list adapter, LangGraph and other framework adapters.
+- Not yet ported: custom per-tool components (generative UI). Tools render through a generic disclosure; an app can set a presenter per tool with `ThreadView::set_tool_presenter`.
+- Not yet ported: attachment, feedback, speech, dictation, suggestion and history adapters, the message queue, composer attachments and quotes.
+- Tools run sequentially.
+- The Slint crates need the femtovg patch above. Markdown styling fidelity in a real GPU window is marked unverified in [STATUS](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md).
+- The interop test covers an AI SDK 7 `streamText` server only. Other backends, authentication and retries are not covered.
+- In the browser build of the example, there are no Markdown worker threads and the example runs only its demo model; use `FetchClient` in your own app.
+- Performance figures in the README are measured on one machine. Do not quote them as guarantees. See the README and `docs/RESULTS.md`.
+
+## Where to look
+
+Skill files:
+- [reference/crates.md](reference/crates.md): the ten crates, key types, MSRV, wasm32.
+- [reference/runtime.md](reference/runtime.md): first runtime, streaming, `ThreadView`, executors.
+- [reference/backend.md](reference/backend.md): AI SDK backend, request and wire formats, errors, cancellation.
+- [reference/slint-ui.md](reference/slint-ui.md): the Slint thread UI in your app.
+- [reference/web.md](reference/web.md): WebAssembly notes.
+- [reference/troubleshooting.md](reference/troubleshooting.md): common failures.
+
+Online guides (repository `https://github.com/iyiolacak/ai-ui-rewrite-rust`):
+- [README](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md)
+- [Getting started](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/01-getting-started.md)
+- [Concepts](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/02-concepts.md)
+- [Streaming and backends](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/03-streaming-and-backends.md)
+- [Building a UI with Slint](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/04-ui-slint.md)
+- [Running on the web](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/05-web.md)
+- [Crate reference](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/06-crates.md)
+- [Coming from assistant-ui](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/08-from-assistant-ui.md)
+- [FAQ](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/10-faq.md)
+- [STATUS](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/STATUS.md), [PROTOCOL](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/PROTOCOL.md), [WEB](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/WEB.md), [patches/README.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/patches/README.md)
+- A complete app: [examples/thread](https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/examples/thread)
+
+API reference on docs.rs: [ai-ui-core](https://docs.rs/ai-ui-core), [ai-ui-stream](https://docs.rs/ai-ui-stream), [ai-ui-data-stream](https://docs.rs/ai-ui-data-stream), [ai-ui-sdk-stream](https://docs.rs/ai-ui-sdk-stream), [ai-ui-http](https://docs.rs/ai-ui-http), [ai-ui-state](https://docs.rs/ai-ui-state), [ai-ui-markdown](https://docs.rs/ai-ui-markdown), [ai-ui-clipboard](https://docs.rs/ai-ui-clipboard), [ai-ui-markdown-slint](https://docs.rs/ai-ui-markdown-slint), [ai-ui-slint](https://docs.rs/ai-ui-slint). Slint: [slint.dev](https://slint.dev). AI SDK: [ai-sdk.dev](https://ai-sdk.dev).

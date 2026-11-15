@@ -1,0 +1,40 @@
+# ai-ui-rewrite-rust
+
+> A Rust port of assistant-ui: chat runtime, AI SDK streaming, incremental Markdown and an optional Slint chat UI, as ten crates on crates.io.
+
+Coding agents: read the skill below first, then the guides. The runtime has no executor of its own and uses single-threaded Rc-based runtimes. Minimum Rust is 1.85 (ai-ui-markdown 1.88, Slint crates 1.92).
+
+## Docs
+
+- [README](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/README.md): Overview, install and licences.
+- [Why ai-ui](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/00-why-ai-ui.md): What the port is for and what it measured against assistant-ui.
+- [Getting started](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/01-getting-started.md): Add the crates, run a first conversation.
+- [Concepts](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/02-concepts.md): Runtimes, messages, branching, composers, tools and thread lists.
+- [Streaming and backends](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/03-streaming-and-backends.md): Wire formats, decoders and HTTP backends.
+- [Slint UI](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/04-ui-slint.md): The controlled Slint components and the thread example.
+- [Web](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/05-web.md): Running in the browser via WebAssembly.
+- [Crates](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/06-crates.md): The ten published crates and what each owns.
+- [Performance](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/07-performance.md): Measured results, method and limits.
+- [From assistant-ui](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/08-from-assistant-ui.md): Mapping the React concepts to the Rust crates.
+- [Contributing](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/09-contributing.md): Build, test and the verification gate.
+- [FAQ](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/10-faq.md): Common questions and known issues.
+
+## Skill
+
+- [SKILL.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md): The entry point: how to add ai-ui to a project.
+- [reference/backend.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/reference/backend.md): Reference file for the skill.
+- [reference/crates.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/reference/crates.md): Reference file for the skill.
+- [reference/runtime.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/reference/runtime.md): Reference file for the skill.
+- [reference/slint-ui.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/reference/slint-ui.md): Reference file for the skill.
+- [reference/troubleshooting.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/reference/troubleshooting.md): Reference file for the skill.
+- [reference/web.md](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/reference/web.md): Reference file for the skill.
+- [prompts/discuss.txt](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/prompts/discuss.txt): Copy-paste prompt for a coding agent.
+- [prompts/do-it.txt](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/prompts/do-it.txt): Copy-paste prompt for a coding agent.
+- [Install script](https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/install.sh): Downloads the skill into .claude/skills/ai-ui.
+
+## Optional
+
+- [Agents page](https://iyiolacak.github.io/ai-ui-rewrite-rust/agents/): Copy-paste prompts and install steps for coding agents.
+- [Full docs in one file](https://iyiolacak.github.io/ai-ui-rewrite-rust/llms-full.txt): README, all guides and SKILL.md concatenated.
+- [Source repository](https://github.com/iyiolacak/ai-ui-rewrite-rust): Workspace, examples and licence.
+- [docs.rs](https://docs.rs/ai-ui-core): API documentation.

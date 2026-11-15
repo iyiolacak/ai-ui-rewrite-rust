@@ -1,0 +1,5 @@
+Add ai-ui (a Rust port of assistant-ui: chat runtime, AI SDK streaming, Markdown, an optional Slint chat UI) to this project.
+
+1. Get the skill: download https://iyiolacak.github.io/ai-ui-rewrite-rust/skill/ai-ui/SKILL.md and every reference file it links into .claude/skills/ai-ui/, keeping the same relative paths. If you can't write there, read them from those URLs instead.
+2. Follow the skill. Inspect this project first, then tell me what you found and which crates you plan to add before changing anything.
+3. Then do the work: add the crates, wire them up, and finish with cargo build, cargo clippy -- -D warnings, cargo test and one message actually sent and streamed back. Report what you changed, what you ran, and anything you couldn't verify.

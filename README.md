@@ -3,6 +3,13 @@
 A Rust port of [assistant-ui](https://github.com/assistant-ui/assistant-ui): chat runtime, AI SDK and assistant-stream
 wire decoders, and a Slint thread UI, for native and WebAssembly apps.
 
+<p align="center">
+  <a href="docs/media/demo.mp4">
+    <img src="docs/media/demo-poster.png" alt="Demo video: scrubbing a 10,004-message thread in the WebAssembly build" width="720">
+  </a>
+  <br><sub>25 s demo: a 10,004-message thread in the WebAssembly build. <a href="docs/media/demo.mp4">Play the video</a>.</sub>
+</p>
+
 - Runtime crates (`ai-ui-core`, `-stream`, `-data-stream`, `-http`, `-state`) have no UI dependency; the gate builds
   them for `wasm32-unknown-unknown`.
 - Follows upstream module for module at one pinned commit, so a backend that serves assistant-ui clients needs no change.

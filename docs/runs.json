@@ -3,9 +3,9 @@
  "generated_from": [
   "benchmarks/results/like-for-like/raw",
   "benchmarks/results/like-for-like-run2",
-  "~/.cache/ai-ui-rewrite-rust/results/perf-profile",
-  "~/.cache/ai-ui-rewrite-rust/results/perf-balanced",
-  "~/.cache/ai-ui-rewrite-rust/results/haiku-tests",
+  "benchmarks/results/like-for-like-run3",
+  "benchmarks/results/like-for-like-run4",
+  "benchmarks/results/web-and-tests",
   "docs/results.json (earlier long-fixture and GPU rows, copied as given)"
  ],
  "generated_by": "benchmarks/results/make-runs-json.py",
@@ -726,7 +726,7 @@
     2459
    ],
    "sources": [
-    "~/.cache/ai-ui-rewrite-rust/results/perf-profile"
+    "benchmarks/results/like-for-like-run3"
    ],
    "measures": {
     "open_like_for_like": {
@@ -1123,7 +1123,7 @@
     3923
    ],
    "sources": [
-    "~/.cache/ai-ui-rewrite-rust/results/perf-balanced"
+    "benchmarks/results/like-for-like-run4"
    ],
    "measures": {
     "open_like_for_like": {
@@ -2031,7 +2031,7 @@
   },
   "measurements": {
    "job1": {
-    "source": "~/.cache/ai-ui-rewrite-rust/results/haiku-tests/job1-measure-web.json",
+    "source": "benchmarks/results/web-and-tests/job1-measure-web.json",
     "history_messages": 10000,
     "load_1min_before": 3.09,
     "load_1min_all": [
@@ -2107,7 +2107,7 @@
     "note": "fps for the empty thread was recorded as 0 (harness did not drive frames then); use job4 for fps. One 404 console error (favicon-type resource) on the first empty run in both files."
    },
    "job4_fps_fixed": {
-    "source": "~/.cache/ai-ui-rewrite-rust/results/haiku-tests/job4-measure-web-fixed.json",
+    "source": "benchmarks/results/web-and-tests/job4-measure-web-fixed.json",
     "history_messages": 10000,
     "load_1min_before": 3.25,
     "load_1min_all": [
@@ -2188,7 +2188,7 @@
  "tests": {
   "command": "cargo test --workspace --offline --release, 3 sequential runs, all exit 0",
   "date": "2026-11-11",
-  "source": "~/.cache/ai-ui-rewrite-rust/results/haiku-tests/job3-summary.txt",
+  "source": "benchmarks/results/web-and-tests/job3-summary.txt",
   "runs": [
    {
     "run": 1,

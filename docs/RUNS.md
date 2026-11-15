@@ -11,11 +11,17 @@ python3 benchmarks/results/make-runs-json.py          # parse the raw files, wri
 python3 benchmarks/results/make-runs-json.py --check  # exit 1 if docs/runs.json is out of date
 ```
 
-Stdlib only. Raw files: runs 1 and 2 are in the repository (`benchmarks/results/like-for-like/raw`, `like-for-like-run2`);
-runs 3 and 4, the web measurements and the test logs are under `~/.cache/ai-ui-rewrite-rust/results/` (`perf-profile`, `perf-balanced`,
-`haiku-tests`), so `--check` needs that folder on the machine. Run 4 is included only when its folder is complete (9 `rust-pairN.out`,
-9 `react-pairN.json`, `power-after.txt`, `load.txt`); otherwise the generator prints a note and skips it, and re-running it after the
-folder is complete adds it.
+Stdlib only. Every raw file is in the repository: runs 1 to 4 in `benchmarks/results/like-for-like/raw`, `like-for-like-run2`,
+`like-for-like-run3` and `like-for-like-run4`, the web measurements and test logs in `benchmarks/results/web-and-tests` (home-directory
+paths in the test logs replaced by `~`). Run 4 is included only when its folder is complete (9 `rust-pairN.out`, 9 `react-pairN.json`,
+`power-after.txt` or `power-final.txt`, `load.txt`).
+
+The landing page's numbers are derived from this file by `site/scripts/fill-bench.py` (`--check` fails when they drift): for each
+measure it shows the median of the run least favourable to Rust and the range of the four run medians.
+
+Two kinds of range appear in the docs. Here, and on the landing page, a ratio range is the minimum and maximum of ratios (per run
+median, or per pair). `docs/RESULTS.md` instead gives each side's min-to-max values and divides the extremes (slowest React by
+fastest Rust and the reverse), which is wider.
 
 ## Schema (version 1)
 

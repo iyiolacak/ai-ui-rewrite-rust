@@ -56,7 +56,7 @@ serves assistant-ui clients needs no change.
 Rust is this repository's example app with the software renderer (`--bench-render`); React is upstream assistant-ui
 (`@assistant-ui/react` 0.15.33) in headless Chromium. Same history, same demo reply, 60 s window. Medians of 5
 interleaved pairs, measured 2026-11-11, machine load about 4-6. Ranges are min to max over the 5 runs. A second, independent run (9 pairs, lighter load) is in
-[Performance](07-performance.md#second-run) and [RESULTS](../RESULTS.md).
+[Performance](07-performance.md#second-run) and [RESULTS](../RESULTS.md). Across all four runs of that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU (medians per run; [RUNS](../RUNS.md)).
 
 | Workload | Measure | Rust | React | Ratio (range) | RESULTS row |
 |---|---|---|---|---|---|

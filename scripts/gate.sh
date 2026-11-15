@@ -9,6 +9,9 @@ WASM="-p ai-ui-sdk-stream -p ai-ui-core -p ai-ui-state -p ai-ui-stream -p ai-ui-
 SCOPE="--workspace"
 [ "${1:-}" = "--quick" ] && SCOPE="$RUNTIME"
 
+echo "== benchmark data"  # published numbers must match the raw files (Python stdlib only)
+python3 benchmarks/results/make-runs-json.py --check
+python3 site/scripts/fill-bench.py --check
 echo "== fmt";    cargo fmt --all --check
 echo "== clippy"; cargo clippy --locked $SCOPE --all-targets -- -D warnings
 echo "== docs";   RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps $RUNTIME

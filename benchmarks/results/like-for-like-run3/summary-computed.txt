@@ -1,0 +1,33 @@
+RUST open ms (like for like): 102.8, 82.3, 82.9, 81.6, 81.2, 84.7, 83.4, 83.7, 83.7
+   median 83.40  min 81.20  max 102.80
+REACT open_formatted ms: 1486.0, 1375.0, 1385.0, 1952.0, 1175.0, 1138.0, 2166.0, 1705.0, 1152.0
+   median 1385.00  min 1138.00  max 2166.00
+RUST cpu ms (process, 60s stream): 5270.0, 5190.0, 5130.0, 5070.0, 4040.0, 4270.0, 4260.0, 4260.0, 4250.0
+   median 4270.00  min 4040.00  max 5270.00
+REACT cpu ms (all processes, 60s stream): 63260.0, 62790.0, 63440.0, 64440.0, 59710.0, 59890.0, 58450.0, 59520.0, 59320.0
+   median 59890.00  min 58450.00  max 64440.00
+REACT main-thread ms (stream): 51636.0, 51817.0, 51674.0, 52792.0, 47855.0, 48053.0, 47506.0, 47675.0, 47472.0
+   median 48053.00  min 47472.00  max 52792.00
+RUST rss MiB after open: 26.9, 27.6, 27.1, 27.5, 27.4, 27.0, 27.4, 27.4, 27.2
+   median 27.40  min 26.90  max 27.60
+RUST rss MiB end: 29.8, 30.4, 29.8, 30.3, 30.3, 29.8, 30.2, 30.2, 30.1
+   median 30.20  min 29.80  max 30.40
+REACT rss MiB after open: 1232.4, 1222.6, 1228.8, 1230.8, 1220.8, 1233.7, 1232.2, 1224.1, 1193.7
+   median 1228.80  min 1193.70  max 1233.70
+REACT pss MiB after open: 606.7, 600.7, 605.5, 606.0, 598.1, 609.5, 610.6, 602.9, 581.1
+   median 605.50  min 581.10  max 610.60
+REACT rss MiB end: 1689.9, 1551.1, 1642.9, 1544.9, 1618.3, 1622.5, 1640.1, 1613.8, 1623.7
+   median 1622.50  min 1544.90  max 1689.90
+REACT pss MiB end: 1056.7, 919.6, 1011.4, 914.7, 986.5, 988.2, 1009.1, 984.1, 991.9
+   median 988.20  min 914.70  max 1056.70
+RUST longest iteration ms: 7.4, 7.0, 7.5, 7.5, 5.8, 5.0, 5.3, 5.2, 5.3
+   median 5.84  min 5.00  max 7.52
+REACT longest frame ms: 416.7, 316.7, 299.9, 633.2, 233.4, 233.2, 233.3, 249.9, 233.4
+   median 249.90  min 233.20  max 633.20
+ratios open (React / Rust):
+  median/median raw 16.607 floor 16.6
+  least favourable (React min / Rust max) raw 11.070 floor 11.0
+  most favourable (React max / Rust min) raw 26.675 floor 26.6
+  per-pair (React open_i / Rust open_i): p1 14.46, p2 16.71, p3 16.71, p4 23.92, p5 14.47, p6 13.44, p7 25.97, p8 20.37, p9 13.76
+ratio CPU median/median floor 14.0 (raw 14.026)
+  per-pair CPU ratio: p1 12.00, p2 12.10, p3 12.37, p4 12.71, p5 14.78, p6 14.03, p7 13.72, p8 13.97, p9 13.96

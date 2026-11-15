@@ -1,0 +1,5 @@
+cargo test --workspace --offline --release, 3 sequential runs, all exit 0
+Each run: 334 passed, 0 failed, 7 ignored, 61 test-result lines (incl. 10 doc-test groups).
+Ignored: ai_ui_example_thread 1; perf.rs 1 (unit) + 4 (integration, tests/perf.rs); doc-test ai_ui_data_stream 1.
+No FAILED or panicked lines in any run. Flaky tests: none observed.
+Runs 2 and 3 reused compiled binaries (about 16 s each).

@@ -97,7 +97,7 @@ event and is not compared with React. Machine load about 4-6; ranges are min to 
 Correction. The earlier table headlined "open the thread 0.12 s" for Rust (24x against React's 2.9 s). That Rust figure was the
 time before Markdown was formatted, while React's 2.9 s ends with Markdown rendered, so it was not like for like; the same table
 said "Markdown formatted by 0.53 s" (5.4x). Since then pooled Markdown workers cut formatting from 0.52 s to 0.09-0.11 s, and the
-measured like-for-like ratio is 27.9x. At 10,000 messages React's page survived all 5 runs here (the 2026-11-10 failure was not
+measured like-for-like ratio is 27.9x in this run and 16.6x to 27.9x across the four runs of 2026-11-11 ([RUNS.md](RUNS.md)). At 10,000 messages React's page survived all 5 runs here (the 2026-11-10 failure was not
 reproduced). Ratios are floored by `scripts/results.py` (see [RESULTS.md](RESULTS.md)).
 
 History: 2026-11-10, median of 3 interleaved pairs on a shared machine (load 10-21), raw files not kept; superseded by the table

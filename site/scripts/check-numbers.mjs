@@ -21,7 +21,8 @@ for (const c of data.comparisons) {
   expected.set(`${c.id}.rust`, String(c.rust));
   expected.set(`${c.id}.react`, String(c.react));
   expected.set(`${c.id}.ratio`, ratio(c));
-  expected.set(`${c.id}.ratio-whole`, String(Math.round(c.react / c.rust)));
+  expected.set(`${c.id}.ratio-whole`, String(Math.floor(c.react / c.rust + 1e-9)));
+  expected.set(`${c.id}.range`, `${c.rangeLow.toFixed(1)}× to ${c.rangeHigh.toFixed(1)}×`);
 }
 for (const r of data.web?.rows ?? []) expected.set(`web.${r.id}`, String(r.value));
 const required = [
@@ -30,6 +31,9 @@ const required = [
 ];
 
 const allowed = new Set(raw.replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?/g) ?? []);
+// Numbers in the prose that are facts about the code, not measurements: the wasm32 target name and the
+// 64-revision cap of the change journal (MessageRepository::message_changes_since).
+for (const t of ['32', '64']) allowed.add(t);
 for (const v of expected.values()) for (const t of v.match(/\d+(?:\.\d+)?/g) ?? []) allowed.add(t);
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.wasm': 'application/wasm' };

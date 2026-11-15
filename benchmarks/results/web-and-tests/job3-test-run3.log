@@ -1,0 +1,730 @@
+warning: unused import: `path::Path as FilePath`
+  --> patches/femtovg/src/lib.rs:25:26
+   |
+25 | use std::{cell::RefCell, path::Path as FilePath, rc::Rc};
+   |                          ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `font_scale` is never used
+    --> patches/femtovg/src/lib.rs:2401:8
+     |
+ 362 | / impl<T> Canvas<T>
+ 363 | | where
+ 364 | |     T: Renderer,
+     | |________________- method in this implementation
+...
+2401 |       fn font_scale(&self) -> f32 {
+     |          ^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `femtovg` (lib) generated 2 warnings (run `cargo fix --lib -p femtovg` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 0.45s
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_clipboard-9e76fec7bcfbf582)
+
+running 9 tests
+test native::tests::drop_during_initialization_cancels_before_platform_write ... ok
+test native::tests::admitted_read_completes_after_shutdown_for_the_host_to_fence ... ok
+test native::tests::queue_is_bounded_without_blocking_input ... ok
+test native::tests::unavailable_clipboard_is_retried_on_a_later_request ... ok
+test native::tests::read_returns_exact_text_and_rejects_oversized_or_failed_results ... ok
+test native::tests::read_shares_bounded_queue_and_shutdown_cancels_pending_read ... ok
+test native::tests::shutdown_cancels_queued_write_but_not_the_in_flight_write ... ok
+test native::tests::results_follow_worker_write_and_do_not_touch_system_clipboard ... ok
+test native::tests::unavailability_and_oversize_are_explicit ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_core-0a1d8358d6e68345)
+
+running 37 tests
+test abort::tests::an_already_aborted_signal_resolves_immediately ... ok
+test local::continuation::tests::continues_only_when_every_call_is_answered ... ok
+test local::continuation::tests::external_results_survive_a_stale_snapshot ... ok
+test local::continuation::tests::a_pending_approval_pauses_the_run ... ok
+test local::continuation::tests::human_tool_list_limits_which_calls_hold_the_run ... ok
+test local::continuation::tests::without_open_calls_continuation_appends ... ok
+test abort::tests::abort_wakes_a_waiting_task_and_is_idempotent ... ok
+test local::continuation::tests::continuation_settles_open_calls_in_place_and_appends_new_parts ... ok
+test repository::tests::a_sibling_is_a_new_branch_and_switching_restores_descendants ... ok
+test repository::tests::appending_moves_the_head_along_the_selected_path ... ok
+test repository::tests::appends_a_sibling_from_an_imported_head_with_children ... ok
+test repository::tests::change_cursors_cover_rollover_and_updates_before_a_path_is_materialized ... ok
+test repository::tests::change_cursors_cover_multiple_updates_without_consuming_other_readers ... ok
+test repository::tests::change_cursors_fall_back_when_the_bounded_history_is_exceeded ... ok
+test repository::tests::change_cursors_ignore_unselected_content_but_reset_for_structural_changes ... ok
+test repository::tests::deleting_reattaches_children_to_the_parent ... ok
+test repository::tests::deleting_the_selected_sibling_selects_the_last_remaining_one ... ok
+test repository::tests::errors_name_the_missing_message ... ok
+test repository::tests::export_follows_a_persisted_sibling_when_the_selected_branch_is_optimistic ... ok
+test repository::tests::export_skips_optimistic_messages_and_round_trips ... ok
+test repository::tests::imports_a_message_listed_before_its_parent ... ok
+test repository::tests::keeps_descendants_when_importing_with_an_inner_head ... ok
+test repository::tests::keeps_the_old_content_when_an_update_is_rejected_as_a_cycle ... ok
+test repository::tests::moves_no_child_when_the_replacement_is_a_descendant_of_the_deleted_message ... ok
+test repository::tests::reset_head_prunes_descendants ... ok
+test repository::tests::switching_away_evicts_optimistic_messages_on_the_left_branch ... ok
+test repository::tests::the_cached_path_stays_correct_through_updates_and_moves ... ok
+test repository::tests::the_path_is_cached_until_the_next_change ... ok
+test repository::tests::update_keeps_position_and_replaces_content ... ok
+test smooth::tests::a_burst_is_revealed_gradually_and_faster_than_the_slowest_rate ... ok
+test smooth::tests::a_trickle_is_revealed_at_the_slowest_rate ... ok
+test smooth::tests::finished_parts_show_at_once_and_unrelated_text_starts_over ... ok
+test smooth::tests::growing_text_keeps_the_revealed_prefix_and_respects_char_boundaries ... ok
+test subscribe::tests::dropping_the_guard_unsubscribes_and_reentrant_subscribe_is_safe ... ok
+test types::tests::incomplete_status_carries_error_only_when_present ... ok
+test types::tests::user_message_defaults_missing_metadata_and_attachments ... ok
+test types::tests::upstream_assistant_json_round_trips_with_unmodelled_fields ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/composer.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/composer-41372ac7580fe351)
+
+running 8 tests
+test an_attachment_alone_is_sendable_and_travels_with_the_message ... ok
+test cancelling_an_edit_leaves_the_thread_unchanged ... ok
+test composer_subscribers_hear_draft_and_run_changes ... ok
+test editing_a_user_message_branches_and_ends_the_edit ... ok
+test editing_an_assistant_message_keeps_its_non_text_parts_and_starts_no_run ... ok
+test sending_appends_after_the_last_message_and_clears_the_draft ... ok
+test the_thread_composer_cancels_the_run_in_progress ... ok
+test whitespace_alone_is_not_sendable ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/external_store.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/external_store-103bed91c0d993f0)
+
+running 5 tests
+test branches_switch_locally_and_the_app_is_told ... ok
+test edits_use_on_edit_when_available_and_on_new_otherwise ... ok
+test shows_the_apps_messages_and_keeps_unchanged_ones_identical ... ok
+test the_composer_calls_on_new_with_the_right_parent_and_inserts_nothing ... ok
+test unsupported_actions_are_reported_and_cancel_reaches_the_app ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/local_runtime.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/local_runtime-0145d64213e61eb0)
+
+running 16 tests
+test a_run_stops_at_max_steps_with_tool_calls_pending ... ok
+test a_tool_result_for_an_unknown_call_is_rejected_without_change ... ok
+test a_user_message_starts_a_run_that_completes ... ok
+test an_adapter_failure_is_recorded_on_the_message_and_returned ... ok
+test appending_during_a_run_cancels_it_and_answers_the_new_message ... ok
+test cancelling_before_the_run_is_polled_never_calls_the_model ... ok
+test cancelling_marks_the_message_and_stops_reading_the_stream ... ok
+test cumulative_results_replace_the_step_content_as_they_stream ... ok
+test dropping_the_run_future_ends_the_run ... ok
+test editing_a_user_message_branches_from_its_parent ... ok
+test export_and_import_restore_the_thread ... ok
+test feedback_is_recorded_on_the_assistant_message_only ... ok
+test metadata_lists_append_per_step_and_custom_merges ... ok
+test only_human_tools_hold_a_run_when_listed ... ok
+test regenerating_adds_a_sibling_branch ... ok
+test tool_results_continue_the_run_and_settle_the_call_in_place ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/thread_list.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/thread_list-1fa2e17660346395)
+
+running 6 tests
+test a_new_thread_is_reused_while_empty_and_old_threads_keep_their_messages ... ok
+test archiving_the_open_thread_moves_on_and_delete_can_be_undone ... ok
+test a_title_is_requested_once_after_the_first_answer ... ok
+test rename_is_immediate_and_rolled_back_when_persisting_fails ... ok
+test starts_with_one_empty_thread_that_registers_on_its_first_message ... ok
+test stored_threads_are_listed_and_load_their_history_when_opened ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/tools.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/tools-be76c0a25f155a5e)
+
+running 5 tests
+test a_denied_tool_never_runs_and_the_model_hears_about_it ... ok
+test a_registered_tool_runs_and_its_result_reaches_the_model ... ok
+test cancelling_while_a_tool_runs_stops_it ... ok
+test an_approval_pauses_the_run_until_the_user_decides ... ok
+test definitions_reach_the_model_context ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_data_stream-31a776f4181dee65)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adapter.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/adapter-837ea40768efa34c)
+
+running 8 tests
+test an_http_error_fails_the_run_and_marks_the_message ... ok
+test detects_the_data_stream_protocol_from_the_header ... ok
+test an_explicit_protocol_overrides_detection_and_the_fallback_is_ui_messages ... ok
+test decided_approvals_add_request_and_response_parts_and_denials_are_execution_denied ... ok
+test posts_upstreams_request_body_and_streams_a_ui_message_reply ... ok
+test user_images_files_and_attachments_become_file_parts ... ok
+test unfinished_calls_are_errors_unless_the_last_message_awaits_the_user ... ok
+test settled_tool_calls_become_assistant_and_tool_messages ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_example_thread-e14cbfd0900d047e)
+
+running 20 tests
+test app::tests::bench_large_user_layout ... ignored, manual interleaved layout benchmark
+test chunks::tests::a_replaced_text_starts_over ... ok
+test paging::tests::ordinary_messages_are_not_paged ... ok
+test chunks::tests::a_very_long_line_is_cut_at_a_space ... ok
+test chunks::tests::chunks_rejoin_to_the_text_and_only_the_tail_changes ... ok
+test settings::tests::column_width_follows_the_text_scale_and_old_values_still_load ... ok
+test settings::tests::text_scale_is_clamped_on_load_and_steps_stop_at_the_ends ... ok
+test settings::tests::theme_and_width_indices_match_the_popover_lists ... ok
+test paging::tests::edited_short_text_and_removed_messages_release_cached_sources ... ok
+test paging::tests::navigation_rejects_stale_pages_sources_and_conversations ... ok
+test settings::tests::missing_or_malformed_files_give_defaults_and_bad_fields_are_ignored ... ok
+test titles::tests::long_text_is_cut_at_a_word ... ok
+test settings::tests::settings_round_trip_through_a_file_created_on_demand ... ok
+test paging::tests::replacing_a_message_releases_removed_parts_without_rescanning_other_messages ... ok
+test paging::tests::pages_preserve_every_byte_and_bound_dense_unbroken_and_unicode_text ... ok
+test app::tests::large_user_pages_render_navigate_and_keep_full_source_for_copy_and_edit ... ok
+test app::tests::settings_drive_the_text_scale_global_the_column_width_and_the_keyboard_shortcuts ... ok
+test app::tests::new_thread_returns_focus_to_the_composer ... ok
+test app::tests::selecting_a_thread_returns_focus_to_the_composer ... ok
+test app::tests::escape_in_edit_composer_cancels_and_returns_focus_to_the_composer ... ok
+
+test result: ok. 19 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_http-64a0ad8420d982c5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/interop_ai_sdk.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/interop_ai_sdk-c5f6c716a2c952d0)
+
+running 1 test
+test a_real_ai_sdk_backend_streams_reasoning_a_server_tool_and_text ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/native.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/native-eda30a999c114706)
+
+running 3 tests
+test an_error_status_is_reported ... ok
+test cancelling_stops_a_stream_the_server_keeps_open ... ok
+test streams_an_ai_sdk_response_from_a_real_socket ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_markdown-dd4f59d150ba8c82)
+
+running 31 tests
+test presentation::tests::destinations_require_absolute_credential_free_http ... ok
+test pool::tests::a_key_keeps_newest_wins_on_its_shard ... ok
+test presentation::tests::escaped_text_matches_scalar_encoding_across_unicode_boundaries ... ok
+test coordinator::tests::unexpected_worker_death_is_reported_and_never_silently_retried ... ok
+test pool::tests::limits_apply_to_the_whole_pool ... ok
+test coordinator::tests::streaming_coalesces_latest_and_labels_older_completion ... ok
+test presentation::tests::inline_code_preserves_whitespace_and_backticks ... ok
+test presentation::tests::html_and_unsafe_urls_remain_literal ... ok
+test presentation::tests::inline_styles_close_and_reopen_across_hard_breaks ... ok
+test scheduling::tests::refused_dispatch_can_release_slot_without_losing_a_newer_snapshot ... ok
+test presentation::tests::link_title_does_not_change_visible_link_text ... ok
+test coordinator::tests::reset_and_cancel_reject_old_completions_even_when_ids_are_reused ... ok
+test scheduling::tests::rejected_new_snapshot_invalidates_running_and_preserves_other_keys ... ok
+test scheduling::tests::replacement_is_fair_and_queue_limits_reject_without_stale_publish ... ok
+test presentation::tests::nested_list_quote_table_and_footnote_are_projected_in_order ... ok
+test presentation::tests::standalone_link_preserves_a_styled_run_and_code ... ok
+test scheduling::tests::reset_cancellation_and_foreign_completions_do_not_publish ... ok
+test scheduling::tests::superseded_work_is_discarded_and_only_latest_snapshot_is_dispatched ... ok
+test scheduling::tests::abandoned_and_foreign_tickets_cannot_release_or_publish_newer_work ... ok
+test scheduling::tests::externally_computed_completion_still_obeys_scope_and_revision ... ok
+test split::tests::a_loose_list_is_never_split ... ok
+test split::tests::blocks_tile_the_source ... ok
+test split::tests::definitions_stop_stabilising_and_replacement_resets ... ok
+test scheduling::tests::worker_computes_full_snapshot_including_later_reference_definitions ... ok
+test coordinator::tests::rejected_replacement_invalidates_prior_work_and_frees_capacity ... ok
+test worker::tests::worker_delivers_result_for_owner_thread_to_validate ... ok
+test pool::tests::many_keys_complete_once_each_with_the_right_projection ... ok
+test worker::tests::failed_callback_can_be_abandoned_and_replaced ... ok
+test split::tests::growing_text_keeps_stable_blocks_and_matches_a_full_parse ... ok
+test split::tests::equivalence_holds_for_other_structures ... ok
+test presentation::tests::limits_fail_atomically ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/debug_privacy.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/debug_privacy-49a96c53b229b9eb)
+
+running 1 test
+test markdown_and_presentation_debug_hide_nested_text_code_and_urls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/parse.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/parse-01050be7efcfce05)
+
+running 6 tests
+test html_is_untrusted_text_and_incomplete_fence_reparses ... ok
+test footnotes_and_disabled_math_remain_readable ... ok
+test input_limits_fail_without_partial_document ... ok
+test parses_mixed_content_and_inert_untrusted_values ... ok
+test nested_list_quote_and_task_markers_keep_structure ... ok
+test table_keeps_alignment_and_cell_inlines ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_markdown_slint-a19abbbdef9ef52d)
+
+running 10 tests
+test cache::tests::stale_revision_and_truncated_source_never_publish ... ok
+test cache::tests::capacity_failure_retries_only_after_other_content_is_released ... ok
+test tests::literal_fallback_preserves_source_and_warning ... ok
+test tests::maps_headings_code_and_table_alignment_without_actions ... ok
+test tests::rejects_overlarge_presentations_before_calling_factory ... ok
+test streaming::tests::while_the_next_version_formats_the_previous_one_stays_visible ... ok
+test streaming::tests::replaced_text_keeps_the_old_rows_until_the_new_text_is_formatted ... ok
+test streaming::tests::a_streaming_document_keeps_one_model_that_is_updated_in_place ... ok
+test streaming::tests::streaming_ends_up_identical_to_formatting_the_finished_text ... ok
+test streaming::tests::delta_updates_match_observing_the_whole_set ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_sdk_stream-edbe883979022d59)
+
+running 28 tests
+test framing::tests::assistant_sse_bounded_buffers_fail_before_retaining_an_excess_byte ... ok
+test framing::tests::assistant_sse_eof_never_dispatches_a_partial_event ... ok
+test framing::tests::assistant_sse_comments_and_empty_data_have_distinct_semantics ... ok
+test framing::tests::assistant_sse_stop_on_callback_error_keeps_earlier_deliveries ... ok
+test framing::tests::assistant_sse_multi_line_data_cannot_bypass_event_budget ... ok
+test reducer::partial_json::tests::assistant_partial_json_drops_incomplete_escape_and_object_key ... ok
+test reducer::partial_json::tests::assistant_partial_json_previews_without_claiming_completion ... ok
+test framing::tests::assistant_sse_line_ending_and_unicode_partitions_do_not_change_events ... ok
+test reducer::partial_json::tests::assistant_partial_json_rejects_prototype_keys_without_discarding_raw_input ... ok
+test reducer::tests::assistant_reducer_citations_validate_then_strip_unknown_nested_fields ... ok
+test reducer::tests::assistant_reducer_data_keys_include_type_and_transient_events_are_not_parts ... ok
+test framing::tests::assistant_sse_random_chunking_preserves_wire_events ... ok
+test reducer::tests::assistant_reducer_dynamic_new_step_delta_omits_raw_input_once_but_retains_bytes ... ok
+test reducer::tests::assistant_reducer_late_preliminary_result_matches_upstream_overwrite ... ok
+test reducer::tests::assistant_reducer_message_id_change_invalidates_previous_parts_and_metadata ... ok
+test reducer::tests::assistant_reducer_metadata_merges_objects_replaces_arrays_and_ignores_null ... ok
+test reducer::tests::assistant_reducer_missing_unknown_payloads_are_not_conflated_with_explicit_null ... ok
+test reducer::tests::assistant_reducer_output_can_target_prior_step_and_approval_uses_approval_id ... ok
+test reducer::tests::assistant_reducer_part_limit_failure_does_not_rebind_a_duplicate_id ... ok
+test reducer::tests::assistant_reducer_prototype_guard_precedes_schema_even_for_unknown_extras ... ok
+test reducer::tests::assistant_reducer_primitive_metadata_merge_matches_reference_type_error ... ok
+test reducer::tests::assistant_reducer_resume_restores_tool_text_but_not_wire_text_ids ... ok
+test reducer::tests::assistant_reducer_schema_failure_is_atomic_and_known_extras_are_ignored ... ok
+test reducer::tests::assistant_reducer_step_finish_does_not_close_interleaved_text_and_reset_keeps_boundary ... ok
+test reducer::tests::assistant_reducer_step_start_mutates_without_emitting_upstream_snapshot ... ok
+test reducer::tests::assistant_reducer_text_ids_are_scoped_by_kind_and_duplicate_starts_append ... ok
+test reducer::tests::assistant_reducer_tool_delta_defers_previews_and_completion_clears_wire_preview_fields ... ok
+test reducer::tests::assistant_reducer_unknown_policy_is_explicit_and_validates_known_types_in_both_modes ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/json_profile.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/json_profile-f6b8d81efcffdb62)
+
+running 4 tests
+test json_profile_exact_large_integer_is_not_javascript_number_parity ... ok
+test json_profile_lone_surrogate_and_overflow_fail_without_erasing_prior_content ... ok
+test json_profile_valid_surrogate_pair_decodes_to_unicode_scalar ... ok
+test json_profile_parser_depth_is_bounded_before_reducer_publication ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/oracle.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/oracle-b3c26da1672a9ee3)
+
+running 3 tests
+test assistant_ui7_transport_blank_line_controls_publication_not_eof ... ok
+test assistant_ui7_all_45_published_upstream_fixtures_match ... ok
+test assistant_ui7_every_byte_and_deterministic_partitionings_preserve_folds ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/replay_harness.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/replay_harness-e4f0a92898d1520c)
+
+running 10 tests
+test replay_accepts_canonical_base64_and_preserves_exact_byte_counts ... ok
+test replay_explicit_network_reads_override_raw_and_preserve_publications ... ok
+test replay_metadata_merge_error_uses_upstream_type_error_projection ... ok
+test replay_rejects_ambiguous_or_mistyped_explicit_network_chunks ... ok
+test replay_accepts_only_positive_safe_integer_chunk_widths ... ok
+test replay_modes_agree_on_equal_fold_workloads_but_not_snapshot_work ... ok
+test replay_rejects_noncanonical_base64 ... ok
+test replay_rejects_unknown_or_non_string_modes ... ok
+test replay_patch_is_current_state_not_last_published_snapshot ... ok
+test replay_trailing_unpublished_step_also_distinguishes_contracts ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/runtime.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/runtime-dfb25da9d3304423)
+
+running 12 tests
+test assistant_runtime_failed_restart_does_not_discard_the_previous_message_or_ticket ... ok
+test assistant_runtime_finish_abort_and_done_do_not_invent_text_end_or_transport_eof ... ok
+test assistant_runtime_host_cancellation_preserves_partial_content_and_stops_publication ... ok
+test assistant_runtime_malformed_later_event_preserves_content_and_earlier_notifications ... ok
+test assistant_runtime_invalid_known_event_is_atomic ... ok
+test assistant_runtime_raw_tool_text_is_borrowable_and_previews_are_explicit ... ok
+test assistant_runtime_reset_invalidates_queued_part_handles_even_if_index_is_reused ... ok
+test assistant_runtime_resource_limits_are_explicit_and_stale_input_uses_no_budget ... ok
+test assistant_runtime_server_error_policy_is_explicit_and_not_a_wire_parse_error ... ok
+test assistant_runtime_stale_network_and_eof_cannot_publish_under_a_new_run ... ok
+test assistant_runtime_unknown_chunks_require_an_explicit_preserving_policy ... ok
+test assistant_runtime_transient_events_are_ordered_without_growing_message_history ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_slint-8deb4900600ea790)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/action_bar.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/action_bar-5b59aad9ff3b6e97)
+
+running 2 tests
+test older_message_actions_show_only_on_hover_and_last_always_shows_them ... ok
+test actions_stay_shown_while_the_pointer_is_on_each_button ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.27s
+
+     Running tests/composer_keys.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/composer_keys-5c9490f814fc894a)
+
+running 7 tests
+test escape_while_running_cancels_the_run ... ok
+test escape_when_idle_does_nothing ... ok
+test shift_enter_inserts_a_newline_and_does_not_send ... ok
+test enter_while_running_does_not_send_or_insert_a_newline ... ok
+test enter_sends_the_draft ... ok
+test composer_keeps_focus_while_running_so_escape_reaches_it ... ok
+test typing_while_running_edits_the_draft ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/focus_visible.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/focus_visible-80a05f34e0d6c251)
+
+running 4 tests
+test clicking_a_button_shows_no_focus_ring ... ok
+test tab_to_a_button_shows_the_focus_ring ... ok
+test tab_to_an_icon_button_shows_the_focus_ring ... ok
+test clicking_after_keyboard_focus_hides_the_ring ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/hit_targets.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/hit_targets-1f58fa7e42653a66)
+
+running 2 tests
+test double_click_starts_guarded_actions_once_and_unguarded_ones_twice ... ok
+test icon_button_activates_inside_its_enlarged_target_only ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.43s
+
+     Running tests/markdown_copy.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/markdown_copy-7cb749138726d2b5)
+
+running 1 test
+test controlled_copy_feedback_and_legacy_callback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/markdown_scroll.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/markdown_scroll-ac4ef3b97337dba4)
+
+running 1 test
+test code_scrollbar_moves_text_and_vertical_wheel_reaches_thread ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/message_sizing.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/message_sizing-b930ea7edd983a41)
+
+running 1 test
+test assistant_ignores_unused_multiline_hint_and_user_bubble_still_uses_it ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/paged_text.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/paged_text-30e4cf2333ce398d)
+
+running 1 test
+test page_controls_forward_captured_identity_without_laying_out_source ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/thread_list.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/thread_list-0aa32340a31b7cc4)
+
+running 5 tests
+test more_menu_delete_reports_the_row_index ... ok
+test more_menu_archive_reports_the_row_index ... ok
+test clicking_a_row_selects_that_thread ... ok
+test escape_cancels_a_rename ... ok
+test more_menu_rename_commits_the_edited_title_on_enter ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/tooltip.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/tooltip-1d9283ea87e1e44d)
+
+running 1 test
+test hover_tooltip_does_not_block_copy ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.24s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_state-4f19cfbf962d7298)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/perf.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/perf-435a9ac3b490b965)
+
+running 1 test
+test projection_cost_per_streamed_update ... ignored
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/view.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/view-d66e67b6adf1bfb8)
+
+running 11 tests
+test a_streaming_update_rebuilds_only_the_message_that_changed ... ok
+test an_external_store_thread_hides_unsupported_actions ... ok
+test a_view_over_a_thread_list_follows_the_main_thread ... ok
+test copy_confirmation_expires_and_sections_toggle ... ok
+test nested_notifications_do_not_drop_another_messages_update ... ok
+test deltas_include_older_messages_and_ui_local_changes ... ok
+test rebind_discards_change_cursors_even_if_versions_and_ids_match ... ok
+test independent_views_catch_up_after_coalesced_updates_and_keep_old_snapshots ... ok
+test rows_describe_the_thread_and_unchanged_rows_keep_their_identity ... ok
+test smooth_streaming_reveals_text_over_ticks_and_asks_for_frames ... ok
+test tool_approval_flows_through_the_view ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_ui_stream-2393c8468b1a08b1)
+
+running 4 tests
+test sse_json::tests::final_unterminated_event_and_utf8_validation_keep_their_semantics ... ok
+test sse_json::tests::multiline_event_limit_counts_inserted_newlines ... ok
+test sse_json::tests::physical_line_limit_includes_cr_and_applies_across_reads ... ok
+test sse_json::tests::fragmented_and_complete_lines_preserve_events_and_unicode ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accumulator.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/accumulator-a65afb32295593ab)
+
+running 10 tests
+test a_framing_error_is_reported_with_the_chunks_before_it ... ok
+test a_preliminary_result_never_replaces_a_final_one ... ok
+test chunks_for_missing_or_wrong_parts_are_dropped_with_one_warning_each ... ok
+test an_unknown_part_type_keeps_later_indices_aligned ... ok
+test finish_reasons_map_to_message_status ... ok
+test malformed_and_unknown_chunks_are_dropped_and_the_stream_continues ... ok
+test message_finish_does_not_clear_an_error ... ok
+test state_operations_start_from_the_initial_state ... ok
+test tool_arguments_parse_incrementally_while_streaming ... ok
+test upstream_python_encoder_stream_folds_into_the_expected_message ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ai_sdk_vectors.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ai_sdk_vectors-34c1268f0e7c9df6)
+
+running 1 test
+test ai_sdk_vectors_against_our_decoders ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/data_stream.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/data_stream-50eb4830caab8396)
+
+running 5 tests
+test a_final_line_without_newline_and_open_text_are_completed_at_the_end ... ok
+test strict_decoding_rejects_unknown_tool_calls_bad_json_and_unknown_codes ... ok
+test a_tool_call_without_streamed_arguments_takes_them_from_the_call ... ok
+test assistant_ui_extensions_group_parts_and_update_state ... ok
+test an_ai_sdk_v4_response_folds_into_the_message ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/partial_json_debug_privacy.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/partial_json_debug_privacy-3aebceaf9c660637)
+
+running 1 test
+test parser_and_snapshot_do_not_debug_print_partial_arguments_or_keys ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/partial_json_parity.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/partial_json_parity-283ad39b547b2b74)
+
+running 11 tests
+test admission_limits_cover_source_nodes_and_depth ... ok
+test array_length_and_nested_field_queries_follow_upstream ... ok
+test chunk_boundaries_do_not_lose_last_complete_number ... ok
+test failures_are_atomic_and_clones_are_independent ... ok
+test invalid_fragments_do_not_advance_open_unicode_or_container_state ... ok
+test nested_fields_and_literals_match_upstream_completeness ... ok
+test unicode_surrogates_are_withheld_until_the_pair_completes ... ok
+test plain_string_fragments_match_whole_prefix_and_reject_atomically ... ok
+test utf8_budget_and_duplicate_replacement_are_atomic ... ok
+test pinned_upstream_prefix_fixture_matches_for_each_fragment ... ok
+test escaped_unsafe_keys_and_depth_limit_are_rejected_atomically ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/perf.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/perf-ecfef6ade70b047d)
+
+running 4 tests
+test accumulator_and_result_cost_by_message_length ... ignored
+test protocol_decode_and_fold_throughput ... ignored
+test runtime_update_cost_by_thread_length ... ignored
+test ui_stream_text_workload_like_the_ai_sdk_harness ... ignored
+
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/protocol_vectors.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/protocol_vectors-8b7bf044590107fc)
+
+running 1 test
+test assistant_stream_vectors_against_our_decoders ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/robustness.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/robustness-83af8f0f338f1d67)
+
+running 2 tests
+test mutated_input_never_panics_and_output_stays_bounded ... ok
+test the_outcome_does_not_depend_on_how_bytes_are_split_into_reads ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.99s
+
+     Running tests/runtime.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/runtime-1b6a928ec013d1f3)
+
+running 6 tests
+test a_truncated_response_fails_the_run_and_keeps_partial_content ... ok
+test content_before_a_failure_is_delivered_first ... ok
+test an_sse_response_streams_into_the_thread ... ok
+test ready_slices_are_folded_into_one_result ... ok
+test ready_heartbeats_and_partial_frames_yield_without_losing_progress ... ok
+test ready_content_bursts_yield_between_cumulative_results ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/state_debug_privacy.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/state_debug_privacy-9fb767335da0b12b)
+
+running 1 test
+test operations_do_not_debug_print_paths_or_values ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/state_operations.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/state_operations-28ecd0eee3b3a02f)
+
+running 9 tests
+test a_failed_operation_rolls_back_the_entire_batch ... ok
+test aggregate_batch_input_is_bounded_before_mutation ... ok
+test dangerous_nested_json_and_invalid_operations_are_rejected ... ok
+test decodes_pinned_fixture_shape_and_numeric_wire_indices ... ok
+test limits_reject_input_and_result_without_publishing_partial_state ... ok
+test preserves_json_integers_outside_javascript_safe_range_as_data ... ok
+test set_and_append_preserve_unrelated_state_and_array_order ... ok
+test strict_paths_reject_unsafe_noncanonical_and_wrong_types ... ok
+test rejects_excessive_config_and_deep_owned_input_without_recursive_drop ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/tool_safety.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/tool_safety-059c89dd45f6372e)
+
+running 4 tests
+test complete_arguments_do_run_the_tool ... ok
+test transport_cut_off_inside_tool_arguments_runs_nothing ... ok
+test data_stream_cut_off_inside_tool_arguments_runs_nothing ... ok
+test ui_stream_cut_off_inside_tool_arguments_runs_nothing ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/transport_interop.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/transport_interop-360ba1f85b94cba1)
+
+running 10 tests
+test debug_redacts_decoded_private_content ... ok
+test input_line_and_event_limits_stop_unbounded_retention ... ok
+test malformed_and_unknown_frames_are_explicit ... ok
+test malformed_chunks_are_dropped_and_the_stream_continues ... ok
+test path_indices_accept_json_numbers_like_javascript_with_a_safe_integer_limit ... ok
+test rejects_prototype_pollution_keys_at_any_depth_even_when_escaped ... ok
+test sse_line_endings_bom_multiline_and_unicode_are_incremental ... ok
+test strict_truncation_does_not_infer_success ... ok
+test unpaired_utf16_surrogate_escapes_are_dropped ... ok
+test pinned_upstream_python_fixture_survives_every_byte_boundary ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ui_message_stream.rs (~/.cache/ai-ui-rewrite-rust/targets/haiku-tests/release/deps/ui_message_stream-8b7c4bfb9b7f4127)
+
+running 8 tests
+test abort_finishes_as_incomplete_and_errors_are_reported ... ok
+test a_ui_message_stream_drives_the_runtime ... ok
+test malformed_chunks_are_dropped_and_unknown_results_fail_the_stream ... ok
+test approval_request_response_and_denial ... ok
+test tool_calls_needing_a_client_result_end_in_requires_action ... ok
+test an_ai_sdk_response_folds_into_the_message ... ok
+test tool_errors_and_preliminary_outputs ... ok
+test text_delta_aliases_keep_precedence_ids_and_provider_metadata ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_clipboard
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_core
+
+running 1 test
+test crates/ai-ui-core/src/lib.rs - (line 5) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.81s
+
+   Doc-tests ai_ui_data_stream
+
+running 1 test
+test crates/ai-ui-data-stream/src/lib.rs - (line 4) ... ignored
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_http
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_markdown
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_markdown_slint
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_sdk_stream
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_slint
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests ai_ui_state
+
+running 1 test
+test crates/ai-ui-state/src/lib.rs - (line 8) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.75s
+
+   Doc-tests ai_ui_stream
+
+running 1 test
+test crates/ai-ui-stream/src/transport.rs - transport::Chunk (line 38) - compile fail ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+

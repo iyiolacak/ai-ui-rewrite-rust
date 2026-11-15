@@ -1,7 +1,8 @@
 ---
 import '../styles/global.css';
+import '../styles/fonts.css';
 import data from '../../data/benchmarks.json';
-import { barChart, comparison, ratioWhole } from '../lib/bench';
+import { barChart, comparison, range, ratioWhole } from '../lib/bench';
 
 const repo = 'https://github.com/iyiolacak/ai-ui-rewrite-rust';
 const docs = `${repo}/blob/main/docs`;
@@ -30,9 +31,7 @@ const guides = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" />
+    <link rel="preload" href="/fonts/WorkSans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <title>AI UI in Rust: assistant-ui rewritten</title>
     <meta name="description" content="A Rust-native AI UI toolkit, built for conversations that don't stop at 100 messages. Same protocols as assistant-ui, far less CPU and memory." />
@@ -73,7 +72,7 @@ const guides = [
             <span>Source on GitHub</span>
           </a>
         </p>
-        <p class="hero-method">Measured against the published <code>@assistant-ui/react</code> 0.15, same history and same streamed reply, median of 3 interleaved runs. <a href="#speed">See the numbers and the method</a>.</p>
+        <p class="hero-method">Measured against the published <code>@assistant-ui/react</code> 0.15, same history and same streamed reply; each figure is the least favourable of four runs. <a href="#speed">See the numbers and the method</a>.</p>
         <div class="screens">
           <div class="screens-track">
             <a class="screen" href="#demo" aria-label="Open the live demo: a 10,000-message thread, running below">
@@ -90,7 +89,7 @@ const guides = [
                     </figure>
                   ))}
                 </div>
-                <p class="screen-note">Median of 3 interleaved runs against <code>@assistant-ui/react</code> 0.15, 1000-message thread.</p>
+                <p class="screen-note">The run least favourable to Rust, of four, against <code>@assistant-ui/react</code> 0.15, 1000-message thread.</p>
               </div>
             </a>
           </div>
@@ -136,7 +135,7 @@ const guides = [
             </div>
             <figure class="mt-5 m-0">
               <Fragment set:html={barChart(comparison('open-1000'), 'faster')} />
-              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Time from navigation until the thread is fully rendered and scrollable.</figcaption>
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Time until the last message&rsquo;s Markdown is formatted and painted, on both sides. Across four runs: <span data-bench="open-1000.range">{range(comparison('open-1000'))}</span>.</figcaption>
             </figure>
           </article>
           <article class="speed-cell">
@@ -146,7 +145,7 @@ const guides = [
             </div>
             <figure class="mt-5 m-0">
               <Fragment set:html={barChart(comparison('memory-1000'), 'less memory')} />
-              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Resident memory summed across all Chromium processes, measured at the end of a 60 s stream.</figcaption>
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">At the end of a 60 s stream. Rust: resident memory of its one process. React: proportional memory (PSS) summed over every Chromium process, which counts shared memory once. Across four runs: <span data-bench="memory-1000.range">{range(comparison('memory-1000'))}</span>.</figcaption>
             </figure>
           </article>
           <article class="speed-cell">
@@ -156,7 +155,7 @@ const guides = [
             </div>
             <figure class="mt-5 m-0">
               <Fragment set:html={barChart(comparison('stall-1000'), 'shorter')} />
-              <figcaption class="mt-3 text-sm" style="color: var(--muted)">Longest gap between frames during a 60 s stream. Input events can’t be processed during a stall.</figcaption>
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">During a 60 s stream. Rust: longest loop iteration. React: longest gap between frames. Input waits during a stall. Across four runs: <span data-bench="stall-1000.range">{range(comparison('stall-1000'))}</span>.</figcaption>
             </figure>
           </article>
           <article class="speed-cell">
@@ -166,11 +165,11 @@ const guides = [
             </div>
             <figure class="mt-5 m-0">
               <Fragment set:html={barChart(comparison('cpu-1000'), 'less CPU')} />
-              <figcaption class="mt-3 text-sm" style="color: var(--muted)">User and system CPU time across the whole process tree over a 60 s stream. Values above 60 s mean more than one core was in use.</figcaption>
+              <figcaption class="mt-3 text-sm" style="color: var(--muted)">User and system CPU time across the whole process tree over a 60 s stream. Values above 60 s mean more than one core was in use. Across four runs: <span data-bench="cpu-1000.range">{range(comparison('cpu-1000'))}</span>.</figcaption>
             </figure>
           </article>
         </div>
-        <p id="speed-fn" class="mt-8 text-sm max-w-3xl" style="color: var(--muted)"><sup>1</sup> Headless Chromium on a shared 12-core Linux machine under load (load average 10&ndash;21). Median of 3 interleaved runs, with a 9 KB prompt. Ratios are rounded down. Results depend on hardware, browser, thread content and configuration, so absolute timings will vary. Benchmark code and the full method: <a class="underline" href="https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/benchmarks/react-baseline">react-baseline</a>. Reproduce with <code>./compare.sh</code> in that folder; its README lists the arguments.</p>
+        <p id="speed-fn" class="mt-8 text-sm max-w-3xl" style="color: var(--muted)"><sup>1</sup> Four independent runs on 2026-11-11 on one 12-core Linux laptop, each 5 to 9 interleaved Rust/React pairs, under different power settings and load. A 1000-message history, then a 9 KB prompt whose reply streams for 60 s. Rust is a release build rendering in software on the CPU; React runs in headless Chromium. Each chart shows the median of the run least favourable to Rust for that measure; Rust was ahead in every pair of every run. Ratios are rounded down. Results depend on hardware, browser, thread content and configuration, so absolute timings will vary. Every raw run: <a class="underline" href={`${docs}/RUNS.md`}>RUNS</a>. Benchmark code and the full method: <a class="underline" href="https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/benchmarks/react-baseline">react-baseline</a>. Reproduce with <code>./compare.sh</code> in that folder; its README lists the arguments.</p>
         <p class="mt-3 text-sm max-w-3xl" style="color: var(--muted)">assistant-ui is MIT-licensed, &copy; AgentbaseAI Inc. This project is an independent port and isn&rsquo;t affiliated with or endorsed by the assistant-ui or Vercel AI SDK projects. Port status: <a class="underline" href={`${docs}/STATUS.md`}>what is and isn&rsquo;t ported</a>.</p>
       </section>
 
@@ -284,7 +283,7 @@ const guides = [
               </h3>
               <div class="acc-panel" id="how-4-panel" role="region" aria-labelledby="how-4-trigger">
                 <div class="acc-inner">
-                  <p>We don't keep a web page inside the app. Slint draws the thread itself — as a native window on desktop, or on a canvas in the browser via WebAssembly. No DOM nodes to keep alive, no JavaScript engine in the native case, no framework re-flowing the whole tree on every update. The core has no I/O or UI dependencies, so the same code compiles for <code>wasm32</code> unchanged — and the WebAssembly demo you can try below is a 2.8&nbsp;MiB download.</p>
+                  <p>We don't keep a web page inside the app. Slint draws the thread itself — as a native window on desktop, or on a canvas in the browser via WebAssembly. No DOM nodes to keep alive, no JavaScript engine in the native case, no framework re-flowing the whole tree on every update. The core has no I/O or UI dependencies, so the same code compiles for <code>wasm32</code> unchanged — and the WebAssembly demo you can try below is a <span data-bench="web.wasm-gzip">{web['wasm-gzip']?.value}</span>&nbsp;MiB download gzipped.</p>
                 </div>
               </div>
             </div>
@@ -320,7 +319,8 @@ const guides = [
           <img src="/logo.svg" width="24" height="24" alt="" />
           <span>AI UI in Rust</span>
         </a>
-        <p class="text-sm max-w-xl" style="color: var(--muted)">MIT licence. Ported from assistant-ui (MIT, &copy; AgentbaseAI Inc.); not affiliated with the assistant-ui or Vercel AI SDK projects. Slint is used under its own licence terms. Rust and the Rust logo are trademarks of the Rust Foundation, and this project is not affiliated with or endorsed by the Rust Foundation or the Rust Project. The logo is used unmodified, from <a class="underline" href="https://github.com/rust-lang/rust-artwork" rel="noopener">rust-artwork</a>, under <a class="underline" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC BY 4.0</a>; see the <a class="underline" href="https://rustfoundation.org/policy/rust-trademark-policy/" rel="noopener">trademark policy</a>.</p>
+        <a href="https://slint.dev" rel="noopener" class="shrink-0"><img src="/made-with-slint.svg" width="106" height="48" alt="Made with Slint" /></a>
+        <p class="text-sm max-w-xl" style="color: var(--muted)">MIT licence. Ported from assistant-ui (MIT, &copy; AgentbaseAI Inc.); not affiliated with the assistant-ui or Vercel AI SDK projects. The demo is built with <a class="underline" href="https://slint.dev" rel="noopener">Slint</a>, used under the Slint Royalty-Free License 2.0. Work Sans is used under the SIL Open Font License 1.1. Rust and the Rust logo are trademarks of the Rust Foundation, and this project is not affiliated with or endorsed by the Rust Foundation or the Rust Project. The logo is used unmodified, from <a class="underline" href="https://github.com/rust-lang/rust-artwork" rel="noopener">rust-artwork</a>, under <a class="underline" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC BY 4.0</a>; see the <a class="underline" href="https://rustfoundation.org/policy/rust-trademark-policy/" rel="noopener">trademark policy</a>.</p>
         <nav class="flex gap-5 text-sm" aria-label="Footer">
           <a href={repo}>GitHub</a>
           <a href={`${docs}/STATUS.md`}>Docs</a>

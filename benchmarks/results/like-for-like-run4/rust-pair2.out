@@ -1,0 +1,5 @@
+  layout + paint per drawn frame: 0-10s 553 frames 2.17 ms, 10-20s 557 frames 1.48 ms, 20-30s 551 frames 1.63 ms, 30-40s 555 frames 1.35 ms, 40-50s 569 frames 0.96 ms, 50-60s 565 frames 1.53 ms
+rss 26.2 MiB, peak 26.2 MiB after opening the thread; rss 28.8 MiB, peak 28.8 MiB at the end; process CPU while streaming 6680 ms
+1000 messages: open (formatted and painted, like for like) 128.3 ms
+1000 messages: history import+first sync 13.3 ms, formatted after 0.11 s; reply streamed in 60.30 s over 24049 iterations
+  app work + layout + software paint per iteration: p50 22.304µs  p95 1.614739ms  p99 3.612623ms  max 45.454859ms  total 7665.1 ms; iterations over 4 ms: 194

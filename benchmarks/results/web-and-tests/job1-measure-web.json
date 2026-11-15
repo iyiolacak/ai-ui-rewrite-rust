@@ -1,0 +1,76 @@
+{
+ "sizes": {
+  "raw": 9500548,
+  "gzip": 2971326,
+  "brotli": 2005463
+ },
+ "history": 10000,
+ "runs": {
+  "empty": [
+   {
+    "firstPaintMs": 765.8000000007451,
+    "wasmMemoryMiB": 3.9375,
+    "fps": 0,
+    "errors": [
+     "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+   },
+   {
+    "firstPaintMs": 233.30000000074506,
+    "wasmMemoryMiB": 4,
+    "fps": 0,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 373.69999999925494,
+    "wasmMemoryMiB": 3.9375,
+    "fps": 0,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 236.89999999850988,
+    "wasmMemoryMiB": 4,
+    "fps": 0,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 300.6000000014901,
+    "wasmMemoryMiB": 4,
+    "fps": 0,
+    "errors": []
+   }
+  ],
+  "history": [
+   {
+    "firstPaintMs": 428.70000000298023,
+    "wasmMemoryMiB": 29.25,
+    "fps": 14.971247273448343,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 422.80000000074506,
+    "wasmMemoryMiB": 29.25,
+    "fps": 15.419590787782939,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 493.69999999925494,
+    "wasmMemoryMiB": 29.25,
+    "fps": 15.094711917916339,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 512.8000000007451,
+    "wasmMemoryMiB": 29.5625,
+    "fps": 13.482924908965654,
+    "errors": []
+   },
+   {
+    "firstPaintMs": 400.3999999985099,
+    "wasmMemoryMiB": 29.3125,
+    "fps": 14.68545346298869,
+    "errors": []
+   }
+  ]
+ }
+}

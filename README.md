@@ -11,19 +11,21 @@ wire decoders, and a Slint thread UI, for native and WebAssembly apps.
 - Markdown is formatted on a worker-thread pool, settled blocks once and the live tail on each delta.
 - Native demo is one Rust binary with no JavaScript engine: `cargo run -p ai-ui-example-thread`.
 
-Against upstream assistant-ui on the same workload, 1000 messages with a 9 KB prompt, median of 5 interleaved pairs,
-release build, software renderer on the Rust side, headless Chromium for React, 2026-11-11 (ranges in
-[RESULTS](docs/RESULTS.md)):
+Against upstream assistant-ui (`@assistant-ui/react` 0.15.33 in headless Chromium) on the same workload: a
+1000-message thread, then a 9 KB prompt whose reply streams for 60 s. Rust is a release build that rasterises in
+software. Four independent runs on 2026-11-11, each 5 to 9 interleaved pairs, under different power settings and load.
+Each cell gives the range of the four run medians; the ratio's first number is the least favourable run
+([RUNS](docs/RUNS.md); every raw file is in `benchmarks/results/`):
 
-| | Rust | React | Ratio |
+| | Rust | React | React / Rust |
 |---|---|---|---|
-| Open the thread, Markdown formatted and painted | 105.3 ms | 2940 ms | 27.9x |
-| Longest iteration or frame while streaming | 34 ms | 916.6 ms | 26.9x |
-| Memory at the end (Rust RSS, React PSS) | 30.1 MiB | 850.3 MiB | 28.2x |
-| Process CPU while streaming 60 s | 17160 ms | 73260 ms | 4.2x |
+| Open the thread, Markdown formatted and painted | 83-105 ms | 1385-2940 ms | 16.6x to 27.9x |
+| Longest iteration or frame while streaming | 5.8-34 ms | 250-917 ms | 23.8x to 42.7x |
+| Memory at the end (Rust RSS, React PSS) | 29.1-30.2 MiB | 850-1032 MiB | 28.2x to 35.4x |
+| Process CPU while streaming 60 s | 4.3-17.2 s | 59.9-73.3 s | 4.2x to 14.0x |
 
-Rust "open" is until the last message's Markdown is formatted and painted; the first rows appear after 12.9 ms, which is
-not compared. Ratios are floored.
+Rust was ahead in every pair of every run. Absolute numbers depend on CPU speed and load: React's open time is the
+more sensitive, so the open ratio is smallest on the fastest runs. Ratios are rounded down.
 
 > Status: early and unpublished (nothing is on crates.io; the Slint crates wait for femtovg 0.28). Not yet ported:
 > assistant-transport as a runtime, attachments, speech, custom per-tool components ([STATUS](docs/STATUS.md)). A port,

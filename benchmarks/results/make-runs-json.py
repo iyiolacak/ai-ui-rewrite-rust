@@ -2,17 +2,16 @@
 """Parses the raw benchmark files and writes docs/runs.json (schema 1). Stdlib only.
    python3 benchmarks/results/make-runs-json.py          write docs/runs.json
    python3 benchmarks/results/make-runs-json.py --check  fail if docs/runs.json is out of date
-Description of the schema and the runs: docs/RUNS.md. Raw files outside the repository live under
-~/.cache/ai-ui-rewrite-rust/results/ (runs 3 and 4, web, tests); run 4 is included only when its folder is complete."""
+Description of the schema and the runs: docs/RUNS.md. Every raw file is in benchmarks/results/; run 4 is included
+only when its folder is complete."""
 import json, math, pathlib, re, statistics, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-HOME_RES = pathlib.Path.home() / ".cache" / "ai-ui-rewrite-rust" / "results"
 RUN1 = ROOT / "benchmarks/results/like-for-like/raw"
 RUN2 = ROOT / "benchmarks/results/like-for-like-run2"
-RUN3 = HOME_RES / "perf-profile"
-RUN4 = HOME_RES / "perf-balanced"
-HAIKU = HOME_RES / "haiku-tests"
+RUN3 = ROOT / "benchmarks/results/like-for-like-run3"
+RUN4 = ROOT / "benchmarks/results/like-for-like-run4"
+HAIKU = ROOT / "benchmarks/results/web-and-tests"
 NOTE = []  # printed notes (run 4 skipped etc.)
 
 

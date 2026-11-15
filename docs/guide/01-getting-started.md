@@ -21,7 +21,8 @@ It is early and not on crates.io yet. It is a port, not a product of the assista
 The point of the port is cost. On the same workload, a Rust thread uses much less CPU and memory than upstream's React
 thread. One example, with its conditions: opening a 1000-message thread (9 KB prompt) until every message's Markdown is
 formatted and painted took 105 ms for Rust and 2.94 s for React, median of 5 interleaved pairs, release build, software
-renderer on the Rust side, headless Chromium for React, measured on 2026-11-11. Other workloads, ranges and caveats are
+renderer on the Rust side, headless Chromium for React, measured on 2026-11-11; across four runs that day the open ratio was 16.6x to 27.9x
+([RUNS](../RUNS.md)). Other workloads, ranges and caveats are
 in [RESULTS](../RESULTS.md); [Performance](07-performance.md) explains where the difference comes from.
 
 ## What you get

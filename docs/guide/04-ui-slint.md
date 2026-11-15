@@ -143,22 +143,23 @@ Software-renderer screenshots show layout, not GPU text or effects.
 
 ## Embedding the thread in your own app
 
-The Slint crates are `publish = false` today, so depend on them by path or Git. Use the same Slint version as the crate, `=1.18.1`.
+Use the same Slint version as the crates, `=1.18.1`.
 
 ```toml
 [dependencies]
 slint = { version = "=1.18.1", features = ["compat-1-18"] }
-ai-ui-core = { path = "../ai-ui-rs/crates/ai-ui-core" }
-ai-ui-state = { path = "../ai-ui-rs/crates/ai-ui-state" }
-ai-ui-markdown-slint = { path = "../ai-ui-rs/crates/ai-ui-markdown-slint" }
+ai-ui-core = "0.1"
+ai-ui-state = "0.1"
+ai-ui-markdown-slint = "0.1"
 
 [build-dependencies]
-ai-ui-slint = { path = "../ai-ui-rs/crates/ai-ui-slint" }
+ai-ui-slint = "0.1"
 slint-build = "=1.18.1"
 
-# Until Slint depends on femtovg 0.28 (copy the directory from this repository):
+# Until a Slint release uses femtovg 0.28: without it a streaming chat uses about twice the CPU with the
+# FemtoVG-WGPU renderer (see patches/README.md).
 [patch.crates-io]
-femtovg = { path = "patches/femtovg" }
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
 ```
 
 `build.rs` registers the library path (this is the example's build script, trimmed):

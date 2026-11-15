@@ -58,9 +58,10 @@ numbers had to be corrected. Read "How to read these numbers" in [Performance](0
 
 ## Is it on crates.io?
 
-The eight toolkit-independent crates are: `ai-ui-core`, `ai-ui-stream`, `ai-ui-data-stream`, `ai-ui-sdk-stream`, `ai-ui-http`, `ai-ui-state`, `ai-ui-markdown` and `ai-ui-clipboard`, version 0.1.
-The two Slint crates and the example are `publish = false` until Slint ships femtovg 0.28; depend on them with a `git`
-dependency on the repository.
+Yes, all ten library crates, version 0.1: the eight toolkit-independent ones (`ai-ui-core`, `ai-ui-stream`,
+`ai-ui-data-stream`, `ai-ui-sdk-stream`, `ai-ui-http`, `ai-ui-state`, `ai-ui-markdown`, `ai-ui-clipboard`) and the two
+Slint crates (`ai-ui-slint`, `ai-ui-markdown-slint`). With Slint's FemtoVG-WGPU renderer, add the one-line femtovg patch
+from the README until a Slint release includes the fix. The example app is not published.
 
 ## Which licence?
 

@@ -11,7 +11,6 @@ description = "Slint components with assistant-ui's look: thread, messages, comp
 include = ["src/**", "ui/**", "README.md", "LICENSE", "NOTICE"]
 repository.workspace = true
 readme = "README.md"
-publish = false
 
 [dependencies]
 

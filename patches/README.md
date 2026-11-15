@@ -15,6 +15,13 @@ window. With the backport, a 30 s stream into a 1000-message thread in a GPU
 window took 9.6-10.2 s of process CPU instead of 16.4-23.6 s, at 114-115 fps
 instead of 103-107 (FemtoVG-WGPU, Intel UHD, Wayland).
 
+Apps that use the published crates get the same fix with:
+
+```toml
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
+
 Remove it (and the `[patch.crates-io]` entry in the root `Cargo.toml`) when
 Slint depends on femtovg 0.28 or later: Slint's main branch already does
 (`internal/renderers/femtovg/Cargo.toml`), the 1.18.1 release does not.

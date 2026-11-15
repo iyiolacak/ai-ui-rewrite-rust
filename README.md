@@ -27,8 +27,8 @@ Each cell gives the range of the four run medians; the ratio's first number is t
 Rust was ahead in every pair of every run. Absolute numbers depend on CPU speed and load: React's open time is the
 more sensitive, so the open ratio is smallest on the fastest runs. Ratios are rounded down.
 
-> Status: early. The eight runtime crates are on [crates.io](https://crates.io/crates/ai-ui-core) as 0.1; the Slint crates
-> wait for femtovg 0.28. Not yet ported:
+> Status: early. All ten library crates are on [crates.io](https://crates.io/crates/ai-ui-core) as 0.1; the two Slint
+> crates need a one-line femtovg patch for now ([Using the crates](#using-the-crates)). Not yet ported:
 > assistant-transport as a runtime, attachments, speech, custom per-tool components ([STATUS](docs/STATUS.md)). A port,
 > not affiliated with the assistant-ui or Vercel AI SDK projects.
 
@@ -37,6 +37,54 @@ Start with [Why ai-ui](docs/guide/00-why-ai-ui.md) or [Getting started](docs/gui
 number is in [RESULTS](docs/RESULTS.md); the browser build is described in [WEB](docs/WEB.md).
 
 ## Quickstart
+
+### With a coding agent
+
+Most people add this by asking their coding agent. Paste this into Claude Code (or any coding agent) in your project:
+
+```text
+Add ai-ui (a Rust port of assistant-ui: chat runtime, AI SDK streaming, Markdown, optional Slint chat UI) to
+this project. Source and docs: https://github.com/iyiolacak/ai-ui-rewrite-rust
+
+1. Inspect the project first and tell me, before changing anything: is it a Rust crate or workspace; which async
+   runtime it uses (Tokio, Slint's event loop, wasm-bindgen-futures, none); whether it has a UI toolkit; whether it
+   targets wasm32; whether there is an AI SDK (Vercel) backend endpoint. Then list the crates you plan to add.
+
+2. Add only what is needed, with `cargo add` (all on crates.io, version 0.1):
+   - ai-ui-core: messages, branching threads, runtimes. Always.
+   - ai-ui-state: toolkit-independent thread state and actions for any UI.
+   - ai-ui-data-stream + ai-ui-http: talk to an AI SDK backend (JSON POST, AI SDK UI message stream).
+   - ai-ui-markdown: bounded Markdown parsing and a splitter for streamed replies.
+   - ai-ui-slint (build-dependency) + ai-ui-markdown-slint: ready-made Slint chat UI with assistant-ui's look.
+   - ai-ui-stream, ai-ui-sdk-stream: only for custom wire-protocol work.
+
+3. Rules:
+   - The runtime has no executor of its own. Drive futures with what the project already uses: slint::spawn_local,
+     a Tokio LocalSet, wasm-bindgen-futures; futures_executor::block_on only in tests. Runtimes are Rc-based and
+     single-threaded by design: do not wrap them in Arc/Mutex or move them to a multi-threaded executor.
+   - Minimum Rust 1.85 (ai-ui-markdown 1.88, the Slint crates 1.92).
+   - Slint UI: pin slint and slint-build to =1.18.1 with feature compat-1-18, and register ai_ui_slint::ui_dir() as
+     the "assistant" library path in build.rs. Add this to the workspace Cargo.toml; without it a streaming chat
+     uses about twice the CPU with Slint's FemtoVG-WGPU renderer until a Slint release includes the fix:
+       [patch.crates-io]
+       femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+     On Linux, Slint needs the fontconfig development package (libfontconfig1-dev or fontconfig-devel).
+   - Licences: ai-ui is MIT. Slint is GPL-3.0, royalty-free with an attribution badge, or commercial. Ask me which
+     Slint licence applies before shipping anything that uses it.
+   - AI SDK backend: the client posts model messages. The server passes body.messages to streamText and returns
+     toUIMessageStreamResponse(); the system prompt is a top-level field, not a system message.
+
+4. Do not guess APIs. Read and follow:
+   - https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/01-getting-started.md (first runtime, streaming, reading state)
+   - https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/03-streaming-and-backends.md (backends, "Connect a real backend")
+   - https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/docs/guide/04-ui-slint.md (Slint UI, "Embedding the thread in your own app")
+   - https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/examples/thread (a complete working app), and docs.rs for the API reference.
+
+5. Finish with cargo build, cargo clippy -- -D warnings and cargo test, then a minimal run that sends one message
+   and shows the streamed reply. Report what you added, what you ran, and anything you could not verify.
+```
+
+### By hand
 
 ```sh
 cargo add ai-ui-core
@@ -72,8 +120,8 @@ For a full app, run the Slint example: `cargo run -p ai-ui-example-thread` (add 
 | `ai-ui-slint` | `@assistant-ui/react` UI | Slint thread, messages, composer and actions | via the example |
 | `examples/thread` | assistant-ui default thread | Demo app: built-in streaming model or any AI SDK endpoint; native and browser | demo build |
 
-The first eight have no UI dependency and are published on crates.io; the two Slint crates (until Slint ships femtovg
-0.28) and the example are `publish = false`, so use them from the repository. Portions are ported from assistant-ui (MIT, (c) AgentbaseAI Inc.); see [NOTICE](NOTICE).
+All ten library crates are published on crates.io (the first eight have no UI dependency); the example is
+`publish = false`. Portions are ported from assistant-ui (MIT, (c) AgentbaseAI Inc.); see [NOTICE](NOTICE).
 
 ## Performance
 
@@ -99,9 +147,15 @@ rendered. Method, caveats and more numbers: [`docs/RESULTS.md`](docs/RESULTS.md)
 
 ## Using the crates
 
-`ai-ui-slint`, `ai-ui-markdown-slint` and the `examples/thread` app add a Slint UI. Until Slint ships femtovg 0.28,
-an app using them adds the `[patch.crates-io] femtovg` entry from this workspace's `Cargo.toml` (see
-[patches/README.md](patches/README.md)).
+`ai-ui-slint`, `ai-ui-markdown-slint` and the `examples/thread` app add a Slint UI. Until a Slint release uses
+femtovg 0.28 (or femtovg publishes a 0.27.x with the fix), an app using Slint's FemtoVG-WGPU renderer should add this
+to its `Cargo.toml`; without it a streaming chat uses about twice the CPU in a GPU window
+([patches/README.md](patches/README.md)):
+
+```toml
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
 
 **Slint licence.** This project's code is MIT. Slint itself is available under GPL-3.0, the Slint Royalty-Free
 licence (requires an attribution badge) or a commercial licence; an application using the Slint crates must comply

@@ -104,7 +104,6 @@ cumulative results) are described in [Concepts](02-concepts.md).
 
 ## Who it is not for
 
-- Projects that need the Slint UI as a published crate today: only the eight runtime crates are on crates.io.
 - Projects that need features on the not-yet-ported list: assistant-transport as a runtime, a concrete HTTP remote
   thread-list adapter, LangGraph and other framework adapters, custom per-tool components, attachment, speech,
   dictation, suggestion and history adapters, message queue.
@@ -113,8 +112,9 @@ cumulative results) are described in [Concepts](02-concepts.md).
 
 ## Status and limits
 
-- **Early.** The eight runtime crates are on crates.io as 0.1 (minor versions may break the API before 1.0). The Slint crates (`ai-ui-markdown-slint`, `ai-ui-slint`) have
-  `publish = false` until Slint ships femtovg 0.28; the repository carries a femtovg patch (`patches/README.md`).
+- **Early.** All ten library crates are on crates.io as 0.1 (minor versions may break the API before 1.0). With Slint's
+  FemtoVG-WGPU renderer, an app adds a one-line femtovg patch until a Slint release includes the fix
+  (`patches/README.md`).
 - **Browser demo.** It needs WebGL. On a 2x display the canvas renders at 1x and looks soft (known issue). Frame rates
   measured in headless Chromium use software WebGL and are a floor.
 - **Fidelity.** Markdown styling in a real GPU window is marked unverified in [STATUS](../STATUS.md).

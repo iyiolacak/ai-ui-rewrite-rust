@@ -16,8 +16,7 @@ protocols, and a Slint thread UI. It follows upstream's architecture module for 
 serves assistant-ui clients keeps working. The pinned upstream commit and the list of what is and is not ported are in
 [STATUS](../STATUS.md).
 
-It is early: the eight runtime crates are on crates.io as 0.1 (`cargo add ai-ui-core`), the Slint crates are used from the
-repository. It is a port, not a product of the assistant-ui or Vercel AI SDK projects.
+It is early: the library crates are on crates.io as 0.1 (`cargo add ai-ui-core`). It is a port, not a product of the assistant-ui or Vercel AI SDK projects.
 
 The point of the port is cost. On the same workload, a Rust thread uses much less CPU and memory than upstream's React
 thread. One example, with its conditions: opening a 1000-message thread (9 KB prompt) until every message's Markdown is
@@ -40,20 +39,21 @@ The first two layers compile for `wasm32-unknown-unknown`. Every crate is descri
 
 ## Install
 
-Nothing is published yet, so depend on the repository. Cargo finds each crate by name inside it:
+Using a coding agent? The [README](../../README.md#with-a-coding-agent) has a prompt to paste; it follows this guide.
+By hand:
 
 ```toml
 [dependencies]
-ai-ui-core = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
-ai-ui-state = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+ai-ui-core = "0.1"
+ai-ui-state = "0.1"
 # Only if you talk to an AI SDK backend:
-ai-ui-data-stream = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
-ai-ui-http = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+ai-ui-data-stream = "0.1"
+ai-ui-http = "0.1"
 # The examples on this page drive futures with a small executor:
 futures-executor = "0.3"
 ```
 
-Pin a revision with `rev = "..."` once you depend on it for real. The non-UI crates need Rust 1.85 or newer
+The non-UI crates need Rust 1.85 or newer
 (`ai-ui-markdown` needs 1.88, the Slint crates 1.92). The runtime has no executor of its own, so you choose one:
 `slint::spawn_local`, a Tokio `LocalSet`, `wasm-bindgen-futures`, or `futures_executor::block_on` in tests and scripts.
 
@@ -280,8 +280,14 @@ exact version of the CLI, or set `WASM_BINDGEN=/path/to/wasm-bindgen`. Add the t
 **Old toolchain.** The Slint crates and the example need Rust 1.92; `rustup update` fixes most "requires rustc" errors.
 
 **Your own Slint app drops frames during long streams.** Slint 1.18 depends on a femtovg release that recompiles GPU
-pipelines too often for a streaming chat. This workspace carries a patch; an app that uses the Slint crates adds the same
-`[patch.crates-io]` entry. See [patches/README.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/patches/README.md).
+pipelines too often for a streaming chat. This workspace carries a patch; an app that uses the Slint crates adds:
+
+```toml
+[patch.crates-io]
+femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+```
+
+ See [patches/README.md](https://github.com/iyiolacak/ai-ui-rewrite-rust/blob/main/patches/README.md).
 
 **Slint licence.** The code here is MIT, but Slint is available under GPL-3.0, a royalty-free licence that requires an
 attribution badge, or a commercial licence. An app using the Slint crates must comply with the one it picks.

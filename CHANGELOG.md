@@ -5,7 +5,7 @@ before 1.0, minor versions may break the API.
 
 ## 0.1.0 (2026-11-15)
 
-First crates.io release of the eight runtime crates.
+First crates.io release of all ten library crates.
 
 Naming: the repository is `ai-ui-rewrite-rust` and the crates use the `ai-ui-` prefix (they were `assistant-ui-*` while the
 project was a working copy inside another repository). The AI SDK stream crate is `ai-ui-sdk-stream`. Environment
@@ -21,8 +21,9 @@ First public version, ported from assistant-ui `eb65bd4` (MIT).
 - `ai-ui-state`: UI-agnostic thread, message and composer state and actions.
 - `ai-ui-markdown`: bounded Markdown parsing and projection, incremental block splitter.
 - `ai-ui-clipboard`: result-aware clipboard for native and browser.
-- Slint UI crates (`ai-ui-slint`, `ai-ui-markdown-slint`) and the `examples/thread` app; not part
-  of the first crates.io release.
+- Slint UI crates (`ai-ui-slint`, `ai-ui-markdown-slint`), published with a known issue: until a Slint release uses
+  femtovg 0.28, apps using the FemtoVG-WGPU renderer add the femtovg patch from the README (about twice the CPU
+  without it while streaming). The `examples/thread` app is not published.
 - Web demo package: `pixel-snap.js` lays the canvas out on whole device pixels, which keeps text sharp in Firefox on
   fractional-scale displays and fractional layouts; see `docs/WEB.md`.
 

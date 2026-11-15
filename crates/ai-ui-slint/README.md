@@ -1,8 +1,24 @@
 # Assistant Slint components
 
+> **Known issue: extra CPU with Slint's FemtoVG-WGPU renderer.** Slint 1.18 uses femtovg 0.27, which drops its cached
+> GPU pipelines whenever a frame does not use them, so a streaming chat (whose frames differ) recompiles pipelines and
+> shaders every few frames. In our real-window measurement a 30 s stream into a 1000-message thread took 16.4-23.6 s of
+> process CPU without the fix and 9.6-10.2 s with it. The fix is upstream (femtovg #366, released in 0.28), but no Slint
+> release uses it yet. Until one does, add this to your application's `Cargo.toml`:
+>
+> ```toml
+> [patch.crates-io]
+> femtovg = { git = "https://github.com/iyiolacak/ai-ui-rewrite-rust" }
+> ```
+>
+> It points Cargo at femtovg 0.27.0 with #366 backported by hand (`patches/femtovg`, MIT OR Apache-2.0, one changed
+> file). Slint's software and Skia renderers are not affected. When femtovg publishes a 0.27.x with the fix, or a Slint
+> release moves to femtovg 0.28, remove the patch and run `cargo update`.
+
 This is a Slint 1.18.1 source component library, separate from the
-portable Rust conversation state and from the product application. The offline
-fixture in `apps/assistant-demo` shows how to import and bind it. It does no
+portable Rust conversation state. The
+[thread example](https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/examples/thread) shows how to import and
+bind it. It does no
 networking, persistence, authorization or tool execution. An in-process module
 boundary does not isolate crashes or resource exhaustion.
 

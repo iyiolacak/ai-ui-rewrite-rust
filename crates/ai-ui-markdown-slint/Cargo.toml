@@ -10,7 +10,6 @@ description = "Slint rendering of ai-ui-markdown blocks, with off-thread formatt
 edition.workspace = true
 repository.workspace = true
 readme = "README.md"
-publish = false
 
 [dependencies]
 ai-ui-markdown = { path = "../ai-ui-markdown", version = "0.1.0" }

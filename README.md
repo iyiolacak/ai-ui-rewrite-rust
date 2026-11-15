@@ -31,6 +31,7 @@ more sensitive, so the open ratio is smallest on the fastest runs. Ratios are ro
 > assistant-transport as a runtime, attachments, speech, custom per-tool components ([STATUS](docs/STATUS.md)). A port,
 > not affiliated with the assistant-ui or Vercel AI SDK projects.
 
+Try the WebAssembly demo with 10,000 messages on the [landing page](https://iyiolacak.github.io/ai-ui-rewrite-rust/).
 Start with [Why ai-ui](docs/guide/00-why-ai-ui.md) or [Getting started](docs/guide/01-getting-started.md); every
 number is in [RESULTS](docs/RESULTS.md); the browser build is described in [WEB](docs/WEB.md).
 

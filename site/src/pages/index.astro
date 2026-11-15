@@ -4,6 +4,8 @@ import '../styles/fonts.css';
 import data from '../../data/benchmarks.json';
 import { barChart, comparison, range, ratioWhole } from '../lib/bench';
 
+// Root of the deployment with a trailing slash: '/' locally, '/ai-ui-rewrite-rust/' on GitHub Pages (SITE_BASE).
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const repo = 'https://github.com/iyiolacak/ai-ui-rewrite-rust';
 const docs = `${repo}/blob/main/docs`;
 const web = Object.fromEntries((data.web?.rows ?? []).map((r) => [r.id, r]));
@@ -31,16 +33,16 @@ const guides = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <link rel="preload" href="/fonts/WorkSans-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+    <link rel="preload" href={`${base}fonts/WorkSans-latin.woff2`} as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href={`${base}logo.svg`} type="image/svg+xml" />
     <title>AI UI in Rust: assistant-ui rewritten</title>
     <meta name="description" content="A Rust-native AI UI toolkit, built for conversations that don't stop at 100 messages. Same protocols as assistant-ui, far less CPU and memory." />
   </head>
   <body class="antialiased">
     <header class="topbar">
       <div class="mx-auto flex w-full max-w-6xl items-center gap-6 px-4 sm:px-6 h-16">
-        <a class="brand" href="/" aria-label="AI UI in Rust, home">
-          <img src="/logo.svg" width="30" height="30" alt="" />
+        <a class="brand" href={`${base}`} aria-label="AI UI in Rust, home">
+          <img src={`${base}logo.svg`} width="30" height="30" alt="" />
           <span>AI UI in Rust</span>
         </a>
         <div class="ml-auto flex items-center gap-5">
@@ -58,17 +60,17 @@ const guides = [
     <main class="mx-auto w-full max-w-6xl px-4 sm:px-6">
       <section class="hero" aria-labelledby="hero">
         <h1 id="hero" class="hero-title">
-          <span class="hl-top"><a class="hl-link" href="https://assistant-ui.com" rel="noopener" target="_blank" aria-describedby="hl-tip">assistant-ui</a>, rewritten in <span class="nowrap"><img class="rust-inline" src="/rust-logo-white-outline.svg" width="40" height="40" alt="" />Rust</span></span><span class="hl-tip" id="hl-tip" role="tooltip">The frontend library for AI agents</span>
+          <span class="hl-top"><a class="hl-link" href="https://assistant-ui.com" rel="noopener" target="_blank" aria-describedby="hl-tip">assistant-ui</a>, rewritten in <span class="nowrap"><img class="rust-inline" src={`${base}rust-logo-white-outline.svg`} width="40" height="40" alt="" />Rust</span></span><span class="hl-tip" id="hl-tip" role="tooltip">The frontend library for AI agents</span>
           <span class="hl-rest" data-crash><span class="hl-seg"><span data-crash-word>opens</span></span> <span class="hl-seg"><span class="num" data-crash-word data-crash-source><span data-bench="open-1000.ratio-whole">{ratioWhole(headline.open)}</span>×</span> <span data-crash-word>faster</span></span> <span class="hl-seg"><span data-crash-word>and</span> <span data-crash-word>uses</span></span> <span class="hl-seg"><span class="num" data-crash-word><span data-bench="memory-1000.ratio-whole">{ratioWhole(headline.memory)}</span>×</span> <span data-crash-word>less</span> <span data-crash-word>memory</span></span> <span class="hl-seg"><span data-crash-word>than</span> <span data-crash-word>the</span> <span data-crash-word>React</span> <span data-crash-word>original.</span></span></span>
         </h1>
         <p class="hero-sub">Stalls while streaming are <span data-bench="stall-1000.ratio-whole">{ratioWhole(headline.stall)}</span>× shorter on a <span class="nowrap">1,000-message thread</span>. Try it with <span class="num-shimmer">{tenThousand.map((c, i) => <i style={`--i:${i}`}>{c}</i>)}</span> messages in your browser.</p>
         <p class="hero-actions">
           <a class="btn btn-demo" href="#demo" aria-label="Try it with 10,000 messages">
-            <img src="/thumb-demo.webp" width="224" height="128" alt="" />
+            <img src={`${base}thumb-demo.webp`} width="224" height="128" alt="" />
             <span>Try it with <span class="num-shimmer">{tenThousand.map((c, i) => <i style={`--i:${i}`}>{c}</i>)}</span> messages</span>
           </a>
           <a class="btn btn-demo" href={repo} aria-label="Source on GitHub">
-            <img src="/thumb-source.webp" width="224" height="128" alt="" />
+            <img src={`${base}thumb-source.webp`} width="224" height="128" alt="" />
             <span>Source on GitHub</span>
           </a>
         </p>
@@ -76,7 +78,7 @@ const guides = [
         <div class="screens">
           <div class="screens-track">
             <a class="screen" href="#demo" aria-label="Open the live demo: a 10,000-message thread, running below">
-              <img src="/demo-preview.webp" width="1760" height="1102" alt="The chat UI: a sidebar of threads and a 10,000-message conversation opened at its first message." decoding="async" />
+              <img src={`${base}demo-preview.webp`} width="1760" height="1102" alt="The chat UI: a sidebar of threads and a 10,000-message conversation opened at its first message." decoding="async" />
             </a>
             <a class="screen screen-results" href="#speed" aria-label="See the benchmark results against the React original">
               <div aria-hidden="true">
@@ -315,11 +317,11 @@ const guides = [
 
     <footer>
       <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <a class="brand" href="/">
-          <img src="/logo.svg" width="24" height="24" alt="" />
+        <a class="brand" href={`${base}`}>
+          <img src={`${base}logo.svg`} width="24" height="24" alt="" />
           <span>AI UI in Rust</span>
         </a>
-        <a href="https://slint.dev" rel="noopener" class="shrink-0"><img src="/made-with-slint.svg" width="106" height="48" alt="Made with Slint" /></a>
+        <a href="https://slint.dev" rel="noopener" class="shrink-0"><img src={`${base}made-with-slint.svg`} width="106" height="48" alt="Made with Slint" /></a>
         <p class="text-sm max-w-xl" style="color: var(--muted)">MIT licence. Ported from assistant-ui (MIT, &copy; AgentbaseAI Inc.); not affiliated with the assistant-ui or Vercel AI SDK projects. The demo is built with <a class="underline" href="https://slint.dev" rel="noopener">Slint</a>, used under the Slint Royalty-Free License 2.0. Work Sans is used under the SIL Open Font License 1.1. Rust and the Rust logo are trademarks of the Rust Foundation, and this project is not affiliated with or endorsed by the Rust Foundation or the Rust Project. The logo is used unmodified, from <a class="underline" href="https://github.com/rust-lang/rust-artwork" rel="noopener">rust-artwork</a>, under <a class="underline" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC BY 4.0</a>; see the <a class="underline" href="https://rustfoundation.org/policy/rust-trademark-policy/" rel="noopener">trademark policy</a>.</p>
         <nav class="flex gap-5 text-sm" aria-label="Footer">
           <a href={repo}>GitHub</a>

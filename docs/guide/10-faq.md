@@ -54,7 +54,9 @@ against 1481 MiB RSS or 850 MiB PSS. Those are medians of 5 interleaved pairs on
 
 The catch: the comparison is against upstream's default thread, which renders every message into the DOM and does not
 virtualise the list. Upstream documents a virtualised thread for long conversations; it has not been measured yet and
-would narrow the gap on long threads. The React page uses plain CSS, which also omits the default kit's
+would narrow the gap on long threads. It also runs on `useLocalRuntime`, which recomputes each message's state twice per
+streamed update where upstream's templates (the AI SDK runtime, an external store) do it once, so the CPU and stall
+ratios likely overstate that part; a corrected rerun is in progress. The React page uses plain CSS, which also omits the default kit's
 `content-visibility: auto` rule on message roots. It ran in headless Chromium on a shared, busy machine;
 the Rust side was offscreen with software raster; it was one machine; no GPU window was compared; and the 2026-11-10
 numbers had to be corrected. Read "How to read these numbers" in [Performance](07-performance.md).

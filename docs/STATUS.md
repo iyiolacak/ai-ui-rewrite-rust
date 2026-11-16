@@ -71,7 +71,9 @@ demo reply (reasoning, then the answer, one word every 18 ms) and the same 60 s 
 The React side is upstream's default thread, which renders every message into the DOM and does not virtualise the
 list. Upstream documents a virtualised thread for long conversations; it has not been measured here. It would reduce
 DOM size, open time and memory on long threads, so none of the ratios below, least of all the 10,000-message ones,
-is a statement about virtualised React. `compare.sh` interleaves the two. Rust draws at most 60 frames a second, like a display. CPU is the whole process tree
+is a statement about virtualised React. The React page also runs on `useLocalRuntime`, which recomputes each message's
+state twice per streamed update; upstream's templates use the AI SDK runtime (an external store), which does it once,
+so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress. `compare.sh` interleaves the two. Rust draws at most 60 frames a second, like a display. CPU is the whole process tree
 (every thread and process); memory is resident memory (React: every Chromium process, RSS and PSS). The current numbers
 are the 2026-11-11 re-run below (median of 5 interleaved pairs, raw files in
 `benchmarks/results/like-for-like/raw`); the 2026-11-10 table after it is kept as history.

@@ -3,7 +3,10 @@
 Every number here is measured, with its conditions. **Scope:** "React" means upstream's default thread
 (`@assistant-ui/react` 0.15.33), which renders every message into the DOM and does not virtualise the list. A virtualised
 React thread has not been measured; it would reduce DOM size, open time and memory on long threads, so the large-thread
-multipliers below are not a statement about virtualised React. Ratios are computed by `scripts/results.py` from the values in
+multipliers below are not a statement about virtualised React. The React page also runs on `useLocalRuntime`, which
+recomputes each message's state twice per streamed update; upstream's templates use the AI SDK runtime (an external
+store), which does it once, so the CPU and stall multipliers likely overstate that part. A corrected rerun is in
+progress. Ratios are computed by `scripts/results.py` from the values in
 `docs/results.json` and floored to one decimal (never rounded up); `python3 scripts/results.py check` fails if this
 page and the JSON disagree. The tables are ranked by the top of each row's range. The top of a range pairs the best
 Rust figure with the worst React figure of the same workload, so each row also shows the ratio of the two stated values and

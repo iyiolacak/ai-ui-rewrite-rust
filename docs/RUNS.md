@@ -73,6 +73,8 @@ Headline open-time ratio against the default unvirtualised React thread (React m
 
 - Every React figure here is upstream's default thread, which renders every message into the DOM and does not virtualise the list.
   Upstream documents a virtualised thread for long conversations; it has not been measured yet and would narrow the gap on long threads.
+  The React page runs on `useLocalRuntime`, which recomputes each message's state twice per streamed update; upstream's templates use
+  the AI SDK runtime (an external store), which does it once, so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress.
   The React page's plain CSS also omits the default kit's `content-visibility: auto` on message roots, which lets Chromium skip
   rendering off-screen messages, so the CSS difference cannot be said to favour React; its net effect is not measured.
 - The open-time ratio differs between runs because of power profile and machine load. React's open time is more CPU-speed sensitive

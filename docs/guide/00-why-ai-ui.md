@@ -59,7 +59,9 @@ serves assistant-ui clients needs no change.
 Rust is this repository's example app with the software renderer (`--bench-render`); React is upstream assistant-ui's
 default thread (`@assistant-ui/react` 0.15.33) in headless Chromium, which renders every message into the DOM and does
 not virtualise the list. A virtualised React thread has not been measured yet; it would narrow the gap on long threads,
-the 10,000-message row most of all. Same history, same demo reply, 60 s window. Medians of 5
+the 10,000-message row most of all. The React page also runs on `useLocalRuntime`, which recomputes each message's
+state twice per streamed update; upstream's templates use the AI SDK runtime (an external store), which does it once,
+so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress. Same history, same demo reply, 60 s window. Medians of 5
 interleaved pairs, measured 2026-11-11, machine load about 4-6. Ranges are min to max over the 5 runs. A second, independent run (9 pairs, lighter load) is in
 [Performance](07-performance.md#second-run) and [RESULTS](../RESULTS.md). Across all four runs of that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU (medians per run; [RUNS](../RUNS.md)).
 

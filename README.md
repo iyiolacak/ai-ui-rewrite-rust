@@ -21,7 +21,10 @@ wire decoders, and a Slint thread UI, for native and WebAssembly apps.
 
 Against upstream assistant-ui (`@assistant-ui/react` 0.15.33 in headless Chromium) on the same workload. "React"
 below is upstream's default thread, which renders every message into the DOM and does not virtualise the list; a
-virtualised React thread has not been measured yet and would narrow the gap on long threads. The workload is a
+virtualised React thread has not been measured yet and would narrow the gap on long threads. The React page also runs on
+`useLocalRuntime`, which recomputes each message's state twice per streamed update; upstream's templates use the AI SDK
+runtime (an external store), which does it once, so the CPU and stall ratios likely overstate that part. A corrected
+rerun is in progress. The workload is a
 1000-message thread, then a 9 KB prompt whose reply streams for 60 s. Rust is a release build that rasterises in
 software. Four independent runs on 2026-11-11, each 5 to 9 interleaved pairs, under different power settings and load.
 Each cell gives the range of the four run medians; the ratio's first number is the least favourable run

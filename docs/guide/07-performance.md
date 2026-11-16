@@ -130,7 +130,9 @@ window on both sides. Each cell is the median of 5 interleaved Rust and React pa
 2026-11-11, machine load about 4-6. Ranges are the minimum to maximum over the five runs. Ratios are the median
 React value divided by the median Rust value, floored to one decimal. Upstream documents a virtualised thread for long
 conversations; it has not been measured yet and would narrow the gap on long threads, so these ratios are not a
-statement about virtualised React.
+statement about virtualised React. The React page also runs on `useLocalRuntime`, which recomputes each message's state
+twice per streamed update; upstream's templates use the AI SDK runtime (an external store), which does it once, so the
+CPU and stall ratios likely overstate that part. A corrected rerun is in progress.
 
 ### 1,000 messages, 9 KB prompt
 

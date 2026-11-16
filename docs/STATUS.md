@@ -45,6 +45,13 @@ and common punctuation, other scripts fall back to system fonts) and IBM Plex Mo
 - Custom per-tool components (generative UI), attachment, feedback, speech, dictation, suggestion and history adapters, message queue.
 - Composer attachments with an adapter, quotes.
 
+## Known limitations
+
+- The example host (`examples/thread`, also the web demo) formats Markdown only for the newest 1,200 messages
+  (`MARKDOWN_WINDOW` in `examples/thread/src/app.rs`); older messages show plain text, permanently for now. Up to 1,200
+  messages every reply is formatted. This is being changed to format rows as they scroll into view. It also affects the
+  benchmarks above 1,200 messages (see [Performance](#against-upstream-react-default-thread-not-virtualised)).
+
 ## Performance
 
 Measured results against upstream: [`RESULTS.md`](RESULTS.md).
@@ -73,13 +80,16 @@ list. Upstream documents a virtualised thread for long conversations; it has not
 DOM size, open time and memory on long threads, so none of the ratios below, least of all the 10,000-message ones,
 is a statement about virtualised React. The React page also runs on `useLocalRuntime`, which recomputes each message's
 state twice per streamed update; upstream's templates use the AI SDK runtime (an external store), which does it once,
-so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress. `compare.sh` interleaves the two. Rust draws at most 60 frames a second, like a display. CPU is the whole process tree
+so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress. At 10,000 messages the Rust
+app formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies; older ones showed plain text), while
+React formatted all of them, so the 10,000-message rows are not like for like. A fix and a rerun are in progress. `compare.sh` interleaves the two. Rust draws at most 60 frames a second, like a display. CPU is the whole process tree
 (every thread and process); memory is resident memory (React: every Chromium process, RSS and PSS). The current numbers
 are the 2026-11-11 re-run below (median of 5 interleaved pairs, raw files in
 `benchmarks/results/like-for-like/raw`); the 2026-11-10 table after it is kept as history.
 
-**Current, like for like (2026-11-11).** "Open" is the same end state on both sides: all messages shown with their Markdown
-formatted. Rust: from the start of the import until the Markdown worker is idle and a frame has been painted (`open (formatted and
+**Current (2026-11-11); like for like at 1000 and 200 messages only.** At 1000 and 200 messages "open" is the same end
+state on both sides: all messages shown with their Markdown formatted. At 10,000 messages it is not: Rust formatted only
+the newest 1,200 messages, React all of them. Rust: from the start of the import until the Markdown worker is idle and a frame has been painted (`open (formatted and
 painted, like for like)` in `--bench`); React: navigation until every message and its Markdown table is in the DOM, plus two
 frames (`open_formatted_ms`). Rust's first sync alone (rows on screen, Markdown not yet formatted) is a different, earlier
 event and is not compared with React. Machine load about 4-6; ranges are min to max of the 5 runs.
@@ -94,10 +104,13 @@ event and is not compared with React. Machine load about 4-6; ranges are min to 
 | | CPU while streaming (60 s) | 17.0 s (13.7-19.5) | 51.2 s (41.9-57.1) | 3.0x |
 | | memory at the end | 25 MiB | 1213 MiB RSS, 584 MiB PSS | 49x RSS, 23x PSS |
 | | longest stall | 110 ms (36-136) | 2.40 s (2.18-2.65) | 21.8x |
-| 10,000 messages, 9 KB prompt | open, like for like | 436 ms (383-472); first sync alone 148 ms | 26.1 s (23.6-27.2) | 59.8x |
+| 10,000 messages, 9 KB prompt | open (not like for like, see below) | 436 ms (383-472); first sync alone 148 ms | 26.1 s (23.6-27.2) | 59.8x |
 | | CPU while streaming (60 s) | 22.8 s (20.9-23.2) | 83.5 s (76.1-84.7) | 3.6x |
 | | memory at the end | 64 MiB | 3718 MiB RSS, 3089 MiB PSS | 58x RSS, 48x PSS |
 | | longest stall | 41 ms (28-46) | 11.6 s (9.8-12.9) | 282x |
+
+The four 10,000-message rows are not like for like: the Rust app formatted Markdown only for the newest 1,200 messages
+(600 of 5,000 replies; older ones showed plain text), while React formatted all of them. A fix and a rerun are in progress.
 
 Correction. The earlier table headlined "open the thread 0.12 s" for Rust (24x against React's 2.9 s). That Rust figure was the
 time before Markdown was formatted, while React's 2.9 s ends with Markdown rendered, so it was not like for like; the same table
@@ -144,7 +157,8 @@ gets the same by adding the `[patch.crates-io]` entry to its own workspace, unti
 At 10,000 messages upstream's page did not survive in headless Chromium on 2026-11-10 (the browser closed mid-run, and on a second
 attempt at launch; on 2026-11-11 it survived 5 of 5 runs, see the table above), and the harness could not type a 512 KB prompt into its composer within 30 s. Rust, after the
 changes below: 10,000 messages open in 75 ms (Markdown formatted by 0.11 s), stream at 14.9 s CPU per 60 s with p95
-2.5 ms, 63 MiB.
+2.5 ms, 63 MiB. Those Rust figures format Markdown only for the newest 1,200 messages (600 of 5,000 replies; older ones
+showed plain text), so the formatting time covers 1,200 messages, not 10,000.
 
 Changes, each judged by `scripts/ab-bench.sh` against the previous main (median of 3 interleaved pairs; 1000 messages
 and a 9 KB prompt): open 61-91 ms -> 8-13 ms, Markdown formatted 0.52 s -> 0.09-0.11 s, app CPU while streaming 6.6 s ->

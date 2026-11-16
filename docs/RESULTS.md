@@ -6,7 +6,10 @@ React thread has not been measured; it would reduce DOM size, open time and memo
 multipliers below are not a statement about virtualised React. The React page also runs on `useLocalRuntime`, which
 recomputes each message's state twice per streamed update; upstream's templates use the AI SDK runtime (an external
 store), which does it once, so the CPU and stall multipliers likely overstate that part. A corrected rerun is in
-progress. Ratios are computed by `scripts/results.py` from the values in
+progress. At 10,000 messages the Rust app formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies;
+older ones showed plain text), while React formatted all of them, so the 10,000-message rows are not like for like. The
+same applies to the 2,000- and 5,000-message rows of 2026-11-10, where Rust also formatted only the newest 1,200
+messages. A fix and a rerun are in progress. Ratios are computed by `scripts/results.py` from the values in
 `docs/results.json` and floored to one decimal (never rounded up); `python3 scripts/results.py check` fails if this
 page and the JSON disagree. The tables are ranked by the top of each row's range. The top of a range pairs the best
 Rust figure with the worst React figure of the same workload, so each row also shows the ratio of the two stated values and
@@ -15,12 +18,14 @@ the lowest ratio. Read the conditions column with the number.
 Every per-pair raw value, the power and load conditions of each run and the web and test results are in `docs/runs.json`; see [RUNS.md](RUNS.md).
 
 Status of this page (2026-11-11): the 1000-message, 200-message and 10,000-message comparisons were re-run with raw files
-kept (5 interleaved pairs each, `benchmarks/results/like-for-like/raw`). **Every "open the thread" row compares like with like**:
-Rust until the last message's Markdown is formatted and painted at least once, React until all messages are in the DOM with
-their Markdown rendered. An earlier version of this page headlined Rust's open time *before* Markdown was formatted (0.12 s,
+kept (5 interleaved pairs each, `benchmarks/results/like-for-like/raw`). **The 1000- and 200-message "open the thread" rows
+compare like with like**: Rust until the last message's Markdown is formatted and painted at least once, React until all messages
+are in the DOM with their Markdown rendered. The 10,000-message open row is not like for like: Rust formatted only the newest
+1,200 messages (see the scope paragraph above). An earlier version of this page headlined Rust's open time *before* Markdown was formatted (0.12 s,
 "24x") against React's open time *with* Markdown rendered; that comparison is withdrawn. Measured like for like, opening a
 1000-message thread is 105 ms (Rust) vs 2.94 s (React's default, unvirtualised thread), 27.9x (range 18.5x to 29.6x). The 2,000- and 5,000-message rows below
-come from the 2026-11-10 session; their Rust open figures were corrected to include Markdown formatting.
+come from the 2026-11-10 session; their Rust open figures were corrected to include Markdown formatting, which then covered only
+the newest 1,200 messages.
 
 ## Second run (2026-11-11, lighter load)
 
@@ -44,6 +49,12 @@ lies inside run 1's pairing range for the same measure, whereas the CPU ratio (7
 
 ## Ranked multipliers (Rust vs React's default, unvirtualised thread)
 
+**Rows above 1,200 messages are not like for like.** At 10,000 messages the Rust app formatted Markdown only for the newest
+1,200 messages (600 of 5,000 replies; older ones showed plain text), while React formatted all of them, so the 10,000-message
+rows (1, 7, 9, 11, 25) are not like for like; row 7's label "like for like" does not hold at that size. The 2,000- and
+5,000-message rows (2, 3, 4, 14, 22) had the same limit. A fix and a rerun are in progress. The 1000- and 200-message rows
+are unaffected: every reply there was formatted.
+
 <!-- results:vs_react -->
 | Rank | Workload | Measure | Rust | React | Ratio | Range | Source (commit), date | Conditions | What drives it |
 |---|---|---|---|---|---|---|---|---|---|
@@ -53,7 +64,7 @@ lies inside run 1's pairing range for the same measure, whereas the CPU ratio (7
 | 4 | 2,000 long structured messages | longest single iteration or frame while streaming | 35 to 74.8 ms (value 41.5) | 1633.2 to 4583.1 ms (value 1633.2) | 39.3x | 21.8x to 130.9x | benchmarks/results/summary-run1.json (raw: results-run1/a-2000, 3 Rust runs, 2 of 3 React runs finished); hist build = 2cbedad + origin/demo/long-threads loader + benchmarks/results/rust-bench-extras.patch, 2026-11-10 | words.py seed 7 fixture, 2,000 messages, 12.2 MB of text, long structured replies, 9 KB prompt, 60 s window, headless Chromium vs --bench-render, 3 interleaved pairs, machine load 6-25. Rust = longest iteration (app work + layout + software paint, unpaced); React = longest frame interval. Single-event stalls are noisy: all runs shown in the range. | React main thread saturated (61 s busy in a 60 s window). |
 | 5 | 1000 messages, 9 KB prompt | longest iteration/frame while streaming, run 2 | 11.73 to 30.53 ms (value 16.68) | 416.6 to 983.3 ms (value 550) | 32.9x | 13.6x to 83.8x | benchmarks/results/like-for-like-run2 (9 interleaved pairs, release build, job2-run-pairs.sh; second independent run, summary job2-summary.txt), 2026-11-11 | RUN 2, a second independent run: median of 9 interleaved pairs (range = min to max over the 9 runs), machine load about 3-5 (lighter than run 1's 4-6), 60 s window, headless Chromium vs --bench-render, 1000 messages, 9 KB prompt. Rust = longest loop iteration (unpaced), React = longest animation-frame interval. | Main thread saturation in React. |
 | 6 | 200 messages, 40 KB prompt | longest stall | 36.2 to 136.2 ms (value 109.9) | 2183.2 to 2649.9 ms (value 2399.9) | 21.8x | 16x to 73.2x | benchmarks/results/like-for-like/raw (5 interleaved pairs, release build of 424a4fb plus the open reporting of this change; summary: benchmarks/results/like-for-like/summarize.py), 2026-11-11 | Median of 5 interleaved pairs (range = min to max over the 5 runs), machine load about 4-6, 60 s window, headless Chromium vs --bench-render. Rust = longest loop iteration (unpaced), React = longest frame interval. Rust varied 36 to 136 ms between runs. | Long reasoning text: Rust shows it as cached chunks laid out once; React re-wraps and re-lays out. |
-| 7 | 10,000 messages, 9 KB prompt | open the thread (like for like: Markdown formatted and painted) | 382.9 to 472.1 ms (value 435.5) | 23591 to 27196 ms (value 26081) | 59.8x | 49.9x to 71x | benchmarks/results/like-for-like/raw (5 interleaved pairs, release build of 424a4fb plus the open reporting of this change; summary: benchmarks/results/like-for-like/summarize.py), 2026-11-11 | Median of 5 interleaved pairs (range = min to max over the 5 runs), machine load about 4-6, 60 s window, headless Chromium vs --bench-render. Like for like: Rust = until the last message's Markdown is formatted and painted at least once (import + first sync + formatting on worker threads + a forced frame); React = navigation until all messages are in the DOM with their Markdown rendered (every reply's table present) plus two frames. Rust first sync alone: 147.8 ms (138.0 to 207.4), not comparable. | As above, growing with thread size. |
+| 7 | 10,000 messages, 9 KB prompt | open the thread (NOT like for like: Rust formatted the newest 1,200 messages, React all) | 382.9 to 472.1 ms (value 435.5) | 23591 to 27196 ms (value 26081) | 59.8x | 49.9x to 71x | benchmarks/results/like-for-like/raw (5 interleaved pairs, release build of 424a4fb plus the open reporting of this change; summary: benchmarks/results/like-for-like/summarize.py), 2026-11-11 | Median of 5 interleaved pairs (range = min to max over the 5 runs), machine load about 4-6, 60 s window, headless Chromium vs --bench-render. Like for like: Rust = until the last message's Markdown is formatted and painted at least once (import + first sync + formatting on worker threads + a forced frame); React = navigation until all messages are in the DOM with their Markdown rendered (every reply's table present) plus two frames. Rust first sync alone: 147.8 ms (138.0 to 207.4), not comparable. | As above, growing with thread size. |
 | 8 | 1000 messages, 9 KB prompt | longest iteration/frame while streaming | 17.5 to 35.4 ms (value 34) | 866.6 to 1183.3 ms (value 916.6) | 26.9x | 24.4x to 67.6x | benchmarks/results/like-for-like/raw (5 interleaved pairs, release build of 424a4fb plus the open reporting of this change; summary: benchmarks/results/like-for-like/summarize.py), 2026-11-11 | Median of 5 interleaved pairs (range = min to max over the 5 runs), machine load about 4-6, 60 s window, headless Chromium vs --bench-render. Rust = longest loop iteration (unpaced), React = longest animation-frame interval. React also had 105 frames over 33 ms in run 1. | Main thread saturation in React. |
 | 9 | 10,000 messages, 9 KB prompt | memory at the end (RSS) | 63.3 to 64 MiB (value 63.6) | 3675.4 to 3926 MiB (value 3717.8) | 58.4x | 57.4x to 62x | benchmarks/results/like-for-like/raw (5 interleaved pairs, release build of 424a4fb plus the open reporting of this change; summary: benchmarks/results/like-for-like/summarize.py), 2026-11-11 | Median of 5 interleaved pairs (range = min to max over the 5 runs), machine load about 4-6, 60 s window, headless Chromium vs --bench-render. React RSS over all Chromium processes; PSS 3089 MiB (3051 to 3299). | As above. |
 | 10 | 1000 messages, 9 KB prompt | memory at the end (RSS), run 2 | 29.8 to 30.2 MiB (value 30.1) | 1427.7 to 1708.5 MiB (value 1531.5) | 50.8x | 47.2x to 57.3x | benchmarks/results/like-for-like-run2 (9 interleaved pairs, release build, job2-run-pairs.sh; second independent run, summary job2-summary.txt), 2026-11-11 | RUN 2, a second independent run: median of 9 interleaved pairs (range = min to max over the 9 runs), machine load about 3-5 (lighter than run 1's 4-6), 60 s window, headless Chromium vs --bench-render, 1000 messages, 9 KB prompt. React RSS over all 9 Chromium processes. | DOM plus JS heap. |
@@ -79,7 +90,8 @@ Notes on specific rows:
 - Longest stall, 200 messages with a 40 KB prompt: Rust 36-136 ms (median 110) against React 2.2-2.6 s (median 2.4 s) is 21.8x
   by the medians, 16.0x with Rust's slowest run and React's fastest, and 73.2x at the other extreme. Both ends are real runs; the
   range is the honest statement. At 1000 messages it is 26.9x.
-- Open rows are like for like (see the status paragraph). The withdrawn 24x compared Rust's first sync (rows visible, Markdown not
+- Open rows at 1000 and 200 messages are like for like (see the status paragraph); the 10,000-, 2,000- and 5,000-message open
+  rows are not, because Rust formatted only the newest 1,200 messages. The withdrawn 24x compared Rust's first sync (rows visible, Markdown not
   yet formatted: 12.9 ms median now, 0.12 s when that figure was published) with React's finished page. The 5.4x recorded next to it
   on 2026-11-10 used Rust's then Markdown time (0.53 s); the pooled Markdown workers since reduced it, and the measured like-for-like
   ratio now is 27.9x at 1000 messages. React's open time with and without the Markdown check differs by only 30 to 40 ms
@@ -91,7 +103,9 @@ Notes on specific rows:
 - 10,000 messages: these rows are where a virtualised React thread (not measured) would differ most from the default one,
   which keeps all 10,000 messages in the DOM. On 2026-11-10 upstream's page did not survive in headless Chromium. In these 5 pairs it did: it opened in 23.6 to
   27.2 s and finished the 60 s window with 3.7 GiB RSS and 11.6 s median longest frame. Both outcomes are real; the earlier failure
-  was not reproduced.
+  was not reproduced. At 10,000 messages the Rust app formatted Markdown only for the newest 1,200 messages (600 of 5,000
+  replies; older ones showed plain text), while React formatted all of them, so the 10,000-message rows are not like for like.
+  A fix and a rerun are in progress.
 - 2,000 long structured messages: the third React run did not finish opening within the harness's 120 s limit, so it is excluded
   from the React range; this understates React. At 5,000 messages React did not finish opening within 120 s in 3 of 3 runs.
   That row is a lower bound (the real React open time is above 120 s, unmeasured).
@@ -109,6 +123,8 @@ Columns read "Rust" = now, "React" = the earlier Rust build in this table only.
 <!-- /results:rust_only -->
 
 ## Rust-only results of the new runs (no React figure)
+
+In the Rust runs below, the app formatted Markdown only for the newest 1,200 messages; older ones showed plain text.
 
 - 5,000 long structured messages (29.7 MB text): open 0.70-1.12 s, resident memory 166 MiB, process CPU 7.8-9.0 s per 60 s, p95 iteration 2.0-2.9 ms (3 runs, `results-run1/a-5000`).
 - 20,000 long structured messages (117.9 MB text): open 4.1 s, 552 MiB, 13.8 s CPU, p95 3.6 ms (1 run, `results-run1/a-20000`). React's run was interrupted, so there is no ratio.
@@ -132,7 +148,8 @@ Columns read "Rust" = now, "React" = the earlier Rust build in this table only.
 - Reproduce: `benchmarks/results/run-pairs.sh MODE HISTORY KB PAIRS OUT FIXTURE` with `RUST_BIN`, `REACT_BASELINE`, `PLAYWRIGHT`, `CHROME`
   set (see the script header); `python3 benchmarks/results/summarize.py DIR` summarises raw files;
   `python3 benchmarks/results/make-results-json.py` rewrites `docs/results.json`; `python3 scripts/results.py render|check`.
-- Raw runs: the like-for-like rows (1000, 200, 10,000 messages) are in `benchmarks/results/like-for-like/raw` with
+- Raw runs: the 2026-11-11 rows (1000, 200, 10,000 messages; the 10,000-message rows are not like for like, see the
+  scope paragraph) are in `benchmarks/results/like-for-like/raw` with
   `summarize.py` there (rows via `benchmarks/results/run-pairs.sh stream H KB 5 OUT`, release build). The 2,000/5,000/20,000-message rows:
   `~/.cache/ai-ui-rewrite-rust/results/results-run1/` (outside git; summarised in `benchmarks/results/summary-run1.json`).
 - What "open" measures: Rust `--bench` prints `open (formatted and painted, like for like)` = from the start of the import to a forced frame
@@ -148,6 +165,10 @@ Columns read "Rust" = now, "React" = the earlier Rust build in this table only.
   `content-visibility: auto` on message roots, which lets Chromium skip rendering off-screen messages; the net effect is not measured.
 - Rust's "longest stall" is the longest loop iteration (unpaced work); React's is the longest animation-frame interval. Different clocks, same workload.
 - The 2,000-message React runs varied a lot (open 42 s and 97 s, one run over 120 s) under a loaded machine; Rust varied little.
+- The example app formats Markdown only for the newest 1,200 messages (`MARKDOWN_WINDOW` in `examples/thread/src/app.rs`);
+  older ones show plain text. Up to 1,200 messages every reply is formatted, so the 1000- and 200-message rows are like for like;
+  the 2,000-, 5,000- and 10,000-message rows are not, because React formatted every message. A fix (formatting rows as they
+  scroll into view) and a rerun are in progress.
 - The 5,000 and 20,000 ratios are lower bounds or absent for the reasons above. No case was found where React's default (unvirtualised) thread wins or ties on these workloads.
 
 ## Not measured yet (interrupted, or not feasible)

@@ -46,6 +46,11 @@ more sensitive, so the open ratio is smallest on the fastest runs. Ratios are ro
 > not affiliated with the assistant-ui or Vercel AI SDK projects.
 
 Try the WebAssembly demo with 10,000 messages on the [landing page](https://iyiolacak.github.io/ai-ui-rewrite-rust/).
+The demo formats Markdown for the newest 1,200 messages; older ones show plain text for now (a change to format rows as
+they scroll into view is in progress). The table above is unaffected: at 1000 messages every reply is formatted. At
+10,000 messages the Rust app formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies), while React
+formatted all of them, so the 10,000-message rows in [RESULTS](docs/RESULTS.md) are not like for like. A fix and a
+rerun are in progress.
 Start with [Why ai-ui](docs/guide/00-why-ai-ui.md) or [Getting started](docs/guide/01-getting-started.md); every
 number is in [RESULTS](docs/RESULTS.md); the browser build is described in [WEB](docs/WEB.md).
 

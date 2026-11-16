@@ -61,7 +61,9 @@ default thread (`@assistant-ui/react` 0.15.33) in headless Chromium, which rende
 not virtualise the list. A virtualised React thread has not been measured yet; it would narrow the gap on long threads,
 the 10,000-message row most of all. The React page also runs on `useLocalRuntime`, which recomputes each message's
 state twice per streamed update; upstream's templates use the AI SDK runtime (an external store), which does it once,
-so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress. Same history, same demo reply, 60 s window. Medians of 5
+so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress. At 10,000 messages the Rust
+app formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies; older ones showed plain text), while
+React formatted all of them, so the 10,000-message row is not like for like. A fix and a rerun are in progress. Same history, same demo reply, 60 s window. Medians of 5
 interleaved pairs, measured 2026-11-11, machine load about 4-6. Ranges are min to max over the 5 runs. A second, independent run (9 pairs, lighter load) is in
 [Performance](07-performance.md#second-run) and [RESULTS](../RESULTS.md). Across all four runs of that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU (medians per run; [RUNS](../RUNS.md)).
 
@@ -71,13 +73,14 @@ interleaved pairs, measured 2026-11-11, machine load about 4-6. Ranges are min t
 | 1000 messages | longest iteration or frame while streaming | 34 ms (17.5 to 35.4) | 916.6 ms (866.6 to 1183.3) | 26.9x (24.4x to 67.6x) | 7 |
 | 1000 messages | memory at the end, Rust RSS vs React PSS | 30.1 MiB (29.7 to 30.4) | 850.3 MiB (841.8 to 895.4) | 28.2x (27.6x to 30.1x) | 14 |
 | 1000 messages | process CPU while streaming 60 s | 17160 ms (13700 to 17650) | 73260 ms (73050 to 73540) | 4.2x (4.1x to 5.3x) | 18 |
-| 10,000 messages | open the thread, Markdown formatted and painted | 435.5 ms (382.9 to 472.1) | 26081 ms (23591 to 27196) | 59.8x (49.9x to 71x) | 6 |
+| 10,000 messages | open the thread; not like for like: Rust formatted the newest 1,200 messages, React all | 435.5 ms (382.9 to 472.1) | 26081 ms (23591 to 27196) | 59.8x (49.9x to 71x) | 6 |
 
 Conditions that apply to every row:
 
-- **Like for like.** "Open" is the same end state on both sides. Rust: until the last message's Markdown is formatted
-  and painted at least once. React: until all messages are in the DOM with their Markdown rendered. Rust's first sync
-  alone (12.9 ms at 1000 messages) is an earlier event and is not compared.
+- **Like for like at 1000 messages.** There "open" is the same end state on both sides. Rust: until the last message's
+  Markdown is formatted and painted at least once. React: until all messages are in the DOM with their Markdown
+  rendered. Rust's first sync alone (12.9 ms at 1000 messages) is an earlier event and is not compared. At 10,000
+  messages the end states differ: the Rust app formats Markdown only for the newest 1,200 messages.
 - **Memory.** PSS is the conservative figure for React because it discounts shared pages. React RSS summed over all
   Chromium processes was 1481.5 MiB for the same run (row 11).
 - **Rust CPU includes software rasterisation.** React CPU is the whole Chromium process tree.

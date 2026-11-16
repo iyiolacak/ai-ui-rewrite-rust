@@ -61,7 +61,7 @@ is better the rule is rust/react; the current measures are all lower-is-better.
 |---|---|---|---|---|---|---|
 | run1 | 5 | 1000 msgs, 9 KB | not recorded (probably power saver) | unknown | 4.6 - 4.9 | the first like-for-like run |
 | run1-200x40 | 5 | 200 msgs, 40 KB | not recorded | unknown | 3.7 - 5.2 | same session |
-| run1-10000 | 5 | 10,000 msgs, 9 KB | not recorded | unknown | 4.6 - 6.0 | same session |
+| run1-10000 | 5 | 10,000 msgs, 9 KB | not recorded | unknown | 4.6 - 6.0 | same session; not like for like: Rust formatted Markdown only for the newest 1,200 messages |
 | run2 | 9 | 1000 msgs, 9 KB | not recorded | unknown | 2.7 - 4.8 | independent repeat |
 | run3 | 9 | 1000 msgs, 9 KB | tuned `throughput-performance`, governor `performance` | plugged in | 0.6 - 2.9 | frequency fell from about 4.2 GHz (pairs 1-4) to about 2.5-2.9 GHz (pairs 5-9), see `mean_cpu_mhz_per_pair` |
 | run4 | 9 | 1000 msgs, 9 KB | tuned `balanced`, governor `powersave`, EPP `balance_performance` | plugged in | 1.8 - 13.6 | confounded: an unrelated `rustc` process and other activity raised the load during pairs 2, 3, 6, 7, 8; mean CPU frequency 3.2 - 4.0 GHz per pair |
@@ -77,6 +77,10 @@ Headline open-time ratio against the default unvirtualised React thread (React m
   the AI SDK runtime (an external store), which does it once, so the CPU and stall ratios likely overstate that part. A corrected rerun is in progress.
   The React page's plain CSS also omits the default kit's `content-visibility: auto` on message roots, which lets Chromium skip
   rendering off-screen messages, so the CSS difference cannot be said to favour React; its net effect is not measured.
+- At 10,000 messages (`run1-10000`) the Rust app formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies;
+  older ones showed plain text), while React formatted all of them, so the 10,000-message rows are not like for like. The
+  2,000-message `earlier_rows` (2026-11-10) had the same limit. A fix and a rerun are in progress. The 1000- and 200-message
+  runs are unaffected: every reply there was formatted.
 - The open-time ratio differs between runs because of power profile and machine load. React's open time is more CPU-speed sensitive
   than Rust's (React 2.9 s, 2.5 s, 1.4 s, 1.7 s; Rust 105 ms, 98 ms, 83 ms, 83 ms in runs 1 to 4), so the faster the CPU runs, the smaller the ratio.
   Rust is faster in every pair of every run; the size of the gap is not one number. Show the range, not one figure.

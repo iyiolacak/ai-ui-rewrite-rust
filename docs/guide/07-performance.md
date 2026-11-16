@@ -112,7 +112,8 @@ paint took 9.589 ms raw against 5.554 ms paged. That is a layout figure, not a w
 
 The Rust side keeps parsed text once and instantiates Slint rows. Resident memory in the like-for-like runs was
 30 MiB at 1,000 messages and 64 MiB at 10,000 (table below). In the larger Rust-only runs, RESULTS records 166 MiB at
-5,000 long structured messages and 552 MiB at 20,000 (117.9 MB of text, one run). Memory grows with the thread, as it must,
+5,000 long structured messages and 552 MiB at 20,000 (117.9 MB of text, one run). Above 1,200 messages these figures
+hold formatted Markdown for the newest 1,200 messages only; older ones were kept as plain text. Memory grows with the thread, as it must,
 but slowly compared with the default React thread, which keeps every message in the DOM.
 
 One experiment was tried and reverted: one list row per Markdown block instead of one per message. That changed row
@@ -132,7 +133,10 @@ React value divided by the median Rust value, floored to one decimal. Upstream d
 conversations; it has not been measured yet and would narrow the gap on long threads, so these ratios are not a
 statement about virtualised React. The React page also runs on `useLocalRuntime`, which recomputes each message's state
 twice per streamed update; upstream's templates use the AI SDK runtime (an external store), which does it once, so the
-CPU and stall ratios likely overstate that part. A corrected rerun is in progress.
+CPU and stall ratios likely overstate that part. A corrected rerun is in progress. At 10,000 messages the Rust app
+formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies; older ones showed plain text), while React
+formatted all of them, so the 10,000-message rows are not like for like. A fix and a rerun are in progress. The 1,000-
+and 200-message rows are unaffected: every reply there was formatted.
 
 ### 1,000 messages, 9 KB prompt
 
@@ -156,9 +160,12 @@ CPU and stall ratios likely overstate that part. A corrected rerun is in progres
 
 ### 10,000 messages, 9 KB prompt
 
+Not like for like: the Rust app formatted Markdown only for the newest 1,200 messages (600 of 5,000 replies; older ones
+showed plain text), while React formatted all of them. A fix and a rerun are in progress.
+
 | Measure | Rust | React (default, not virtualised) | Ratio | Range of ratio | RESULTS row |
 |---|---|---|---|---|---|
-| Open the thread, like for like | 435.5 ms (382.9-472.1) | 26081 ms (23591-27196) | 59.8x | 49.9x-71x | 6 |
+| Open the thread (Rust: newest 1,200 formatted) | 435.5 ms (382.9-472.1) | 26081 ms (23591-27196) | 59.8x | 49.9x-71x | 6 |
 | CPU while streaming, 60 s | 22800 ms (20930-23220) | 83500 ms (76060-84710) | 3.6x | 3.2x-4x | 20 |
 | Memory at the end, RSS | 63.6 MiB (63.3-64) | 3717.8 MiB (3675.4-3926) | 58.4x | 57.4x-62x | 8 |
 | Memory at the end, Rust RSS vs React PSS | 63.6 MiB | 3088.9 MiB (3051.1-3298.6) | 48.5x | 47.6x-52.1x | 9 |
@@ -184,7 +191,8 @@ table above is unchanged; the full rows are in RESULTS (rows marked "run 2").
 The runs differ because of machine load: Rust's CPU was 17.2 s in run 1 and 9.7 s in run 2 (ratio 4.2x against 7.1x). CPU is
 load-sensitive and is not a headline figure. Open, stall and memory agreed within the ranges.
 
-Larger fixtures were measured earlier (2026-11-10, 3 interleaved pairs, load 6-25, long structured replies):
+Larger fixtures were measured earlier (2026-11-10, 3 interleaved pairs, load 6-25, long structured replies). These are not
+like for like either: the Rust app formatted Markdown only for the newest 1,200 messages, React all of them.
 
 | Workload | Measure | Rust | React (default, not virtualised) | Ratio | RESULTS row |
 |---|---|---|---|---|---|
@@ -209,7 +217,9 @@ fell from 23.1-25.5 s to 11.8-14.1 s (1.8x, RESULTS rust-only row 1) and the med
 **What "open" means.** On the Rust side it is the time from the start of the history import until the last message's
 Markdown is formatted and painted at least once: import, first sync, formatting on the worker threads, and a forced
 frame. On the React side it is navigation until all messages are in the DOM with their Markdown rendered (every
-reply's table present), plus two frames; the default thread does not virtualise, so that is every message. Rust's first sync alone, when rows are on screen but Markdown is not yet
+reply's table present), plus two frames; the default thread does not virtualise, so that is every message. The
+example app formats Markdown only for the newest 1,200 messages, so above that size (the 2,000-, 5,000- and
+10,000-message rows) Rust's "open" covers fewer formatted messages than React's and is not like for like. Rust's first sync alone, when rows are on screen but Markdown is not yet
 formatted, was 12.9 ms at 1,000 messages. It is a different, earlier event and is not compared with React.
 
 **RSS and PSS.** RSS counts every resident page of a process, so summing it over Chromium's nine processes counts

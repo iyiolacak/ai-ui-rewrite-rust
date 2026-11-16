@@ -30,16 +30,16 @@ and must explicitly permit this source dependency in its architecture boundary.
 
 The dependency-free `ai-ui-slint` Rust crate provides the source location
 at **build time**; it does not create a window or add a Slint runtime dependency.
-The package is currently private (`publish = false`), so consume it by path or
-an explicitly managed Git dependency until distribution and licensing are decided.
-Use the matching Slint and `slint-build` version, currently 1.18.1:
+It is published on crates.io. The Slint components it points to are under
+Slint's own licence (GPL-3.0, Royalty-Free with attribution, or commercial); your
+application chooses one. Use the matching Slint and `slint-build` version, currently 1.18.1:
 
 ```toml
 [dependencies]
 slint = { version = "=1.18.1", features = ["compat-1-18"] }
 
 [build-dependencies]
-ai-ui-slint = { path = "../path/to/crates/assistant-slint" }
+ai-ui-slint = "0.1"
 slint-build = "=1.18.1"
 ```
 
@@ -330,7 +330,7 @@ API. It handles horizontal wheel, track and thumb input, and rejects vertical
 wheel events so an enclosing thread can handle them. The Markdown code viewport
 uses it for long lines; its offset and scroll bounds remain owned by the viewport.
 The focused software-window interaction check is run with
-`python3 crates/assistant-slint/tests/run-markdown-scroll.py` from the workspace
+`cargo test --locked -p ai-ui-slint --test markdown_scroll` from the workspace
 root, using the demo's pinned Slint dependency graph. Physical touch and device
 performance remain unverified.
 

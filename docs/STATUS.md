@@ -63,12 +63,15 @@ The older full-stream harness used `Vec::remove(0)` for simulated network reads;
 the new comparison corrects it on both revisions. Treat the historical numbers
 below as records of their original harnesses, not directly comparable results.
 
-### Against upstream (React)
+### Against upstream React (default thread, not virtualised)
 
 `benchmarks/react-baseline` runs upstream assistant-ui (the published `@assistant-ui/react` 0.15.33 and
 `-react-markdown` 0.14.25 of our reference commit) on the same workload as `--bench-render`: the same history, the same
 demo reply (reasoning, then the answer, one word every 18 ms) and the same 60 s window, in headless Chromium.
-`compare.sh` interleaves the two. Rust draws at most 60 frames a second, like a display. CPU is the whole process tree
+The React side is upstream's default thread, which renders every message into the DOM and does not virtualise the
+list. Upstream documents a virtualised thread for long conversations; it has not been measured here. It would reduce
+DOM size, open time and memory on long threads, so none of the ratios below, least of all the 10,000-message ones,
+is a statement about virtualised React. `compare.sh` interleaves the two. Rust draws at most 60 frames a second, like a display. CPU is the whole process tree
 (every thread and process); memory is resident memory (React: every Chromium process, RSS and PSS). The current numbers
 are the 2026-11-11 re-run below (median of 5 interleaved pairs, raw files in
 `benchmarks/results/like-for-like/raw`); the 2026-11-10 table after it is kept as history.
@@ -79,7 +82,7 @@ painted, like for like)` in `--bench`); React: navigation until every message an
 frames (`open_formatted_ms`). Rust's first sync alone (rows on screen, Markdown not yet formatted) is a different, earlier
 event and is not compared with React. Machine load about 4-6; ranges are min to max of the 5 runs.
 
-| Workload | Measure | Rust (`ai-ui-slint`) | React (upstream) | Ratio |
+| Workload | Measure | Rust (`ai-ui-slint`) | React (upstream default, not virtualised) | Ratio |
 |---|---|---|---|---|
 | 1000 messages, 9 KB prompt | open, like for like | 105 ms (101-151); first sync alone 12.9 ms | 2.94 s (2.79-2.99) | 27.9x (18.5x-29.6x) |
 | | CPU while streaming (60 s) | 17.2 s (13.7-17.7) | 73.3 s (73.1-73.5) | 4.2x |
@@ -97,13 +100,13 @@ event and is not compared with React. Machine load about 4-6; ranges are min to 
 Correction. The earlier table headlined "open the thread 0.12 s" for Rust (24x against React's 2.9 s). That Rust figure was the
 time before Markdown was formatted, while React's 2.9 s ends with Markdown rendered, so it was not like for like; the same table
 said "Markdown formatted by 0.53 s" (5.4x). Since then pooled Markdown workers cut formatting from 0.52 s to 0.09-0.11 s, and the
-measured like-for-like ratio is 27.9x in this run and 16.6x to 27.9x across the four runs of 2026-11-11 ([RUNS.md](RUNS.md)). At 10,000 messages React's page survived all 5 runs here (the 2026-11-10 failure was not
+measured like-for-like ratio against the default unvirtualised thread is 27.9x in this run and 16.6x to 27.9x across the four runs of 2026-11-11 ([RUNS.md](RUNS.md)). At 10,000 messages React's page survived all 5 runs here (the 2026-11-10 failure was not
 reproduced). Ratios are floored by `scripts/results.py` (see [RESULTS.md](RESULTS.md)).
 
 History: 2026-11-10, median of 3 interleaved pairs on a shared machine (load 10-21), raw files not kept; superseded by the table
 above:
 
-| Workload | Measure | Rust (`ai-ui-slint`) | React (upstream) |
+| Workload | Measure | Rust (`ai-ui-slint`) | React (upstream default, not virtualised) |
 |---|---|---|---|
 | 1000 messages, 9 KB prompt | CPU while streaming (60 s) | 18.8 s | 68.1 s (main thread 59.8 s, saturated) |
 | | open the thread | 0.12 s before Markdown was formatted (not comparable), formatted by 0.53 s | 2.9 s |
@@ -115,7 +118,10 @@ above:
 
 The Rust figures include software rasterisation on the CPU (`--bench-render`); a GPU window moves that to the GPU,
 while Chromium's figures include its own raster and compositor work. The React thread follows upstream's default
-structure but with plain CSS instead of Tailwind and Radix, so it does somewhat less work than upstream's default.
+structure (no list virtualisation) but with plain CSS instead of Tailwind and Radix. That skips the kit's styling work,
+but it also omits the kit's `content-visibility: auto` on message roots, which lets Chromium skip rendering off-screen
+messages. The net effect against upstream's styled default has not been measured, so the CSS difference cannot be said
+to favour React.
 
 Two changes made on the way (2026-11-10): long reasoning text is shown as chunks that are appended once and never
 re-wrapped (`examples/thread/src/chunks.rs`, `ChatPart.body-chunks`), with each chunk's height held in a property so
@@ -202,8 +208,9 @@ in 10 s buckets). Before the 60 Hz cap it drew every changed iteration (~280 a s
 about 10% of iterations over 4 ms, so painting, not app work, dominates a frame. The offscreen process stays at
 20-28 MiB, so most of the ~100 MB measured in the GPU window belongs to the renderer and windowing, not thread data.
 At the demo model's pace the reply does not finish within the bench's 60 s window; totals compare equal windows.
-Tried and reverted (2026-11-10, five interleaved pairs per scenario): one list row per Markdown block, like
-upstream's `with-virtualized-thread` but finer. With rendering it was within noise (p95 6.4 vs 7.0 ms at 1000
+Tried and reverted (2026-11-10, five interleaved pairs per scenario): one list row per Markdown block instead of one
+per message. That changed row granularity inside the same Slint `ListView`; it was not thread virtualisation and says
+nothing about upstream's virtualised thread. With rendering it was within noise (p95 6.4 vs 7.0 ms at 1000
 messages, 7.1 vs 6.5 ms for a 40 KB reply); app work alone got worse (total 6.8 to 9.1 s, frames over 4 ms 66 to
 182) because every update re-compared the reply's blocks.
 
@@ -214,7 +221,7 @@ fell to 0.72× of base (0.95× with software paint); RSS is within 0.2 KB per
 message of base. Full projection remains
 necessary for structural/global changes, retained snapshots or runtimes without
 a usable change journal. Per-update work still grows with the length of the
-streaming reply; this change does not add thread virtualization. The earlier
+streaming reply; this change does not add thread virtualisation. The earlier
 repository journal removes the historical-row scan from the local runtime's
 steady-state `ThreadView` content updates.
 

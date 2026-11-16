@@ -1,6 +1,6 @@
 # Benchmark runs dataset (`docs/runs.json`)
 
-One structured file with every raw benchmark run of 2026-11-11 (Rust `--bench-render` against upstream React in headless Chromium),
+One structured file with every raw benchmark run of 2026-11-11 (Rust `--bench-render` against upstream React's default thread, which does not virtualise the list, in headless Chromium),
 the web-demo measurements and the test runs. The landing page draws its box and strip plots, per-pair points and run comparisons from it.
 `docs/results.json` / `docs/RESULTS.md` remain the published, ranked result tables; this file keeps every per-pair value.
 
@@ -66,11 +66,15 @@ is better the rule is rust/react; the current measures are all lower-is-better.
 | run3 | 9 | 1000 msgs, 9 KB | tuned `throughput-performance`, governor `performance` | plugged in | 0.6 - 2.9 | frequency fell from about 4.2 GHz (pairs 1-4) to about 2.5-2.9 GHz (pairs 5-9), see `mean_cpu_mhz_per_pair` |
 | run4 | 9 | 1000 msgs, 9 KB | tuned `balanced`, governor `powersave`, EPP `balance_performance` | plugged in | 1.8 - 13.6 | confounded: an unrelated `rustc` process and other activity raised the load during pairs 2, 3, 6, 7, 8; mean CPU frequency 3.2 - 4.0 GHz per pair |
 
-Headline open-time ratio (React median / Rust median, floored): run 1 27.9x, run 2 25.3x, run 3 16.6x, run 4 20.1x
+Headline open-time ratio against the default unvirtualised React thread (React median / Rust median, floored): run 1 27.9x, run 2 25.3x, run 3 16.6x, run 4 20.1x
 (see `ratio_floor_median`; the per-pair range is in the least/most favourable fields).
 
 ## The honest reading
 
+- Every React figure here is upstream's default thread, which renders every message into the DOM and does not virtualise the list.
+  Upstream documents a virtualised thread for long conversations; it has not been measured yet and would narrow the gap on long threads.
+  The React page's plain CSS also omits the default kit's `content-visibility: auto` on message roots, which lets Chromium skip
+  rendering off-screen messages, so the CSS difference cannot be said to favour React; its net effect is not measured.
 - The open-time ratio differs between runs because of power profile and machine load. React's open time is more CPU-speed sensitive
   than Rust's (React 2.9 s, 2.5 s, 1.4 s, 1.7 s; Rust 105 ms, 98 ms, 83 ms, 83 ms in runs 1 to 4), so the faster the CPU runs, the smaller the ratio.
   Rust is faster in every pair of every run; the size of the gap is not one number. Show the range, not one figure.

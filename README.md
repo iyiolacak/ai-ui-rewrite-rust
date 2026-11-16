@@ -13,8 +13,9 @@ wire decoders, and a Slint thread UI, for native and WebAssembly apps.
 - Runtime crates (`ai-ui-core`, `-stream`, `-data-stream`, `-http`, `-state`) have no UI dependency; the gate builds
   them for `wasm32-unknown-unknown`.
 - Follows upstream module for module at one pinned commit, so a backend that serves assistant-ui clients needs no change.
-- Per-update cost does not grow with thread length: a bounded change journal projects only changed rows
-  ([how](docs/guide/07-performance.md)).
+- A bounded change journal projects only changed rows, so a streamed update stays in microseconds on long threads;
+  it still grows about linearly with history, 2.9 to 21.3 µs from 1,000 to 10,000 messages
+  ([how](docs/guide/07-performance.md), [measured](docs/PERFORMANCE.md#remaining-costs-and-next-experiments)).
 - Markdown is formatted on a worker-thread pool, settled blocks once and the live tail on each delta.
 - Native demo is one Rust binary with no JavaScript engine: `cargo run -p ai-ui-example-thread`.
 

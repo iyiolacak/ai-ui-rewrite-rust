@@ -18,9 +18,10 @@ including rejected experiments, is [PERFORMANCE](../PERFORMANCE.md).
 
 A streaming chat does the same small thing many times: a few bytes arrive, one message grows, one row on screen
 changes. A slow chat redoes work proportional to the whole thread for each of those events. Most of the design is
-about making the cost of one event independent of everything else in the thread.
+about keeping the cost of one event close to the size of the change rather than the size of the thread. It is not
+all the way there: part of each update still grows with history, as the next section says.
 
-### One streamed update costs the same at any thread length
+### One streamed update projects only the changed rows
 
 The repository behind every runtime (`crates/ai-ui-core/src/repository.rs`) keeps a bounded change journal: the last
 64 content revisions, stored as the indices of the selected-path messages that changed, not as copies of message
@@ -39,13 +40,20 @@ and projection went from 8.5 to 1.7 microseconds at 1,000 existing messages and 
 5,000 (median of five interleaved pairs). With 10 messages it did not change. That is a runtime-plus-projection
 workload, not frame latency.
 
+The cost per update is lower, not constant. The 2026-11-11 change feed removed the host's scan of every row, but one
+update still cost 2.9 microseconds at 1,000 messages and 21.3 at 10,000 in the 2026-11-11 host-traversal measurement
+(`perf.rs`, a different setup from the figures above), about linear in history. That
+remaining cost is in the runtime snapshot and state projection, and PERFORMANCE lists it as the next target for long
+threads ([Remaining costs](../PERFORMANCE.md#remaining-costs-and-next-experiments)).
+
 ### Row sync touches only changed rows
 
 The Slint side does not rebuild the list when a reply grows. The example host compares row identities (messages are
 `Arc`, so identity is a pointer comparison) and updates changed rows and their part models in place. Streaming text
 goes into one in-place row model per document. Animators for smooth streaming exist only for parts that are
-streaming. The example's `App::sync` still compares identities across the selected thread; PERFORMANCE lists that as a
-remaining cost.
+streaming. Since 2026-11-11 the view's change feed (`ThreadView::state_changes_since`) tells the host which rows changed,
+so `App::sync` no longer compares every row on each update; a structural change, an expired cursor or a thread switch
+still reconciles all rows.
 
 ### Markdown runs off the UI thread
 
@@ -88,9 +96,12 @@ Slint crates adds the same `[patch.crates-io]` entry until Slint ships femtovg 0
 ### The list and large messages
 
 The thread is a Slint `ListView`, so layout and paint cost follows the rows on screen. PERFORMANCE records that
-changing text scale or reading width with 20,000 messages costs a few milliseconds of layout, and that the cost does
-not grow with thread length because only visible rows relayout. STATUS still lists row instantiation across the whole
-thread as a known remaining cost, so this guide does not claim a fully virtualised model.
+changing text scale or reading width with 20,000 messages costs a few milliseconds of layout, that Slint re-evaluates
+only the rows the `ListView` has instantiated, and that this layout cost does not grow with thread length because only
+visible rows relayout ([Settings](../PERFORMANCE.md#settings-text-size-reading-width-theme)). It also records that
+per-update runtime and projection cost still grows about linearly with history, and that Slint's row and layout
+behaviour was not changed by that work ([Remaining costs](../PERFORMANCE.md#remaining-costs-and-next-experiments)).
+This guide therefore does not claim a fully virtualised model.
 
 A user message over 64 KiB or with at least 1,000 newlines is shown one verbatim page at a time (at most 16 KiB and
 400 newlines; `examples/thread/src/paging.rs`). The runtime still holds the whole message, and copy, edit and model
@@ -102,23 +113,28 @@ paint took 9.589 ms raw against 5.554 ms paged. That is a layout figure, not a w
 The Rust side keeps parsed text once and instantiates Slint rows. Resident memory in the like-for-like runs was
 30 MiB at 1,000 messages and 64 MiB at 10,000 (table below). In the larger Rust-only runs, RESULTS records 166 MiB at
 5,000 long structured messages and 552 MiB at 20,000 (117.9 MB of text, one run). Memory grows with the thread, as it must,
-but slowly compared with a DOM.
+but slowly compared with the default React thread, which keeps every message in the DOM.
 
-One experiment was tried and reverted: one list row per Markdown block. It stayed within noise in rendering and
-increased application work, because every update re-compared the blocks. The measurement is in PERFORMANCE.
+One experiment was tried and reverted: one list row per Markdown block instead of one per message. That changed row
+granularity within the same list; it was not thread virtualisation. It stayed within noise in rendering and
+increased application work, because every update re-compared the blocks. The measurement is in [STATUS](../STATUS.md); PERFORMANCE records why the
+approach should not be repeated as it was.
 
 ## The measurements
 
-Workload: upstream's thread (`@assistant-ui/react` 0.15.33 with plain CSS, in headless Chromium) against
+Workload: upstream's default thread (`@assistant-ui/react` 0.15.33 with plain CSS, in headless Chromium), which renders
+every message into the DOM and does not virtualise the list, against
 `ai-ui-example-thread --bench N --bench-reply-kb K --bench-render` (offscreen, software raster, at most 60 frames a
 second). The same history, the same demo reply (reasoning, then the answer, one word every 18 ms) and the same 60 s
 window on both sides. Each cell is the median of 5 interleaved Rust and React pairs, release build, run on
 2026-11-11, machine load about 4-6. Ranges are the minimum to maximum over the five runs. Ratios are the median
-React value divided by the median Rust value, floored to one decimal.
+React value divided by the median Rust value, floored to one decimal. Upstream documents a virtualised thread for long
+conversations; it has not been measured yet and would narrow the gap on long threads, so these ratios are not a
+statement about virtualised React.
 
 ### 1,000 messages, 9 KB prompt
 
-| Measure | Rust | React | Ratio | Range of ratio | RESULTS row |
+| Measure | Rust | React (default, not virtualised) | Ratio | Range of ratio | RESULTS row |
 |---|---|---|---|---|---|
 | Open the thread, like for like | 105.3 ms (100.8-150.9) | 2940 ms (2794-2987) | 27.9x | 18.5x-29.6x | 15 |
 | CPU while streaming, 60 s | 17160 ms (13700-17650) | 73260 ms (73050-73540) | 4.2x | 4.1x-5.3x | 18 |
@@ -128,7 +144,7 @@ React value divided by the median Rust value, floored to one decimal.
 
 ### 200 messages, 40 KB prompt
 
-| Measure | Rust | React | Ratio | Range of ratio | RESULTS row |
+| Measure | Rust | React (default, not virtualised) | Ratio | Range of ratio | RESULTS row |
 |---|---|---|---|---|---|
 | Open the thread, like for like | 33.2 ms (31.8-46.6) | 1104 ms (1029-1197) | 33.2x | 22x-37.6x | 13 |
 | CPU while streaming, 60 s | 17020 ms (13660-19450) | 51160 ms (41900-57120) | 3x | 2.1x-4.1x | 19 |
@@ -138,7 +154,7 @@ React value divided by the median Rust value, floored to one decimal.
 
 ### 10,000 messages, 9 KB prompt
 
-| Measure | Rust | React | Ratio | Range of ratio | RESULTS row |
+| Measure | Rust | React (default, not virtualised) | Ratio | Range of ratio | RESULTS row |
 |---|---|---|---|---|---|
 | Open the thread, like for like | 435.5 ms (382.9-472.1) | 26081 ms (23591-27196) | 59.8x | 49.9x-71x | 6 |
 | CPU while streaming, 60 s | 22800 ms (20930-23220) | 83500 ms (76060-84710) | 3.6x | 3.2x-4x | 20 |
@@ -155,7 +171,7 @@ A second, independent run of the 1,000-message comparison (2026-11-11, 9 interle
 about 3-5 against 4-6 for the first run). Raw files and commands: `benchmarks/results/like-for-like-run2/`. The first run's
 table above is unchanged; the full rows are in RESULTS (rows marked "run 2").
 
-| Measure | Rust | React | Ratio | Range of ratio |
+| Measure | Rust | React (default, not virtualised) | Ratio | Range of ratio |
 |---|---|---|---|---|
 | Open the thread, like for like | 97.5 ms (85.7-213.2) | 2472 ms (1870-2874) | 25.3x | 8.7x-33.5x |
 | Longest iteration or frame | 16.68 ms (11.73-30.53) | 550 ms (416.6-983.3) | 32.9x | 13.6x-83.8x |
@@ -168,7 +184,7 @@ load-sensitive and is not a headline figure. Open, stall and memory agreed withi
 
 Larger fixtures were measured earlier (2026-11-10, 3 interleaved pairs, load 6-25, long structured replies):
 
-| Workload | Measure | Rust | React | Ratio | RESULTS row |
+| Workload | Measure | Rust | React (default, not virtualised) | Ratio | RESULTS row |
 |---|---|---|---|---|---|
 | 2,000 messages (12.2 MB) | open the thread | 527.1 ms (485.5-528.3) | 42090 ms (42090-96584) | 79.8x | 2 |
 | 2,000 messages | longest iteration or frame | 41.5 ms (35-74.8) | 1633.2 ms (1633.2-4583.1) | 39.3x | 4 |
@@ -179,7 +195,8 @@ Larger fixtures were measured earlier (2026-11-10, 3 interleaved pairs, load 6-2
 Two cautions apply to these. For 2,000 messages, one of three React runs did not finish opening within the harness's
 120 s limit and is excluded, which understates React. For 5,000 messages React did not finish in 3 of 3 runs, so
 120 s is a floor, not a measurement, and the ratio is a lower bound. Those older runs also used a harness that
-measured React's open without checking the Markdown, which if anything understates React.
+measured React's open without checking the Markdown, which if anything understates React. These long threads are also
+where a virtualised React thread would differ most from the default one measured here.
 
 Rust against its own earlier state (not a React comparison): in a real GPU window, 1,000 messages, 30 s, process CPU
 fell from 23.1-25.5 s to 11.8-14.1 s (1.8x, RESULTS rust-only row 1) and the median frame rate rose from 105 to 141 fps
@@ -190,7 +207,7 @@ fell from 23.1-25.5 s to 11.8-14.1 s (1.8x, RESULTS rust-only row 1) and the med
 **What "open" means.** On the Rust side it is the time from the start of the history import until the last message's
 Markdown is formatted and painted at least once: import, first sync, formatting on the worker threads, and a forced
 frame. On the React side it is navigation until all messages are in the DOM with their Markdown rendered (every
-reply's table present), plus two frames. Rust's first sync alone, when rows are on screen but Markdown is not yet
+reply's table present), plus two frames; the default thread does not virtualise, so that is every message. Rust's first sync alone, when rows are on screen but Markdown is not yet
 formatted, was 12.9 ms at 1,000 messages. It is a different, earlier event and is not compared with React.
 
 **RSS and PSS.** RSS counts every resident page of a process, so summing it over Chromium's nine processes counts
@@ -209,14 +226,21 @@ the ratios and ranges are meaningful.
 **Different clocks, same workload.** Rust's "longest stall" is the longest loop iteration, unpaced. React's is the
 longest animation-frame interval. Rust's figures include software rasterisation on the CPU. React's CPU is the whole
 Chromium process tree, including its own raster and compositing. React's main-thread busy time does not count raster
-threads, which favours React. The React thread uses plain CSS and does somewhat less than upstream's default
-Tailwind and Radix thread, which also favours React.
+threads, which favours React. The React thread uses plain CSS instead of upstream's default Tailwind and Radix kit.
+That skips the kit's styling work, but it also omits the kit's `content-visibility: auto` on message roots, which lets
+Chromium skip rendering off-screen messages. The net effect has not been measured, so the CSS difference cannot be said
+to favour React.
 
-**Where React won.** No case was found on these workloads where React wins or ties.
+**Where React won.** Against the default unvirtualised thread, no case was found on these workloads where React wins
+or ties. A virtualised React thread has not been measured.
 
 ## What we did not measure
 
 - Any product other than upstream assistant-ui. This guide makes no comparison with others.
+- Upstream's virtualised thread, which upstream documents for long conversations. Every React figure here is the
+  default thread, which does not virtualise the list; a virtualised thread would narrow the gap on long threads.
+- The default thread with the kit's own styling: Tailwind and Radix, and the `content-visibility: auto` rule on
+  message roots. The React page uses plain CSS without that rule.
 - React in a real GPU window. The harness cannot open one, so there is no GPU Rust-against-React ratio; the GPU rows
   are Rust against its earlier self.
 - Long fixtures re-run with raw files kept: the 2,000- and 5,000-message rows come from 3 pairs on a loaded machine
@@ -232,7 +256,7 @@ Tailwind and Radix thread, which also favours React.
 An earlier README and RESULTS headlined opening a 1,000-message thread at 0.12 s for Rust, against 2.9 s for React
 (24x). The Rust figure was the time before Markdown had been formatted; the React figure ended with Markdown
 rendered, so the comparison was not like for like. It was corrected on 2026-11-11. The measured like-for-like
-ratio at 1,000 messages is 27.9x (18.5x to 29.6x), reflecting formatting that had since been cut from 0.52 s to
+ratio at 1,000 messages, against the default unvirtualised thread, is 27.9x (18.5x to 29.6x), reflecting formatting that had since been cut from 0.52 s to
 0.09-0.11 s by the worker pool. The 2026-11-10 values for 1,000 and 200 messages were also withdrawn, because their
 raw files were not kept; the table above replaces them.
 

@@ -48,11 +48,14 @@ the repository's reference documents. Build it and measure `dist-web/`. See [Run
 
 ## How does it compare with assistant-ui in speed, and what is the catch?
 
-On the recorded workloads, Rust opened a 1,000-message thread, Markdown formatted and painted, in 105 ms against
-2.94 s for React (27.9x), used 17.2 s of CPU against 73.3 s for 60 s of streaming (4.2x), and 30 MiB of memory
+On the recorded workloads, against upstream's default React thread (which does not virtualise the list), Rust opened a
+1,000-message thread, Markdown formatted and painted, in 105 ms against 2.94 s for React (27.9x), used 17.2 s of CPU against 73.3 s for 60 s of streaming (4.2x), and 30 MiB of memory
 against 1481 MiB RSS or 850 MiB PSS. Those are medians of 5 interleaved pairs on 2026-11-11; across all four runs that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU ([RUNS](../RUNS.md)).
 
-The catch: the comparison is against upstream's thread with plain CSS in headless Chromium on a shared, busy machine;
+The catch: the comparison is against upstream's default thread, which renders every message into the DOM and does not
+virtualise the list. Upstream documents a virtualised thread for long conversations; it has not been measured yet and
+would narrow the gap on long threads. The React page uses plain CSS, which also omits the default kit's
+`content-visibility: auto` rule on message roots. It ran in headless Chromium on a shared, busy machine;
 the Rust side was offscreen with software raster; it was one machine; no GPU window was compared; and the 2026-11-10
 numbers had to be corrected. Read "How to read these numbers" in [Performance](07-performance.md).
 

@@ -18,7 +18,8 @@ explain most of the shapes:
   at one pinned commit, and tests are ported from upstream's, so a thread, a backend or a stored history means the same
   thing in both worlds.
 - **Cost per streamed update.** A chat spends most of its life receiving one small update after another. The design keeps
-  the work for one update independent of how long the thread is, wherever it can.
+  the work for one update independent of how long the thread is, wherever it can. It is not there yet: the runtime
+  snapshot and state projection still grow with history ([Performance](07-performance.md)).
 
 ## The message model
 

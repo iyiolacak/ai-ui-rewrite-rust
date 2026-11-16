@@ -16,10 +16,11 @@ A chat thread grows. A reply streams in as many small updates, a few bytes at a 
 re-renders, re-lays out or re-parses work that scales with the whole thread, the cost of one update grows with the
 number of messages, not with the size of the change.
 
-In upstream assistant-ui on React, that looks like this on our benchmark: with 1000 messages the longest frame interval
-while streaming was 916.6 ms (median of 5 interleaved pairs, range 866.6 to 1183.3 ms), and the main thread was busy for
-about the whole 60 s window. With 10,000 messages, opening the thread took 26.1 s. Conditions and caveats are in the
-table below and in [RESULTS](../RESULTS.md).
+In upstream assistant-ui's default React thread, which renders every message into the DOM and does not virtualise the
+list, that looks like this on our benchmark: with 1000 messages the longest frame interval while streaming was 916.6 ms
+(median of 5 interleaved pairs, range 866.6 to 1183.3 ms), and the main thread was busy for about the whole 60 s window.
+With 10,000 messages, opening the thread took 26.1 s. Upstream documents a virtualised thread for long conversations;
+it has not been measured here yet. Conditions and caveats are in the table below and in [RESULTS](../RESULTS.md).
 
 ## What ai-ui is
 
@@ -39,9 +40,11 @@ serves assistant-ui clients needs no change.
 - **Wire-compatible decoders.** The AI SDK UI message stream, the AI SDK data stream and assistant-transport are decoded
   incrementally, with reads that may split anywhere, including inside a UTF-8 character. 96 protocol vectors are saved in
   `crates/ai-ui-stream/tests/fixtures/protocol-vectors.json`; the counts are below.
-- **Per-update cost that does not grow with thread length.** A bounded change journal in `ai-ui-core` lets a view
-  project only the rows that changed. The mechanism is in [Performance](07-performance.md); the end-to-end measurements
-  are in the table.
+- **Per-update work limited to the rows that changed.** A bounded change journal in `ai-ui-core` lets a view
+  project only the rows that changed, and the host no longer scans every row. The runtime snapshot and state projection
+  still grow about linearly with history, so per-update cost is lower but not constant
+  ([PERFORMANCE](../PERFORMANCE.md#remaining-costs-and-next-experiments)). The mechanism is in
+  [Performance](07-performance.md); the end-to-end measurements are in the table.
 - **Markdown formatted off the UI thread.** `ai-ui-markdown` uses a pool of worker threads, formats settled blocks once
   and re-formats only the live tail while text streams (`crates/ai-ui-markdown/src/pool.rs`).
 - **One native binary, no JavaScript engine.** `cargo run -p ai-ui-example-thread` builds and runs the demo; there is no
@@ -53,12 +56,14 @@ serves assistant-ui clients needs no change.
 
 ## Measured against upstream assistant-ui
 
-Rust is this repository's example app with the software renderer (`--bench-render`); React is upstream assistant-ui
-(`@assistant-ui/react` 0.15.33) in headless Chromium. Same history, same demo reply, 60 s window. Medians of 5
+Rust is this repository's example app with the software renderer (`--bench-render`); React is upstream assistant-ui's
+default thread (`@assistant-ui/react` 0.15.33) in headless Chromium, which renders every message into the DOM and does
+not virtualise the list. A virtualised React thread has not been measured yet; it would narrow the gap on long threads,
+the 10,000-message row most of all. Same history, same demo reply, 60 s window. Medians of 5
 interleaved pairs, measured 2026-11-11, machine load about 4-6. Ranges are min to max over the 5 runs. A second, independent run (9 pairs, lighter load) is in
 [Performance](07-performance.md#second-run) and [RESULTS](../RESULTS.md). Across all four runs of that day the ratios were 16.6x to 27.9x for open, 23.8x to 42.7x for the longest stall, 28.2x to 35.4x for memory and 4.2x to 14.0x for CPU (medians per run; [RUNS](../RUNS.md)).
 
-| Workload | Measure | Rust | React | Ratio (range) | RESULTS row |
+| Workload | Measure | Rust | React (default, not virtualised) | Ratio (range) | RESULTS row |
 |---|---|---|---|---|---|
 | 1000 messages | open the thread, Markdown formatted and painted | 105.3 ms (100.8 to 150.9) | 2940 ms (2794 to 2987) | 27.9x (18.5x to 29.6x) | 15 |
 | 1000 messages | longest iteration or frame while streaming | 34 ms (17.5 to 35.4) | 916.6 ms (866.6 to 1183.3) | 26.9x (24.4x to 67.6x) | 7 |
@@ -76,8 +81,9 @@ Conditions that apply to every row:
 - **Rust CPU includes software rasterisation.** React CPU is the whole Chromium process tree.
 - **Ratios** are computed from the stated values and floored to one decimal. The range pairs the best Rust run with the
   worst React run and the reverse.
-- **Not measured here:** a GPU window against React with a GPU, other browsers, other machines, and scenarios other than
-  these two prompts. Stalls from single events are noisy; read the range, not just the median.
+- **Not measured here:** upstream's virtualised React thread; the default thread with the kit's Tailwind and Radix
+  styling and its `content-visibility: auto` rule on message roots (the React page uses plain CSS without it); a GPU
+  window against React with a GPU, other browsers, other machines, and scenarios other than these two prompts. Stalls from single events are noisy; read the range, not just the median.
 
 Method and reproduction commands: [Performance](07-performance.md). The earlier "24x" open figure, which compared
 Rust before Markdown was formatted with React after, was withdrawn and is explained in RESULTS.

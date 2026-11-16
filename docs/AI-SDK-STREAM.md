@@ -155,7 +155,7 @@ Primary behavior references, pinned to AI SDK 7.0.166:
 The partial JSON repair is adapted from the Apache-2.0-licensed AI SDK and carries
 its notice/license beside the source. assistant-ui itself is MIT; that license
 must not be confused with the AI SDK source license. `serde_json` is MIT OR
-Apache-2.0. The crate's own code is MIT like the rest of this workspace; the package is marked `publish = false` until names are decided.
+Apache-2.0. The crate's own code is MIT like the rest of this workspace; the package is published on crates.io as `ai-ui-sdk-stream` 0.1.0.
 
 ## Remaining work
 

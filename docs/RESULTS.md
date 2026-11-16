@@ -16,7 +16,7 @@ kept (5 interleaved pairs each, `benchmarks/results/like-for-like/raw`). **Every
 Rust until the last message's Markdown is formatted and painted at least once, React until all messages are in the DOM with
 their Markdown rendered. An earlier version of this page headlined Rust's open time *before* Markdown was formatted (0.12 s,
 "24x") against React's open time *with* Markdown rendered; that comparison is withdrawn. Measured like for like, opening a
-1000-message thread is 105 ms (Rust) vs 2.94 s (React), 27.9x (range 18.5x to 29.6x). The 2,000- and 5,000-message rows below
+1000-message thread is 105 ms (Rust) vs 2.94 s (React's default, unvirtualised thread), 27.9x (range 18.5x to 29.6x). The 2,000- and 5,000-message rows below
 come from the 2026-11-10 session; their Rust open figures were corrected to include Markdown formatting.
 
 ## Second run (2026-11-11, lighter load)
@@ -39,7 +39,7 @@ so the CPU ratio moved from 4.2x to 7.1x. CPU is load-sensitive (Rust includes s
 cores) and is therefore not a headline figure. Open, stall and memory agreed: each run-2 ratio (25.3x, 32.9x, 29.5x, 50.8x)
 lies inside run 1's pairing range for the same measure, whereas the CPU ratio (7.1x) lies outside run 1's (4.1x to 5.3x).
 
-## Ranked multipliers (Rust vs React)
+## Ranked multipliers (Rust vs React's default, unvirtualised thread)
 
 <!-- results:vs_react -->
 | Rank | Workload | Measure | Rust | React | Ratio | Range | Source (commit), date | Conditions | What drives it |
@@ -85,7 +85,8 @@ Notes on specific rows:
   React memory 950 MiB, React stall 867 ms and 5.0 s, ...) came from 3 pairs whose raw files were not kept. The new 5-pair medians
   differ (for example React memory 1481 MiB RSS with 9 Chromium processes, React 200-message stall 2.4 s), so the old figures are
   not quoted any more.
-- 10,000 messages: on 2026-11-10 upstream's page did not survive in headless Chromium. In these 5 pairs it did: it opened in 23.6 to
+- 10,000 messages: these rows are where a virtualised React thread (not measured) would differ most from the default one,
+  which keeps all 10,000 messages in the DOM. On 2026-11-10 upstream's page did not survive in headless Chromium. In these 5 pairs it did: it opened in 23.6 to
   27.2 s and finished the 60 s window with 3.7 GiB RSS and 11.6 s median longest frame. Both outcomes are real; the earlier failure
   was not reproduced.
 - 2,000 long structured messages: the third React run did not finish opening within the harness's 120 s limit, so it is excluded
@@ -115,8 +116,8 @@ Columns read "Rust" = now, "React" = the earlier Rust build in this table only.
 ## Methods
 
 - Workload: the same history, the same demo reply (reasoning, then answer, one word per 18 ms) and the same 60 s window in both apps
-  (`benchmarks/react-baseline`, `docs/STATUS.md#against-upstream-react`). React is the published `@assistant-ui/react` 0.15.33 with
-  plain CSS in headless Chromium (chrome-headless-shell 1248); Rust is `ai-ui-example-thread --bench N --bench-reply-kb K --bench-render`
+  (`benchmarks/react-baseline`, `docs/STATUS.md#against-upstream-react-default-thread-not-virtualised`). React is the published `@assistant-ui/react` 0.15.33's default thread (every message in
+  the DOM, list not virtualised) with plain CSS in headless Chromium (chrome-headless-shell 1248); Rust is `ai-ui-example-thread --bench N --bench-reply-kb K --bench-render`
   (offscreen, software raster, at most 60 frames a second).
 - Interleaved pairs (Rust, React, Rust, React, ...) so machine load hits both alike; the load average before each run is in the raw files.
   Machine: 12 cores, shared and busy (load 4-25 during these runs), so absolutes move and only ratios count. Medians are used for published
@@ -138,15 +139,19 @@ Columns read "Rust" = now, "React" = the earlier Rust build in this table only.
 ## Caveats
 
 - Single-event stalls are noisy: Rust's longest iteration at 2,000 messages ranged 35-75 ms, React's 1.6-4.6 s. We report every run, not the best.
-- The Rust figures include software rasterisation on the CPU; React's include Chromium's own raster and compositing, with plain CSS (less work than upstream's Tailwind/Radix thread).
+- The Rust figures include software rasterisation on the CPU; React's include Chromium's own raster and compositing.
   React's main-thread busy time does not count raster threads, which favours React; whole-process CPU is used where stated.
+- The React page uses plain CSS instead of upstream's Tailwind/Radix kit. That skips the kit's styling work but also omits its
+  `content-visibility: auto` on message roots, which lets Chromium skip rendering off-screen messages; the net effect is not measured.
 - Rust's "longest stall" is the longest loop iteration (unpaced work); React's is the longest animation-frame interval. Different clocks, same workload.
 - The 2,000-message React runs varied a lot (open 42 s and 97 s, one run over 120 s) under a loaded machine; Rust varied little.
-- The 5,000 and 20,000 ratios are lower bounds or absent for the reasons above. No case was found where React wins or ties on these workloads.
+- The 5,000 and 20,000 ratios are lower bounds or absent for the reasons above. No case was found where React's default (unvirtualised) thread wins or ties on these workloads.
 
 ## Not measured yet (interrupted, or not feasible)
 
 - Interrupted before they ran: React at 20,000 messages (the run was started and stopped); fast-scroll frame time at 2,000/5,000/20,000
   messages for both apps (harnesses written and smoke-tested, no clean pairs); composer typing latency with 5,000 messages (harness written and smoke-tested for 2,000 on Rust only);
   memory growth over a 5-minute stream (RSS every 5 s at 5,000 messages; harness written, not run); React at 5,000 messages with a longer open timeout.
+- Not measured yet: upstream's virtualised thread (documented by upstream for long conversations), and the default thread with
+  the kit's Tailwind/Radix styling and its `content-visibility: auto` rule. Both would change React's figures on long threads.
 - Not feasible here: React in a real GPU window (no popup windows allowed), so no GPU Rust-vs-React ratio; the GPU rows above are Rust against Rust.

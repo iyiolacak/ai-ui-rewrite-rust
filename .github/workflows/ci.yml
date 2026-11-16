@@ -97,8 +97,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      # `publish = false` stays until the crate names are decided, so this uses `cargo package`,
-      # which builds each crate from its tarball. Only crates without workspace dependencies can
-      # be verified before their dependencies are on crates.io.
+      # All ten library crates are on crates.io (0.1). `cargo package` builds each crate from its
+      # tarball; the second step only lists the contents of crates with workspace dependencies.
+      # Releases are made from the public checkout with `cargo publish --dry-run` first.
       - run: cargo package --locked -p ai-ui-core -p ai-ui-markdown -p ai-ui-clipboard
       - run: cargo package --list --locked -p ai-ui-stream -p ai-ui-data-stream -p ai-ui-http -p ai-ui-state

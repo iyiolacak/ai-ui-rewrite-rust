@@ -9,7 +9,7 @@ Most crates build for `wasm32-unknown-unknown`. Add the target once with `rustup
 | `ai-ui-core`, `ai-ui-stream`, `ai-ui-data-stream`, `ai-ui-state`, `ai-ui-markdown`, `ai-ui-sdk-stream` | yes | No I/O, clock or thread dependencies. |
 | `ai-ui-http` | yes | `FetchClient` (browser `fetch`) replaces `NativeClient` (ureq) on wasm32. |
 | `ai-ui-clipboard` | yes | `navigator.clipboard` on `wasm32-unknown-unknown`; arboard on desktop. |
-| `ai-ui-markdown-slint`, `ai-ui-slint` | through the example only | Slint crates, `publish = false`; built and run via `examples/thread`. |
+| `ai-ui-markdown-slint`, `ai-ui-slint` | through the example only | Published Slint crates (crates.io 0.1.0); for the web they are built and run via `examples/thread`. |
 | `examples/thread` | yes, as the demo | Slint with the femtovg renderer on WebGL, winit on a canvas. |
 
 Check any of them with `cargo check --target wasm32-unknown-unknown -p <crate>`; `scripts/gate.sh` builds the non-Slint ones.

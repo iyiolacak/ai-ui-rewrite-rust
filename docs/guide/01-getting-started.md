@@ -18,8 +18,9 @@ serves assistant-ui clients keeps working. The pinned upstream commit and the li
 
 It is early: the library crates are on crates.io as 0.1 (`cargo add ai-ui-core`). It is a port, not a product of the assistant-ui or Vercel AI SDK projects.
 
-The point of the port is cost. On the same workload, a Rust thread uses much less CPU and memory than upstream's React
-thread. One example, with its conditions: opening a 1000-message thread (9 KB prompt) until every message's Markdown is
+The point of the port is cost. On the same workload, a Rust thread uses much less CPU and memory than upstream's default
+React thread, which renders every message into the DOM and does not virtualise the list; a virtualised React thread has
+not been measured yet and would narrow the gap on long threads. One example, with its conditions: opening a 1000-message thread (9 KB prompt) until every message's Markdown is
 formatted and painted took 105 ms for Rust and 2.94 s for React, median of 5 interleaved pairs, release build, software
 renderer on the Rust side, headless Chromium for React, measured on 2026-11-11; across four runs that day the open ratio was 16.6x to 27.9x
 ([RUNS](../RUNS.md)). Other workloads, ranges and caveats are

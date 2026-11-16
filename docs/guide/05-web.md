@@ -18,7 +18,7 @@ The runtime crates have no I/O, clock or thread dependencies, so they compile fo
 | `ai-ui-core`, `ai-ui-stream`, `ai-ui-sdk-stream`, `ai-ui-data-stream`, `ai-ui-state`, `ai-ui-markdown` | Yes. No I/O, clock or thread dependencies. |
 | `ai-ui-http` | Yes. `FetchClient` (browser `fetch`) replaces `NativeClient` (ureq) on wasm32. |
 | `ai-ui-clipboard` | Yes. `navigator.clipboard` on `wasm32-unknown-unknown`; arboard on desktop. |
-| `ai-ui-markdown-slint`, `ai-ui-slint` | Through the example only. They are Slint crates with `publish = false`. |
+| `ai-ui-markdown-slint`, `ai-ui-slint` | Through the example only. They are published Slint crates (crates.io 0.1.0); for the web they are built and run via `examples/thread`. |
 | `examples/thread` | Yes, as the demo. |
 
 Check any single crate with:

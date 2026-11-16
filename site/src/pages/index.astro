@@ -74,7 +74,7 @@ const guides = [
             <span>Source on GitHub</span>
           </a>
         </p>
-        <p class="hero-method">Measured against the published <code>@assistant-ui/react</code> 0.15, same history and same streamed reply; each figure is the least favourable of four runs. <a href="#speed">See the numbers and the method</a>.</p>
+        <p class="hero-method">Measured against the published <code>@assistant-ui/react</code> 0.15 default thread (not virtualised), same history and same streamed reply; each figure is the least favourable of four runs. <a href="#speed">See the numbers and the method</a>.</p>
         <div class="screens">
           <div class="screens-track">
             <a class="screen" href="#demo" aria-label="Open the live demo: a 10,000-message thread, running below">
@@ -171,7 +171,7 @@ const guides = [
             </figure>
           </article>
         </div>
-        <p id="speed-fn" class="mt-8 text-sm max-w-3xl" style="color: var(--muted)"><sup>1</sup> Four independent runs on 2026-11-11 on one 12-core Linux laptop, each 5 to 9 interleaved Rust/React pairs, under different power settings and load. A 1000-message history, then a 9 KB prompt whose reply streams for 60 s. Rust is a release build rendering in software on the CPU; React runs in headless Chromium. Each chart shows the median of the run least favourable to Rust for that measure; Rust was ahead in every pair of every run. Ratios are rounded down. Results depend on hardware, browser, thread content and configuration, so absolute timings will vary. Every raw run: <a class="underline" href={`${docs}/RUNS.md`}>RUNS</a>. Benchmark code and the full method: <a class="underline" href="https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/benchmarks/react-baseline">react-baseline</a>. Reproduce with <code>./compare.sh</code> in that folder; its README lists the arguments.</p>
+        <p id="speed-fn" class="mt-8 text-sm max-w-3xl" style="color: var(--muted)"><sup>1</sup> Four independent runs on 2026-11-11 on one 12-core Linux laptop, each 5 to 9 interleaved Rust/React pairs, under different power settings and load. A 1000-message history, then a 9 KB prompt whose reply streams for 60 s. Rust is a release build rendering in software on the CPU; React is upstream's default thread, not virtualised, in headless Chromium. Each chart shows the median of the run least favourable to Rust for that measure; Rust was ahead in every pair of every run. Ratios are rounded down. Results depend on hardware, browser, thread content and configuration, so absolute timings will vary. Every raw run: <a class="underline" href={`${docs}/RUNS.md`}>RUNS</a>. Benchmark code and the full method: <a class="underline" href="https://github.com/iyiolacak/ai-ui-rewrite-rust/tree/main/benchmarks/react-baseline">react-baseline</a>. Reproduce with <code>./compare.sh</code> in that folder; its README lists the arguments.</p>
         <p class="mt-3 text-sm max-w-3xl" style="color: var(--muted)">assistant-ui is MIT-licensed, &copy; AgentbaseAI Inc. This project is an independent port and isn&rsquo;t affiliated with or endorsed by the assistant-ui or Vercel AI SDK projects. Port status: <a class="underline" href={`${docs}/STATUS.md`}>what is and isn&rsquo;t ported</a>.</p>
       </section>
 
@@ -187,7 +187,7 @@ const guides = [
               </h3>
               <div class="acc-panel" id="what-1-panel" role="region" aria-labelledby="what-1-trigger">
                 <div class="acc-inner">
-                  <p>Both UIs show you the newest messages right away. The difference is what happens off-screen. The React version still keeps and re-renders every older message with it — all of them in the DOM and all of them parsed. Ours doesn't. The thread keeps only the newest window on screen, and anything older is paged in only if you scroll back to it. So the whole app stays fast even as the conversation gets longer.</p>
+                  <p>Both UIs show you the newest messages right away. The difference is what happens off-screen. Upstream's default React thread, the one we measured, keeps every older message in the DOM and parses all of them; it does not virtualise the list. Ours lays out and paints only the rows on screen, because the thread is a Slint list view, and formats Markdown on worker threads. Rows for the whole thread still exist in memory, so this is not a fully virtualised model, and we have not measured a virtualised React thread.</p>
                 </div>
               </div>
             </div>

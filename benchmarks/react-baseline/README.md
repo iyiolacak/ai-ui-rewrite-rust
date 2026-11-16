@@ -15,6 +15,8 @@ The React thread follows upstream's default `thread.aui.tsx` structure
 (viewport, messages, parts with reasoning, GFM Markdown with `defer`, action
 bar, branch picker, composer) with plain CSS instead of Tailwind and Radix, so
 it does less work than upstream's full default thread.
+It does **not** virtualise the message list (upstream's default does not either; upstream has a separate virtualised
+example), so every message is in the DOM. A virtualised variant has not been measured yet.
 
 ## Run
 

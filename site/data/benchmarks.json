@@ -12,6 +12,7 @@
   "Compared with upstream assistant-ui only. Nothing here says anything about ChatGPT or any other product.",
   "The Rust figures include software rasterisation on the CPU (--bench-render). Chromium's figures include its own raster and compositor work.",
   "The React thread follows upstream's default structure with plain CSS instead of Tailwind and Radix, so it does somewhat less work than upstream's default.",
+  "The React thread is upstream's default, which does not virtualise the message list, so every message is in the DOM. A virtualised React thread has not been measured and would narrow the gap on long threads.",
   "Rust draws at most 60 frames a second, like a display. Absolute numbers depend on CPU speed and load; React's open time is the more sensitive, so the open ratio is smallest on the fastest runs.",
   "Ratios are React median divided by Rust median, rounded down, never up."
  ],
